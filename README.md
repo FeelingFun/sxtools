@@ -3,8 +3,9 @@
 SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
+
 	Model your low-poly control cage ->
-	Delete construction history ->
+	Delete construction history ->	
 	Color and crease ->
 	Export to game engine
 
@@ -26,11 +27,14 @@ Some tools are not undo-safe. If proper development pipeline is observed, this s
 
 ## Installation
 Copy scripts to the user script folder:
+
 Windows:
+
 `My Documents\maya\scripts\`
 
+
 OSX:
-copy sxtools scripts to
+
 `userhome/Library/Preferences/Autodesk/maya/scripts/`
 
 Load shelf_SX.mel into Maya shelves
@@ -174,11 +178,16 @@ To remove all optionVars created by SX Tools:
 SX Tools builds on the following work:
 ### sfx
 Code for programmatically working with Maya shaderfx nodes
+
 (c) 2015-16 Steve Theodore
+
 https://github.com/theodox/sfx
+
 Available under MIT license.
 
 ### Vertex-to-edge curvature calculation method 
 Algorithm by Stepan Jirka
+
 http://www.stepanjirka.com/maya-api-curvature-shader/
+
 Integrated into SX Tools under MIT license with permission from the author.
