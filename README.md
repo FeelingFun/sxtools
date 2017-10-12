@@ -1,9 +1,12 @@
 # SX Tools
 
-SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a ‘layer stack’ context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
+SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
-	Model your low-poly control cage -> Delete construction history -> Color and crease -> Export to game engine
+	Model your low-poly control cage ->
+	Delete construction history ->
+	Color and crease ->
+	Export to game engine
 
 Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply.
 
@@ -11,9 +14,9 @@ Changing the topology of your model while coloring and creasing is probably fine
 1. Copy sxtools.py and sfx folder to Maya scripts folder
 2. Load shelf_SX.mel, start SX Tools by pressing shelf icon
 3. Click on empty space
-4. Shift-click on ‘Apply Project Defaults’ to start with basic configuration
+4. Shift-click on **Apply Project Defaults** to start with basic configuration
 5. Import or load a mesh object
-6. Click on object, press ‘Add Missing Color Sets’
+6. Click on object, press **Add Missing Color Sets**
 7. Done, start painting vertex colors!
 
 ## Caveats
@@ -24,11 +27,11 @@ Some tools are not undo-safe. If proper development pipeline is observed, this s
 ## Installation
 Copy scripts to the user script folder:
 Windows:
-My Documents\maya\scripts\
+`My Documents\maya\scripts\`
 
 OSX:
 copy sxtools scripts to
-user home /Library/Preferences/Autodesk/maya/scripts/
+`userhome/Library/Preferences/Autodesk/maya/scripts/`
 
 Load shelf_SX.mel into Maya shelves
 Start SX Tools by clicking the shelf icon, dock the tool window according to your preference.
@@ -47,7 +50,9 @@ Is the distance between all export objects when previewed. The objects are laid 
 
 Albedo colors are flattened, but the coverage masks of each layer are exported. This allows palette management in the game engine.
 
-Once you’ve made your selections, press ‘Apply Project Defaults’ to get started. Shift-clicking the button starts with built-in default settings.
+Once you’ve made your selections, press **Apply Project Defaults** to get started.
+Shift-clicking the button starts with built-in default settings.
+
 Creating project defaults may take a few seconds, as the tool generates custom shaders according to the channel and layer selections.
 The tool also by default disables color management, enables AA, smooth wireframes and transparency depth peeling.
 
@@ -61,16 +66,17 @@ NOTE: Many buttons have alternate functionality when shift-clicked.
 
 ## The Layer View
 ### Shading Modes
-Final - A preview composite of all albedo layers and material channels
-Debug - Displays only the selected layer with transparency, and without lighting
-Alpha - Displays layer alpha channels in grayscale
+**Final** - A preview composite of all albedo layers and material channels
+**Debug** - Displays only the selected layer with transparency, and without lighting
+**Alpha** - Displays layer alpha channels in grayscale
 
-‘Toggle all layers’ flips the visibility of all layers from their current state
+### Toggle All Layers
+Flips the visibility of all layers from their current state
 
 Blend mode selection is similar to popular 2D paint programs:
-‘Alpha’ being the regular transparency blend
-‘Add’ creating an additive (brighter) result
-‘Multiply’ darkening the layer below
+**Alpha** - the regular transparency blend
+**Add**  - creates an additive (brighter) result
+**Multiply** - darkens the layer below
 
 ### The layer list:
 * Click to select layers
@@ -82,7 +88,7 @@ Layers are marked with:
 A layer can have both (M) and (A) flags active at the same time, this indicates the layer has opacity values both below and above the adjustment-to-mask limit.
 
 ### The layer color palette
-Allows the user to pick an existing layer color as both the ‘Apply Color’ and ‘Paint Vertex Tool’ active color.
+Allows the user to pick an existing layer color as both the **Apply Color** and **Paint Vertex Tool** active color.
 
 ### The layer opacity slider
 Always displays the maximum opacity value found in a layer. Layers may still have other values below the max. Dragging the slider directly manipulates the alpha values of the components in the layer. This means that if the slider is dragged to 0, any variance in the values is lost - dragging the slider back up will set all component alpha values to the same constant. Alpha variance is preserved when the slider is otherwise adjusted.
@@ -98,7 +104,7 @@ Shift-clicking will provide inverted selection.
 Sets a layer to default value. If components are selected, only clears the selected components.
 Shift-clicking will clear ALL layers.
 
-Mask layer vs. Adjustment layer
+*Mask layer vs. Adjustment layer*
 A typical layer has fully opaque components that mask the elements below. These are marked with (M).
 When layer opacity is below the ‘Alpha-to-mask limit’ specified in the project defaults, the layer is marked as an Adjustment layer (A). When exported, Adjustment layers only contribute their color to the final vertex color, but their alpha is discarded from any masks.
 
