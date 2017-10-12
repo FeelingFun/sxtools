@@ -17,11 +17,50 @@ class IfElseBasic(SFXNodeType):
     ID = 20163
 
 
+
+class PathDirection(SFXNodeType):
+    TYPE = "Path Direction"
+    ID = 20093
+
+
+class PathDirectionList(SFXNodeType):
+    TYPE = "Path Direction List"
+    ID = 20128
+
+
+class IfElse(SFXNodeType):
+    TYPE = "If Else"
+    ID = 20140
+
+
+class RepeatLoop(SFXNodeType):
+    TYPE = "Repeat Loop"
+    ID = 20132
+
+
+class PrimitiveVariable(SFXNodeType):
+    TYPE = "Primitive Variable"
+    ID = 20170
+    
+
 class Time(SFXNodeType):
     TYPE = "Time"
     ID = 20086
 
 
+class BoolValue(SFXNodeType):
+    TYPE = "Bool Value"
+    ID = 20116
+
+
+class IntValue(SFXNodeType):
+    TYPE = "Int Value"
+    ID = 20117
+
+
+class StringValue(SFXNodeType):
+    TYPE = "String Value"
+    ID = 20167
 
 
 class Light(SFXNodeType):
@@ -69,9 +108,19 @@ class Invert(SFXNodeType):
     ID = 20157
 
 
+class InvertOneMinus(SFXNodeType):
+    TYPE = "Invert One Minus"
+    ID = 20123
+
+
 class Length(SFXNodeType):
     TYPE = "Length"
     ID = 20032
+
+
+class LinearInterpolateMix(SFXNodeType):
+    TYPE = "Linear Interpolate Mix"
+    ID = 20031
 
 
 class Max(SFXNodeType):
@@ -87,6 +136,11 @@ class Multiply(SFXNodeType):
 class Normalize(SFXNodeType):
     TYPE = "Normalize"
     ID = 20021
+
+
+class Pow(SFXNodeType):
+    TYPE = "Pow"
+    ID = 20055
 
 
 class Subtract(SFXNodeType):
@@ -144,6 +198,21 @@ class Float2(SFXNodeType):
     TYPE = "Float2"
     ID = 20139
 
+
+class Float3(SFXNodeType):
+    TYPE = "Float3"
+    ID = 20143
+
+
+class FloatToBool(SFXNodeType):
+    TYPE = "Float To Bool"
+    ID = 20098
+
+
+class FloatToInt(SFXNodeType):
+    TYPE = "Float To Int"
+    ID = 20097
+     
 
 class Int(SFXNodeType):
     TYPE = "Int"
@@ -399,6 +468,7 @@ Divide
 Dot Product
 Invert
 Length
+Linear Interpolate Mix
 Max
 Multiply
 Normalize
