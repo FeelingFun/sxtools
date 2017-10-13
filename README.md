@@ -71,15 +71,20 @@ NOTE: Many buttons have alternate functionality when shift-clicked.
 ## The Layer View
 ### Shading Modes
 **Final** - A preview composite of all albedo layers and material channels
+
 **Debug** - Displays only the selected layer with transparency, and without lighting
+
 **Alpha** - Displays layer alpha channels in grayscale
 
 ### Toggle All Layers
 Flips the visibility of all layers from their current state
 
 Blend mode selection is similar to popular 2D paint programs:
+
 **Alpha** - the regular transparency blend
+
 **Add**  - creates an additive (brighter) result
+
 **Multiply** - darkens the layer below
 
 ### The layer list:
