@@ -79,7 +79,8 @@ NOTE: Many buttons have alternate functionality when shift-clicked.
 ### Toggle All Layers
 Flips the visibility of all layers from their current state
 
-Blend mode selection is similar to popular 2D paint programs:
+### Blend mode selection
+Is similar to popular 2D paint programs:
 
 **Alpha** - the regular transparency blend
 
