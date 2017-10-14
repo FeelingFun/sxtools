@@ -1,5 +1,7 @@
 # SX Tools
 
+![Layered Example](/images/sxtools_multichannel.jpg)
+
 SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
@@ -137,6 +139,8 @@ http://www.nvidia.com/object/download-mental-ray.html
 
 By default, each selected object is rendered separately, with an optional groundplane occluder.
 Shift-clicking the bake button will allow objects to occlude each other.
+
+![Master Palette Example](/images/sxtools_palettevariations.jpg)
 
 ### Apply Master Palette
 Sets the first five layers of the object to the selected palette.
