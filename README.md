@@ -68,6 +68,8 @@ Import or create polygon mesh objects while SX Tools is running. A window will p
 
 # The Main Window
 
+![SX Tools interface](/images/sxtools_UI.jpg)
+
 NOTE: Many buttons have alternate functionality when shift-clicked.
 
 ## The Layer View
