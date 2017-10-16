@@ -74,7 +74,9 @@ frameStates = {}
 displayScalingValue = 1.0
 exportToleranceValue = 1.0
 exportSmoothValue = 0
-jobID = 0
+job1ID = 0
+job2ID = 0
+job3ID = 0
 currentColor = (0, 0, 0)
 layerAlphaMax = 0
 material = None
@@ -1615,7 +1617,7 @@ def bakeOcclusion():
     groundOffset = cmds.floatField('groundOffset', query=True, value=True)
     
     bbox = []
-    bakeList = objectArray
+    bakeList = shapeArray
     modifiers = cmds.getModifiers()
     shift = bool((modifiers & 1) > 0)
 
@@ -1651,7 +1653,8 @@ def bakeOcclusion():
         for bake in bakeList:
             if groundBool == True:
                 bbox = cmds.exactWorldBoundingBox( bake )
-                groundPos = cmds.getAttr( str(bake)+'.translate' )[0]
+                bakeTx = getTransforms([bake,])
+                groundPos = cmds.getAttr( str(bakeTx[0])+'.translate' )[0]
                 cmds.setAttr( 'sxGroundPlane.translateX', groundPos[0] )
                 cmds.setAttr( 'sxGroundPlane.translateY', (bbox[1] - groundOffset) )
                 cmds.setAttr( 'sxGroundPlane.translateZ', groundPos[2] )
@@ -3477,7 +3480,7 @@ def assignCreaseToolUI():
 # --------------------------------------------------------------------
 
 def startSXTools():
-    global jobID, displayScalingValue
+    global job1ID, job2ID, job3ID, displayScalingValue
     # Check if SX Tools UI exists
     if cmds.workspaceControl(dockID, exists=True):
         cmds.deleteUI(dockID, control=True)
