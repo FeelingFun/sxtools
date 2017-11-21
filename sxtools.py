@@ -2858,6 +2858,8 @@ def gradientToolManager(mode, group=1):
     modifiers = maya.cmds.getModifiers()
     shift = bool((modifiers & 1) > 0)
 
+    print mode, group
+
     if mode =='load':
         clearRamp('SXRamp')
         name = maya.cmds.optionMenu('rampPresets', query=True, value=True)
@@ -2874,14 +2876,16 @@ def gradientToolManager(mode, group=1):
             maya.cmds.nodePreset( save=('SXRamp', name) )
         elif len(name) == 0:
             print 'SXTools: Invalid preset name!'
-    elif (mode == 2) and (group == 1):
-        maya.cmds.optionVar(intValue=('SXToolsGradientDirection', mode))
-        calculateCurvature(objectArray)
-    elif (mode == 1) and (group == 1):
-        maya.cmds.optionVar(intValue=('SXToolsGradientDirection', mode))
-        remapRamp(shapeArray[len(shapeArray)-1])
+    elif group == 1:
+        if mode == 2:
+            maya.cmds.optionVar(intValue=('SXToolsGradientDirection', 5))
+            calculateCurvature(objectArray)
+        elif mode == 1:
+            maya.cmds.optionVar(intValue=('SXToolsGradientDirection', 4))
+            remapRamp(shapeArray[len(shapeArray)-1])
     else:
         maya.cmds.optionVar(intValue=('SXToolsGradientDirection', mode))
+        print mode, group
         gradientFill(mode)
 
 
@@ -3250,11 +3254,6 @@ def gradientToolUI():
         maya.cmds.setAttr('SXAlphaRamp.colorEntryList[1].position', 0)
         maya.cmds.setAttr('SXAlphaRamp.colorEntryList[1].color', 1, 1, 1)
 
-    if maya.cmds.optionVar(exists='SXToolsGradientDirection'):
-        gradientDirection = maya.cmds.optionVar(query='SXToolsGradientDirection')
-    else:
-        gradientDirection = 2
-
     maya.cmds.frameLayout( "gradientFrame", parent="toolFrame",
                      label="Gradient Fill", marginWidth=5, marginHeight=0,
                      collapsable=True, collapse=frameStates['gradientFrameCollapse'],
@@ -3302,7 +3301,7 @@ def gradientToolUI():
                         columnWidth3=(80, 80, 80),
                         columnAttach3=('left', 'left', 'left'),
                         labelArray3=['X', 'Y', 'Z'],
-                        select=gradientDirection, numberOfRadioButtons=3 )
+                        numberOfRadioButtons=3 )
     maya.cmds.radioButtonGrp( 'gradientMode', parent='gradientColumn',
                         columnWidth2=(120, 120), shareCollection='gradientDirection',
                         columnAttach2=('left', 'left'),
@@ -3313,6 +3312,15 @@ def gradientToolUI():
                 command=("sxtools.gradientToolManager(maya.cmds.radioButtonGrp('gradientDirection', query=True, select=True), 0)\n"
                          "sxtools.gradientToolManager(maya.cmds.radioButtonGrp('gradientMode', query=True, select=True), 1)"))
     maya.cmds.setParent( 'toolFrame' )
+
+    if maya.cmds.optionVar(exists='SXToolsGradientDirection'):
+        gradientDirection = maya.cmds.optionVar(query='SXToolsGradientDirection')
+        if gradientDirection <= 3:
+            maya.cmds.radioButtonGrp( 'gradientDirection', edit=True, select=gradientDirection )
+        elif gradientDirection > 3:
+            maya.cmds.radioButtonGrp( 'gradientMode', edit=True, select=(gradientDirection-3) )
+    else:
+        maya.cmds.radioButtonGrp( 'gradientDirection', edit=True, select=1 )
 
 
 def colorNoiseToolUI():
