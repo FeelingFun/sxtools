@@ -2858,8 +2858,6 @@ def gradientToolManager(mode, group=1):
     modifiers = maya.cmds.getModifiers()
     shift = bool((modifiers & 1) > 0)
 
-    print mode, group
-
     if mode =='load':
         clearRamp('SXRamp')
         name = maya.cmds.optionMenu('rampPresets', query=True, value=True)
@@ -2885,7 +2883,6 @@ def gradientToolManager(mode, group=1):
             remapRamp(shapeArray[len(shapeArray)-1])
     else:
         maya.cmds.optionVar(intValue=('SXToolsGradientDirection', mode))
-        print mode, group
         gradientFill(mode)
 
 
@@ -3080,7 +3077,8 @@ def exportObjectsUI():
                                      "maya.cmds.setFocus('MayaWindow')"),
                        alwaysInvokeEnterCommandOnReturn=True)
     maya.cmds.button( label='Export Objects in _staticExports', width=120,
-                command="sxtools.exportObjects(maya.cmds.textField('exportPath', query=True, text=True))" )
+                command=("maya.cmds.optionVar(stringValue=('SXToolsExportPath', str(maya.cmds.textField('exportPath', query=True, text=True))))\n"
+                         "sxtools.exportObjects(maya.cmds.textField('exportPath', query=True, text=True))") )
     maya.cmds.setParent( 'exportObjFrame' )
     maya.cmds.setParent( 'canvas' )
     maya.cmds.workspaceControl( dockID, edit=True, resizeHeight=5, resizeWidth=250 )
@@ -3603,4 +3601,3 @@ def updateSXTools():
             maya.mel.eval('DisplayLight;')
 
     maya.cmds.setFocus('MayaWindow')
-
