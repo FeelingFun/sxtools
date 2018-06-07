@@ -33,7 +33,7 @@
 #
 #   Technical notes:
 #   updateSXTools()       - the main function called by a scriptJob
-#							monitoring selection changes
+#                           monitoring selection changes
 #   createSXShader()      - creates the necessary materials to view
 #                           the color-layered object. Separate 
 #                           functions for export preview.
@@ -1747,7 +1747,7 @@ def applyMasterPalette(objects):
 
 def gradientFill(axis):
     for shape in shapeArray:
-        if len(componentArray) > 0:
+        if componentArray is not None:
             components = maya.cmds.polyListComponentConversion(componentArray, tvf=True)
             tempFaceArray = maya.cmds.polyListComponentConversion(componentArray, tf=True)
             # because polyEvaluate doesn't work on face vertices
@@ -2559,7 +2559,7 @@ def clearSelector():
     if shift == True:
         clearAllLayers()
     elif shift == False:
-        if len(componentArray) > 0:
+        if componentArray is not None:
             clearSelectedComponents(getSelectedLayer()[0])
         else:
             clearSelectedLayer(shapeArray, getSelectedLayer()[0])
