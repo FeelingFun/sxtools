@@ -1,6 +1,6 @@
 # --------------------------------------------------------------------
 #   SX Tools - Maya vertex painting toolkit
-#   (c) 2017  Jani Kahrama / Secret Exit Ltd
+#   (c) 2017-2018  Jani Kahrama / Secret Exit Ltd
 #   Released under MIT license
 #
 #   Curvature calculation method based on work by Stepan Jirka
@@ -32,8 +32,8 @@
 #   to a layer mask, or if it is only used to flatten layer colors.
 #
 #   Technical notes:
-#   updateSXTools()       - the main function that updates the UI 
-#                           according to the current selection
+#   updateSXTools()       - the main function called by a scriptJob
+#							monitoring selection changes
 #   createSXShader()      - creates the necessary materials to view
 #                           the color-layered object. Separate 
 #                           functions for export preview.
@@ -1595,16 +1595,16 @@ def exportObjects(exportPath):
 
 def assignToCreaseSet(setName):
     creaseSets = ('sxCrease0', 'sxCrease1', 'sxCrease2', 'sxCrease3', 'sxCrease4')
-    for selection in selectionArray:
-        if ((maya.cmds.filterExpand(selection, sm=31) is not None)
-            or (maya.cmds.filterExpand(selection, sm=32) is not None)):
+    for component in componentArray:
+        if ((maya.cmds.filterExpand(component, sm=31) is not None)
+            or (maya.cmds.filterExpand(component, sm=32) is not None)):
 
             for set in creaseSets:
-                if maya.cmds.sets(selection, isMember=set):
-                    maya.cmds.sets(selection, remove=set)
-            maya.cmds.sets(selection, forceElement=setName)
+                if maya.cmds.sets(component, isMember=set):
+                    maya.cmds.sets(component, remove=set)
+            maya.cmds.sets(component, forceElement=setName)
         else:
-            edgeList = maya.cmds.polyListComponentConversion(selection, te=True)
+            edgeList = maya.cmds.polyListComponentConversion(component, te=True)
             for set in creaseSets:
                 if maya.cmds.sets(edgeList, isMember=set):
                     maya.cmds.sets(edgeList, remove=set)
@@ -1748,8 +1748,8 @@ def applyMasterPalette(objects):
 def gradientFill(axis):
     for shape in shapeArray:
         if len(componentArray) > 0:
-            components = maya.cmds.polyListComponentConversion(selectionArray, tvf=True)
-            tempFaceArray = maya.cmds.polyListComponentConversion(selectionArray, tf=True)
+            components = maya.cmds.polyListComponentConversion(componentArray, tvf=True)
+            tempFaceArray = maya.cmds.polyListComponentConversion(componentArray, tf=True)
             # because polyEvaluate doesn't work on face vertices
             maya.cmds.select(tempFaceArray)
             objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
@@ -2439,7 +2439,7 @@ def checkHistory(objList):
         maya.cmds.columnLayout('warningLayout', parent='canvas', rowSpacing=5, adjustableColumn=True)
         maya.cmds.text( label='WARNING: Objects with construction history!',
                   backgroundColor=(0.35, 0.1, 0), ww=True )
-        maya.cmds.button( label='Delete History', command='maya.cmds.DeleteHistory()\nsxtools.updateSXTools()' )
+        maya.cmds.button( label='Delete History', command='maya.cmds.delete(sxtools.objectArray, ch=True)\nsxtools.updateSXTools()' )
 
 
 # After a selection of meshes has been processed for export,
@@ -3192,7 +3192,7 @@ def layerViewUI():
     maya.cmds.button(label='Select Layer Mask', width=100,
                 statusBarMessage='Shift-click button to invert selection',
                 command="maya.cmds.select(sxtools.getLayerMask())")
-    if len(componentArray) > 0:
+    if componentArray is not None:
         maya.cmds.button('clearButton', label='Clear Selected',
                     statusBarMessage='Shift-click button to clear all layers on selected components',
                     width=100 ,
@@ -3434,7 +3434,6 @@ def swapLayerToolUI():
     maya.cmds.setParent( 'toolFrame' )
 
 
-
 def copyLayerToolUI():
     maya.cmds.frameLayout( 'copyLayerFrame', parent='toolFrame',
              label='Copy Layer', marginWidth=5, marginHeight=0,
@@ -3511,21 +3510,38 @@ def startSXTools():
     cleanup3ID = maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job3ID)'])
 
 
-# The main function of the tool, updates the UI dynamically for different selection types.
+# Avoids UI refresh from being included in the undo list
 # Called by the "jobID" scriptJob whenever the user clicks a selection.
 def updateSXTools():
+    
+    maya.cmds.undoInfo( stateWithoutFlush=False )
+    selectionManager()
+    refreshSXTools()
+    maya.cmds.undoInfo( stateWithoutFlush=True )
+    
+    
+## The user can have various different types of objects selected. The selections are filtered for the tool.
+def selectionManager():
 
-    global frameStates
     global selectionArray, objectArray, shapeArray, componentArray, patchArray
 
     selectionArray = maya.cmds.ls(sl=True)
-    objectArray = maya.cmds.ls(sl=True, o=True)
-    componentArray = set(maya.cmds.ls(sl=True, o=False)) - set(objectArray)
-    shapeArray = maya.cmds.ls(sl=True, dag=True, type='mesh', long=True)
+    shapeArray =  maya.cmds.listRelatives(selectionArray, type='mesh', fullPath=True)
+    objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
+    #componentArray = list(set(maya.cmds.ls(sl=True, o=False)) - set(maya.cmds.ls(sl=True, o=True)))
+    componentArray = maya.cmds.filterExpand(selectionArray, sm=(31,32,34,70))
+ 
+    # Maintain correct object selection even if only components are selected
+    if (shapeArray is None and componentArray is not None):
+        shapeArray = maya.cmds.ls(selectionArray, o=True, dag=True, type='mesh', long=True)
+        objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
+        
+    
+# The main function of the tool, updates the UI dynamically for different selection types.
+def refreshSXTools():
 
-    # Maintain correct object selection even if only components selected
-    if (len(shapeArray) == 0 and len(componentArray) > 0):
-        shapeArray = objectArray
+    global frameStates
+    global selectionArray, objectArray, shapeArray, componentArray, patchArray
 
     createDefaultLights()
     createCreaseSets()
@@ -3540,7 +3556,7 @@ def updateSXTools():
                       verticalScrollBarAlwaysVisible=False )
 
     # If nothing selected, construct setup view
-    if len(shapeArray) == 0:
+    if shapeArray is None:
         setupProjectUI()
 
     # If exported objects selected, construct message
@@ -3584,7 +3600,7 @@ def updateSXTools():
         swapLayerToolUI()
         copyLayerToolUI()
         assignCreaseToolUI()
-
+        
         maya.cmds.columnLayout( 'processColumn', parent='canvas',
                           width=250, rowSpacing=5, adjustableColumn=True )
         maya.cmds.text(label=' ', parent='processColumn')
@@ -3594,8 +3610,7 @@ def updateSXTools():
         checkHistory(shapeArray)
 
         # Make sure selected things are using the correct material
-        for shape in shapeArray:
-            maya.cmds.sets(e=True, forceElement='SXShaderSG')
+        maya.cmds.sets(shapeArray, e=True, forceElement='SXShaderSG')
         if verifyShadingMode() == 0:
             maya.cmds.polyOptions(activeObjects=True, colorMaterialChannel='ambientDiffuse', colorShadedDisplay=True)
             maya.mel.eval('DisplayLight;')
