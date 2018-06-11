@@ -74,9 +74,6 @@ frameStates = {}
 displayScalingValue = 1.0
 exportToleranceValue = 1.0
 exportSmoothValue = 0
-job1ID = 0
-job2ID = 0
-job3ID = 0
 currentColor = (0, 0, 0)
 layerAlphaMax = 0
 material = None
@@ -1747,7 +1744,7 @@ def applyMasterPalette(objects):
 
 def gradientFill(axis):
     for shape in shapeArray:
-        if componentArray is not None:
+        if len(componentArray) > 0:
             components = maya.cmds.polyListComponentConversion(componentArray, tvf=True)
             tempFaceArray = maya.cmds.polyListComponentConversion(componentArray, tf=True)
             # because polyEvaluate doesn't work on face vertices
@@ -2137,7 +2134,7 @@ def patchLayers(objects):
     if len(noColorSetObject) > 0:
         resetLayers(noColorSetObject)
 
-    maya.cmds.select(objects)
+    maya.cmds.select(selectionArray)
 
 
 def mergeLayerUp():
@@ -2405,13 +2402,14 @@ def refreshProjectDefaults():
 
 
 def verifyShadingMode():
-    object = shapeArray[len(shapeArray)-1]
-    mode = int(maya.cmds.getAttr(object+'.shadingMode')+1)
-    
-    objectLabel = 'Selected Objects: '+str(len(shapeArray))
-    maya.cmds.frameLayout( 'layerFrame', edit=True, label=objectLabel )
-    maya.cmds.radioButtonGrp( 'shadingButtons', edit=True, select=mode )
-    return mode
+    if len(shapeArray) > 0:
+        object = shapeArray[len(shapeArray)-1]
+        mode = int(maya.cmds.getAttr(object+'.shadingMode')+1)
+        
+        objectLabel = 'Selected Objects: '+str(len(shapeArray))
+        maya.cmds.frameLayout( 'layerFrame', edit=True, label=objectLabel )
+        maya.cmds.radioButtonGrp( 'shadingButtons', edit=True, select=mode )
+        return mode
 
 
 def setShadingMode(mode):
@@ -2455,22 +2453,25 @@ def viewExported():
 # Processed meshes no longer have the pre-vis material,
 # so the tool must present a different UI when any of these are selected.
 def checkExported(objects):
-    for object in objects:
-        parent = maya.cmds.listRelatives(str(object), parent=True)
-        if parent is not None:
-            if str(parent[0]) == '_staticExports':
-                return True
-                break
-            elif str(object).endswith('_paletted') == True:
-                return True
-                break
-            elif str(object).endswith('_transparent') == True:
-                return True
-                break
-        elif parent is None:
-            if str(object) == '_staticExports':
-                return True
-                break
+    if len(objectArray) > 0:
+        for object in objects:
+            parent = maya.cmds.listRelatives(str(object), parent=True)
+            if parent is not None:
+                if str(parent[0]) == '_staticExports':
+                    return True
+                    break
+                elif str(object).endswith('_paletted') == True:
+                    return True
+                    break
+                elif str(object).endswith('_transparent') == True:
+                    return True
+                    break
+            elif parent is None:
+                if str(object) == '_staticExports':
+                    return True
+                    break
+    else:
+        return False
 
 
 def viewExportedMaterial():
@@ -2559,7 +2560,7 @@ def clearSelector():
     if shift == True:
         clearAllLayers()
     elif shift == False:
-        if componentArray is not None:
+        if len(componentArray) > 0:
             clearSelectedComponents(getSelectedLayer()[0])
         else:
             clearSelectedLayer(shapeArray, getSelectedLayer()[0])
@@ -3192,7 +3193,7 @@ def layerViewUI():
     maya.cmds.button(label='Select Layer Mask', width=100,
                 statusBarMessage='Shift-click button to invert selection',
                 command="maya.cmds.select(sxtools.getLayerMask())")
-    if componentArray is not None:
+    if len(componentArray) > 0:
         maya.cmds.button('clearButton', label='Clear Selected',
                     statusBarMessage='Shift-click button to clear all layers on selected components',
                     width=100 ,
@@ -3337,10 +3338,14 @@ def colorNoiseToolUI():
     maya.cmds.text( 'monoLabel', label='Monochromatic:' )
     maya.cmds.checkBox( 'mono', label='' )
     maya.cmds.text( 'noiseValueLabel', label='Noise Value (0-1):' )
-    maya.cmds.floatField( 'noiseValue',  precision=3, minValue=0.0, maxValue=1.0 )
+    maya.cmds.floatField( 'noiseValue',  precision=3, value=0.5, minValue=0.0, maxValue=1.0 )
     maya.cmds.button(label='Apply Noise', parent='noiseColumn',
                 height=30, width=100,
-                command="sxtools.colorNoise(sxtools.objectArray)")
+                command="sxtools.colorNoise(sxtools.objectArray)\n"
+                        "maya.cmds.floatSlider('layerOpacitySlider', edit=True, value=1.0)\n"
+                        "sxtools.setLayerOpacity()\n"
+                        "sxtools.refreshLayerList()\n"
+                        "sxtools.refreshSelectedItem()")
     maya.cmds.setParent( 'toolFrame' )
 
 
@@ -3485,10 +3490,12 @@ def assignCreaseToolUI():
 # --------------------------------------------------------------------
 
 def startSXTools():
-    global job1ID, job2ID, job3ID, displayScalingValue
+
     # Check if SX Tools UI exists
     if maya.cmds.workspaceControl(dockID, exists=True):
         maya.cmds.deleteUI(dockID, control=True)
+
+    global job1ID, job2ID, job3ID, job4ID, displayScalingValue
 
     platform = maya.cmds.about(os=True)
 
@@ -3500,14 +3507,17 @@ def startSXTools():
                           initialHeight=5, initialWidth=250*displayScalingValue,
                           minimumWidth=250*displayScalingValue )
 
-    # Background monitors to reconstruct window if selection changes,
-    # and to kill the scriptJob upon closing
+    # Background jobs to reconstruct window if selection changes,
+    # and to clean up upon closing
     job1ID = maya.cmds.scriptJob(event=['SelectionChanged', 'sxtools.updateSXTools()'])
-    job2ID = maya.cmds.scriptJob(event=['SceneOpened', 'sxtools.setProjectDefaults()'])
-    job3ID = maya.cmds.scriptJob(runOnce=True, event=['quitApplication', "maya.cmds.deleteUI(sxtools.dockID)"])
-    cleanup1ID = maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job1ID)'])
-    cleanup2ID = maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job2ID)'])
-    cleanup3ID = maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job3ID)'])
+    job2ID = maya.cmds.scriptJob(event=['NameChanged', 'sxtools.updateSXTools()'])
+    job3ID = maya.cmds.scriptJob(event=['SceneOpened', 'sxtools.setProjectDefaults()'])
+    job4ID = maya.cmds.scriptJob(runOnce=True, event=['quitApplication', 'maya.cmds.deleteUI(sxtools.dockID)'])
+    
+    maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job1ID)\n'
+                                                         'maya.cmds.scriptJob(kill=sxtools.job2ID)\n'
+                                                         'maya.cmds.scriptJob(kill=sxtools.job3ID)\n'
+                                                         'maya.cmds.scriptJob(kill=sxtools.job4ID)'])
 
 
 # Avoids UI refresh from being included in the undo list
@@ -3536,6 +3546,18 @@ def selectionManager():
         shapeArray = maya.cmds.ls(selectionArray, o=True, dag=True, type='mesh', long=True)
         objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
         
+    if (len(maya.cmds.ls(sl=True, type='objectSet')) > 0) and componentArray is not None:
+        del componentArray[:]
+    
+    if shapeArray is None:
+        shapeArray = []
+    
+    if objectArray is None:
+        objectArray = []
+    
+    if componentArray is None:
+        componentArray = []
+        
     
 # The main function of the tool, updates the UI dynamically for different selection types.
 def refreshSXTools():
@@ -3556,7 +3578,7 @@ def refreshSXTools():
                       verticalScrollBarAlwaysVisible=False )
 
     # If nothing selected, construct setup view
-    if shapeArray is None:
+    if len(shapeArray) == 0:
         setupProjectUI()
 
     # If exported objects selected, construct message
