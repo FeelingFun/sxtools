@@ -3495,7 +3495,7 @@ def startSXTools():
     if maya.cmds.workspaceControl(dockID, exists=True):
         maya.cmds.deleteUI(dockID, control=True)
 
-    global job1ID, job2ID, job3ID, job4ID, displayScalingValue
+    global job1ID, job2ID, job3ID, job4ID, job5ID, displayScalingValue
 
     platform = maya.cmds.about(os=True)
 
@@ -3511,13 +3511,21 @@ def startSXTools():
     # and to clean up upon closing
     job1ID = maya.cmds.scriptJob(event=['SelectionChanged', 'sxtools.updateSXTools()'])
     job2ID = maya.cmds.scriptJob(event=['NameChanged', 'sxtools.updateSXTools()'])
-    job3ID = maya.cmds.scriptJob(event=['SceneOpened', 'sxtools.setProjectDefaults()'])
-    job4ID = maya.cmds.scriptJob(runOnce=True, event=['quitApplication', 'maya.cmds.deleteUI(sxtools.dockID)'])
+    job3ID = maya.cmds.scriptJob(event=['SceneOpened', 'sxtools.frameStates["setupFrameCollapse"]=False\n'
+                                                       'sxtools.setProjectDefaults()'])
+    job4ID = maya.cmds.scriptJob(event=['NewSceneOpened', 'sxtools.frameStates["setupFrameCollapse"]=False\n'
+                                                          'sxtools.setProjectDefaults()'])
+    job5ID = maya.cmds.scriptJob(runOnce=True, event=['quitApplication', 'maya.cmds.deleteUI(sxtools.dockID)'])
     
     maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job1ID)\n'
                                                          'maya.cmds.scriptJob(kill=sxtools.job2ID)\n'
                                                          'maya.cmds.scriptJob(kill=sxtools.job3ID)\n'
-                                                         'maya.cmds.scriptJob(kill=sxtools.job4ID)'])
+                                                         'maya.cmds.scriptJob(kill=sxtools.job4ID)\n'
+                                                         'maya.cmds.scriptJob(kill=sxtools.job5ID)'])
+    
+    # Set correct lighting and shading mode at start
+    maya.mel.eval('DisplayShadedAndTextured;')
+    maya.mel.eval('DisplayLight;')
 
 
 # Avoids UI refresh from being included in the undo list
