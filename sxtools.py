@@ -2422,14 +2422,22 @@ def checkHistory(objList):
     history = False
     for obj in objList:
         histList = maya.cmds.listHistory(obj)
-        if 'assetsLayer' in histList:
-            histList.remove('assetsLayer')
-        for hist in histList:
+        objName = str(obj).translate(None, '|') + "Shape"
+        if (objName) in histList:
+            histList.remove(objName)
+        for hist in reversed(histList):
+            if 'assetsLayer' in str(hist):
+                histList.remove(hist)
+        for hist in reversed(histList):
+            if 'sxCrease' in str(hist):
+                histList.remove(hist)
+        for hist in reversed(histList):
+            if 'set' in str(hist):
+                histList.remove(hist)
+        for hist in reversed(histList):
             if 'groupId' in str(hist):
                 histList.remove(hist)
-        for k in range(0, 5):
-            if ('sxCrease'+str(k)) in histList:
-                histList.remove('sxCrease'+str(k))
+                
         if len(histList) > 1:
             history = True
     
@@ -3086,7 +3094,7 @@ def exportObjectsUI():
 
 
 def emptyObjectsUI():
-    global shapeArray, patchArray
+    global objectArray, shapeArray, patchArray
     
     patchArray = verifyObjectLayers(shapeArray)[1]
     patchLabel = 'Objects with no layers: '+str(len(patchArray))
@@ -3102,12 +3110,12 @@ def emptyObjectsUI():
                     command='sxtools.patchLayers(sxtools.patchArray)' )
     maya.cmds.setParent( 'patchFrame' )
     maya.cmds.setParent( 'canvas' )
-    checkHistory(shapeArray)
+    checkHistory(objectArray)
     maya.cmds.workspaceControl( dockID, edit=True, resizeHeight=5, resizeWidth=250 )
 
 
 def mismatchingObjectsUI():
-    global shapeArray, patchArray
+    global objectArray, shapeArray, patchArray
     
     patchArray = verifyObjectLayers(shapeArray)[1]
     patchLabel = 'Objects with nonstandard layers: '+str(len(patchArray))
@@ -3129,7 +3137,7 @@ def mismatchingObjectsUI():
                     command="sxtools.patchLayers(sxtools.patchArray)" )
     maya.cmds.setParent( 'patchFrame' )
     maya.cmds.setParent( 'canvas' )
-    checkHistory(shapeArray)
+    checkHistory(objectArray)
     maya.cmds.workspaceControl( dockID, edit=True, resizeHeight=5, resizeWidth=250 )
 
 
@@ -3637,7 +3645,7 @@ def refreshSXTools():
         maya.cmds.button( label='Create Export Objects', parent='processColumn', 
                     command="sxtools.processObjects(sxtools.objectArray)")
         maya.cmds.setParent( 'canvas' )
-        checkHistory(shapeArray)
+        checkHistory(objectArray)
 
         # Make sure selected things are using the correct material
         maya.cmds.sets(shapeArray, e=True, forceElement='SXShaderSG')
