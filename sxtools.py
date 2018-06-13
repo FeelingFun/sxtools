@@ -2437,8 +2437,8 @@ def checkHistory(objList):
         for hist in reversed(histList):
             if 'groupId' in str(hist):
                 histList.remove(hist)
-                
-        if len(histList) > 1:
+    
+        if len(histList) > 0:
             history = True
     
     if history == True:
@@ -3561,7 +3561,8 @@ def selectionManager():
     if (shapeArray is None and componentArray is not None):
         shapeArray = maya.cmds.ls(selectionArray, o=True, dag=True, type='mesh', long=True)
         objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
-        
+ 
+    # The case when the user selects a component set
     if (len(maya.cmds.ls(sl=True, type='objectSet')) > 0) and componentArray is not None:
         del componentArray[:]
     
