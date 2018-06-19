@@ -1481,7 +1481,7 @@ def processObjects(sourceArray):
 
     sourceNamesArray = maya.cmds.ls(sourceArray, dag=True, tr=True)    
     exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)
-
+    
     # Parent export objects under new group, the tricky bit here is renaming the new objects to the old names.
     # For tracking objects correctly when they might not have unique names, we use "long" and "fullpath" options.
     for export in exportArray:
@@ -1489,7 +1489,7 @@ def processObjects(sourceArray):
             maya.cmds.parent(export, '_staticExports')
 
     exportNamesArray = maya.cmds.ls(maya.cmds.listRelatives('_staticExports'), dag=True, tr=True)   
-           
+                                 
     # Rename export objects
     for i in range (len(sourceNamesArray)):
         maya.cmds.rename(exportNamesArray[i], sourceNamesArray[i])
@@ -1669,6 +1669,147 @@ def bakeOcclusion():
     
     maya.cmds.select(bakeList)
 
+
+def bakeOcclusionArnold():
+
+    bakePath = maya.cmds.textField('bakepath', query=True, text=True)
+    if bakePath is None:
+        bakePath = 'C:/'
+    # check if path has a slash, add if necessary
+
+        #create AO material
+    if maya.cmds.objExists('aiSXAO') == False:
+        maya.cmds.shadingNode('aiAmbientOcclusion', asShader=True, name='aiSXAO')
+        maya.cmds.setAttr('aiSXAO.samples', 8)
+        maya.cmds.setAttr('aiSXAO.falloff', 0.1)
+        maya.cmds.setAttr('aiSXAO.invertNormals', 0)
+        maya.cmds.setAttr('aiSXAO.nearClip', 0.01)
+        maya.cmds.setAttr('aiSXAO.farClip', 100)
+        maya.cmds.setAttr('aiSXAO.selfOnly', 0)
+        print('SX Tools: Creating occlusion material\n')
+        
+    if maya.cmds.objExists('SXAOTexture') == False:
+        maya.cmds.shadingNode('file', asTexture=True, name='SXAOTexture')
+
+    groundBool = maya.cmds.checkBox('ground', query=True, value=True)
+    groundScale = maya.cmds.floatField('groundScale', query=True, value=True)
+    groundOffset = maya.cmds.floatField('groundOffset', query=True, value=True)
+    
+    bbox = []
+    bakeList = shapeArray
+    modifiers = maya.cmds.getModifiers()
+    shift = bool((modifiers & 1) > 0)
+
+    if int(maya.cmds.optionVar(query='SXToolsMatChannels')[0]) == 1:
+        setColorSet('occlusion')
+
+    if groundBool == True:
+        maya.cmds.polyPlane( name='sxGroundPlane', w=groundScale, h=groundScale, sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0 )
+        maya.cmds.select(bakeList)
+
+    for bake in bakeList:
+        #create uvAO uvset
+        uvList = maya.cmds.polyUVSet(bake, q=True, allUVSets=True)
+        if 'uvAO' not in uvList:
+            maya.cmds.polyAutoProjection(bake, lm=0, pb=0, ibd=1, cm=1, l=2, sc=1, o=0, p=6, uvSetName='uvAO', ps=0.2, ws=0)
+
+    #bake everything together
+    if shift == True:
+        if groundBool == True:
+            bbox = maya.cmds.exactWorldBoundingBox( bakeList )
+            maya.cmds.setAttr( 'sxGroundPlane.translateY', (bbox[1] - groundOffset) )
+        maya.cmds.arnoldRenderToTexture(bakeList, resolution=512, shader='aiSXAO', aa_samples=1, normal_offset=0.001, filter='closest', folder=bakePath, uv_set='uvAO')
+
+    #bake each object separately
+    elif shift == False:
+        for bake in bakeList:
+            maya.cmds.setAttr( (str(bake) + '.visibility'), False )
+
+        for bake in bakeList:
+            if groundBool == True:
+                bbox = maya.cmds.exactWorldBoundingBox( bake )
+                bakeTx = getTransforms([bake,])
+                groundPos = maya.cmds.getAttr( str(bakeTx[0])+'.translate' )[0]
+                maya.cmds.setAttr( 'sxGroundPlane.translateX', groundPos[0] )
+                maya.cmds.setAttr( 'sxGroundPlane.translateY', (bbox[1] - groundOffset) )
+                maya.cmds.setAttr( 'sxGroundPlane.translateZ', groundPos[2] )
+
+            maya.cmds.setAttr( (str(bake) + '.visibility'), True )
+            maya.cmds.arnoldRenderToTexture(bake, resolution=512, shader='aiSXAO', aa_samples=1, normal_offset=0.001, filter='closest', folder=bakePath, uv_set='uvAO')
+            maya.cmds.setAttr( (str(bake) + '.visibility'), False )
+
+        for bake in bakeList:
+            maya.cmds.setAttr( (str(bake) + '.visibility'), True )
+        
+    if groundBool == True:
+        maya.cmds.delete('sxGroundPlane')
+ 
+    #apply baked maps to occlusion layers
+    for bake in bakeList:
+        bakeFileName = bakePath + '/' + str(bake).split('|')[-1] + '.exr'
+        maya.cmds.setAttr('SXAOTexture.fileTextureName', bakeFileName, type='string')
+        maya.cmds.setAttr('SXAOTexture.filterType', 0)
+        maya.cmds.setAttr('SXAOTexture.aiFilter', 0)
+        #maya.cmds.setAttr('SXAOTexture.hdrMapping', 'HDR_LINEAR_MAPPING')
+        applyTexture('SXAOTexture', 'uvAO', False)
+ 
+    #TODO: Fix HDR mapping, fix UV alpha seams
+          
+    maya.cmds.select(bakeList)
+
+
+def applyTexture(texture, uvSetName, applyAlpha):
+    colors = []
+    color = []
+    uCoords = []
+    vCoords = []
+        
+    for shape in shapeArray:
+        maya.cmds.polyUVSet (shape, currentUVSet=True, uvSet=uvSetName)
+                
+        components = maya.cmds.ls(maya.cmds.polyListComponentConversion(shape, tv=True), fl=True)
+
+        for component in components:
+            fvs = maya.cmds.ls(maya.cmds.polyListComponentConversion(component, tvf=True), fl=True)
+            uvs = maya.cmds.ls(maya.cmds.polyListComponentConversion(fvs, tuv=True), fl=True)
+            for uv in uvs:
+                uvCoord = maya.cmds.polyEditUV(uv, query=True)
+                colors.append(maya.cmds.colorAtPoint(texture, o='RGBA', u=uvCoord[0], v=uvCoord[1]))
+            for tmpColor in colors:
+                if tmpColor[3] == 1:
+                    color = tmpColor
+
+            if applyAlpha == False:
+                if 1 <= color[3] > 0:
+                    maya.cmds.polyColorPerVertex(component,
+                                            r=color[0]/color[3],
+                                            g=color[1]/color[3],
+                                            b=color[2]/color[3],
+                                            a=1)
+                else:
+                    maya.cmds.polyColorPerVertex(component,
+                                            r=color[0],
+                                            g=color[1],
+                                            b=color[2],
+                                            a=1)
+            else:
+                if 1<= color[3] > 0:
+                    maya.cmds.polyColorPerVertex(component,
+                                            r=color[0]/color[3],
+                                            g=color[1]/color[3],
+                                            b=color[2]/color[3],
+                                            a=color[3])
+                else:
+                    maya.cmds.polyColorPerVertex(component,
+                                            r=color[0],
+                                            g=color[1],
+                                            b=color[2],
+                                            a=color[3])
+
+    getLayerPaletteOpacity(shapeArray[len(shapeArray)-1], getSelectedLayer()[0])
+    refreshLayerList()
+    refreshSelectedItem()
+    
 
 def calculateCurvature(objects):
 
@@ -3384,9 +3525,27 @@ def bakeOcclusionToolUI():
     maya.cmds.floatField( 'groundScale', value=100.0, precision=1, minValue=0.0 )
     maya.cmds.floatField( 'groundOffset', value=1.0, precision=1, minValue=0.0 )
 
-    maya.cmds.button(label='Bake Occlusion', parent='occlusionColumn',
-                height=30, width=100, ann='Shift-click to bake all objects together',
-                command="sxtools.bakeOcclusion()")
+    
+    maya.cmds.rowColumnLayout( 'occlusionRowColumns2', parent='occlusionColumn',
+                 numberOfColumns=2,
+                 columnWidth=((1, 80), (2, 150)),
+                 columnAttach=[(1, 'left', 0 ), (2, 'left', 0)],
+                 rowSpacing=(1, 0))
+                     
+    maya.cmds.text( 'bake label', label='Bake folder:' )
+    maya.cmds.textField('bakepath', enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+                   placeholderText='C:/')
+
+    plugList = maya.cmds.pluginInfo( query=True, listPlugins=True )
+    if 'Mayatomr' in plugList:
+        maya.cmds.button(label='Bake Occlusion (Mental Ray)', parent='occlusionColumn',
+                    height=30, width=100, ann='Shift-click to bake all objects together',
+                    command='sxtools.bakeOcclusion()')
+    if 'mtoa' in plugList:
+        maya.cmds.button(label='Bake Occlusion (Arnold)', parent='occlusionColumn',
+                    height=30, width=100, ann='Shift-click to bake all objects together',
+                    command="sxtools.bakeOcclusionArnold()")               
+                
     maya.cmds.setParent('toolFrame')
 
 
@@ -3552,11 +3711,19 @@ def selectionManager():
     global selectionArray, objectArray, shapeArray, componentArray, patchArray
 
     selectionArray = maya.cmds.ls(sl=True)
-    shapeArray =  maya.cmds.listRelatives(selectionArray, type='mesh', fullPath=True)
+    shapeArray =  maya.cmds.listRelatives(selectionArray, type='mesh', allDescendents=True, fullPath=True)
     objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
     #componentArray = list(set(maya.cmds.ls(sl=True, o=False)) - set(maya.cmds.ls(sl=True, o=True)))
     componentArray = maya.cmds.filterExpand(selectionArray, sm=(31,32,34,70))
- 
+
+    # If only shape nodes are selected
+    onlyShapes = True
+    for selection in selectionArray:
+        if 'Shape' not in str(selection):
+            onlyShapes = False
+    if onlyShapes == True:
+        shapeArray = selectionArray
+   
     # Maintain correct object selection even if only components are selected
     if (shapeArray is None and componentArray is not None):
         shapeArray = maya.cmds.ls(selectionArray, o=True, dag=True, type='mesh', long=True)
@@ -3633,7 +3800,7 @@ def refreshSXTools():
         gradientToolUI()
         colorNoiseToolUI()
         plugList = maya.cmds.pluginInfo( query=True, listPlugins=True )
-        if ('Mayatomr' in plugList):
+        if ('Mayatomr' in plugList) or ('mtoa' in plugList):
             bakeOcclusionToolUI()
         masterPaletteToolUI()
         swapLayerToolUI()
@@ -3644,7 +3811,7 @@ def refreshSXTools():
                           width=250, rowSpacing=5, adjustableColumn=True )
         maya.cmds.text(label=' ', parent='processColumn')
         maya.cmds.button( label='Create Export Objects', parent='processColumn', 
-                    command="sxtools.processObjects(sxtools.objectArray)")
+                    command="sxtools.processObjects(sxtools.selectionArray)")
         maya.cmds.setParent( 'canvas' )
         checkHistory(objectArray)
 
