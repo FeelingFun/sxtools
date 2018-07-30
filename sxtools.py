@@ -2563,7 +2563,11 @@ def checkHistory(objList):
     history = False
     for obj in objList:
         histList = maya.cmds.listHistory(obj)
-        objName = str(obj).translate(None, '|') + "Shape"
+        objName = str(obj)
+        objNameStripped = objName.rstrip('0123456789')
+        nameDigits = objName.replace(objNameStripped,'')
+        objName = objNameStripped.translate(None, '|') + "Shape" + nameDigits
+
         if (objName) in histList:
             histList.remove(objName)
         for hist in reversed(histList):
