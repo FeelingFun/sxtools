@@ -1886,9 +1886,9 @@ def applyMasterPalette(objects):
 def gradientFill(axis):
     for shape in shapeArray:
         if len(componentArray) > 0:
-            components = maya.cmds.polyListComponentConversion(componentArray, tvf=True)
-            tempFaceArray = maya.cmds.polyListComponentConversion(componentArray, tf=True)
-            # because polyEvaluate doesn't work on face vertices
+            components = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tvf=True), fl=True)
+            tempFaceArray = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tf=True), fl=True)
+            # tempFaceArray is constructed because polyEvaluate doesn't work on face vertices
             maya.cmds.select(tempFaceArray)
             objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
         else:
@@ -1905,8 +1905,8 @@ def gradientFill(axis):
         for component in components:
             compPos = maya.cmds.xform( component, query=True, worldSpace=True, translation=True )
             if axis == 1:
-                ratio = (abs(compPos[0] + abs(objectBoundsXmin))
-                         / (abs(objectBoundsXmax) + abs(objectBoundsXmin)))
+                ratioRaw = (compPos[0] - objectBoundsXmin) / (objectBoundsXmax - objectBoundsXmin)
+                ratio = max(min(ratioRaw, 1), 0)
                 compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
                 compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
                 maya.cmds.polyColorPerVertex(component,
@@ -1915,8 +1915,8 @@ def gradientFill(axis):
                                         b=compColor[2],
                                         a=compAlpha[0] )
             elif axis == 2:
-                ratio = (abs(compPos[1] + abs(objectBoundsYmin))
-                         / (abs(objectBoundsYmax) + abs(objectBoundsYmin)))
+                ratioRaw = (compPos[1] - objectBoundsYmin) / (objectBoundsYmax - objectBoundsYmin)
+                ratio = max(min(ratioRaw, 1), 0)
                 compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
                 compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
                 maya.cmds.polyColorPerVertex(component,
@@ -1925,8 +1925,8 @@ def gradientFill(axis):
                                         b=compColor[2],
                                         a=compAlpha[0] )
             elif axis == 3:
-                ratio = (abs(compPos[2] + abs(objectBoundsZmin))
-                         / (abs(objectBoundsZmax) + abs(objectBoundsZmin)))
+                ratioRaw = (compPos[2] - objectBoundsZmin) / (objectBoundsZmax - objectBoundsZmin)
+                ratio = max(min(ratioRaw, 1), 0)
                 compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
                 compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
                 maya.cmds.polyColorPerVertex(component,
