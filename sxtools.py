@@ -2947,7 +2947,7 @@ def saveMasterPalette():
             storePalette('masterPalette', masterPaletteDict, preset)
 
         else:
-            print 'SX Tools Error: Invalid layer name!'
+            print 'SX Tools Error: Invalid palette name!'
 
 
 def getMasterPaletteItem():
