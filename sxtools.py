@@ -28,7 +28,7 @@
 #   When the user adjusts the layer opacity, or in any way causes
 #   the components of a layer to have an alpha >0 and <1, the 
 #   layer is marked as an adjustment layer (A). This means it is
-#   checked against exportToleranceValue to see if the alpha contributes
+#   checked against AlphaToleranceValue to see if the alpha contributes
 #   to a layer mask, or if it is only used to flatten layer colors.
 #
 #   Technical notes:
@@ -37,7 +37,7 @@
 #   createSXShader()      - creates the necessary materials to view
 #                           the color-layered object. Separate 
 #                           functions for export preview.
-#   setProjectDefaults()  - called to set and store the color sets
+#   setPreferences()      - called to set and store the color sets
 #                           needed for the project, writes the defaults
 #                           to settings dictionary
 #   setPrimVars()         - sets the object-specific primitive
@@ -70,9 +70,6 @@ objectArray = []
 shapeArray = []
 componentArray = []
 patchArray = []
-displayScalingValue = 1.0
-exportToleranceValue = 1.0
-exportSmoothValue = 0
 currentColor = (0, 0, 0)
 layerAlphaMax = 0
 material = None
@@ -91,13 +88,14 @@ refArray = [u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
             u'occlusion', u'specular', u'transmission', u'emission']
 
 
-# Startup functions
+# Setup functions
 # --------------------------------------------------------------------
 
-def setProjectDefaults():
+def setPreferences():
     modifiers = maya.cmds.getModifiers()
     shift = bool((modifiers & 1) > 0)
 
+    # default values, if the user decides to reset the tool
     if shift == True:
         projectSettings['SXToolsAlphaTolerance'] = 1.0
         projectSettings['SXToolsSmoothExport'] = 0
@@ -147,68 +145,18 @@ def setProjectDefaults():
         projectSettings['SXToolsMatChannels'] = (1, 1, 1, 1)
         projectSettings['SXToolsExportChannels'] = ('U3', 'U1', 'V1', 'U2', 'V2')
 
-    elif shift == False:
-        projectSettings['SXToolsAlphaTolerance'] = maya.cmds.floatField('exportTolerance', query=True, value=True)
-        projectSettings['SXToolsSmoothExport'] = maya.cmds.intField('exportSmooth', query=True, value=True)
-        projectSettings['SXToolsExportOffset'] = maya.cmds.intField('exportOffset', query=True, value=True)
-        projectSettings['SXToolsLayerCount'] = maya.cmds.intField('layerCount', query=True, value=True)
-
-        projectSettings['SXToolsRefLayers'] = {}
-        projectSettings['SXToolsRefIndices'] = {}
-        projectSettings['SXToolsRefNames'] = {}
-
-        refIndex = 0
-        for k in range(0, projectSettings['SXToolsLayerCount']):
-            refIndex += 1
-            layerName = 'layer' + str(k+1)
-            
-            if k == 0:
-                projectSettings['SXToolsRefLayers'][layerName] = (0.5, 0.5, 0.5, 1)
-            else:
-                projectSettings['SXToolsRefLayers'][layerName] = (0, 0, 0, 0)
-            
-            projectSettings['SXToolsRefIndices'][layerName] = refIndex
-            projectSettings['SXToolsRefNames'][refIndex] = layerName
-            
-
-        channels = [u'occlusion', u'specular', u'transmission', u'emission']
-        for channel in channels:
-            if maya.cmds.checkBox( channel, query=True, value=True ):
-                refIndex += 1
-                if channel == 'occlusion':
-                    projectSettings['SXToolsRefLayers'][channel] = (1, 1, 1, 1)
-                else:
-                    projectSettings['SXToolsRefLayers'][channel] = (0, 0, 0, 1)
-                
-                projectSettings['SXToolsRefIndices'][channel] = refIndex
-                projectSettings['SXToolsRefNames'][refIndex] = channel
-        
-        projectSettings['SXToolsChannelCount'] = refIndex - projectSettings['SXToolsLayerCount']    
-        projectSettings['SXToolsMatChannels'] = ( int(maya.cmds.checkBox('occlusion', query=True, value=True)),
-                                                  int(maya.cmds.checkBox('specular', query=True, value=True)), 
-                                                  int(maya.cmds.checkBox('transmission', query=True, value=True)),
-                                                  int(maya.cmds.checkBox('emission', query=True, value=True)) )
-
-        projectSettings['SXToolsExportChannels'] = ( maya.cmds.textField('maskExport', query=True, text=True),
-                                                     maya.cmds.textField('occlusionExport', query=True, text=True),
-                                                     maya.cmds.textField('specularExport', query=True, text=True),
-                                                     maya.cmds.textField('transmissionExport', query=True, text=True),
-                                                     maya.cmds.textField('emissionExport', query=True, text=True) )
-
     savePreferences()
 
     if shift == True:
         createSXShader(projectSettings['SXToolsLayerCount'], True, True, True, True)
-        createSXExportShader()
-        createSXPBShader()
     elif shift == False:
         createSXShader(projectSettings['SXToolsLayerCount'],
-                          maya.cmds.checkBox( 'occlusion', query=True, value=True ),
-                          maya.cmds.checkBox( 'specular', query=True, value=True ),
-                          maya.cmds.checkBox( 'transmission', query=True, value=True ),
-                          maya.cmds.checkBox( 'emission', query=True, value=True ))
-        createSXExportShader()
-        createSXPBShader()
+                       projectSettings['SXToolsMatChannels'][0],
+                       projectSettings['SXToolsMatChannels'][1],
+                       projectSettings['SXToolsMatChannels'][2],
+                       projectSettings['SXToolsMatChannels'][3])
+    createSXExportShader()
+    createSXPBShader()
 
     # Viewport and Maya prefs
     maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
@@ -275,7 +223,7 @@ def setPrimVars():
                     maya.cmds.addAttr(shape, ln=visName, at='double', min=0, max=1, dv=1)
 
 
-def refreshProjectDefaults():
+def refreshSetupProjectView():
     if 'SXToolsAlphaTolerance' in projectSettings:
         maya.cmds.floatField( 'exportTolerance', edit=True, value=projectSettings['SXToolsAlphaTolerance'] )
 
@@ -302,6 +250,90 @@ def refreshProjectDefaults():
         maya.cmds.textField( 'emissionExport', edit=True, text=(projectSettings['SXToolsExportChannels'][4]) )
 
 
+def updatePreferences():
+    projectSettings['SXToolsAlphaTolerance'] = maya.cmds.floatField( 'exportTolerance', query=True, value=True )
+    projectSettings['SXToolsSmoothExport'] = maya.cmds.intField( 'exportSmooth', query=True, value=True )
+    projectSettings['SXToolsExportOffset'] = maya.cmds.intField( 'exportOffset', query=True, value=True )
+    projectSettings['SXToolsLayerCount'] = maya.cmds.intField( 'layerCount', query=True, value=True )
+    projectSettings['SXToolsMatChannels'] = ( int(maya.cmds.checkBox('occlusion', query=True, value=True)),
+                                              int(maya.cmds.checkBox('specular', query=True, value=True)), 
+                                              int(maya.cmds.checkBox('transmission', query=True, value=True)),
+                                              int(maya.cmds.checkBox('emission', query=True, value=True)) )
+    projectSettings['SXToolsExportChannels'] = ( maya.cmds.textField('maskExport', query=True, text=True),
+                                                 maya.cmds.textField('occlusionExport', query=True, text=True),
+                                                 maya.cmds.textField('specularExport', query=True, text=True),
+                                                 maya.cmds.textField('transmissionExport', query=True, text=True),
+                                                 maya.cmds.textField('emissionExport', query=True, text=True) )
+    projectSettings['SXToolsRefLayers'] = {}
+    projectSettings['SXToolsRefIndices'] = {}
+    projectSettings['SXToolsRefNames'] = {}
+
+    refIndex = 0
+    for k in range(0, projectSettings['SXToolsLayerCount']):
+        refIndex += 1
+        layerName = 'layer' + str(k+1)
+        
+        if k == 0:
+            projectSettings['SXToolsRefLayers'][layerName] = (0.5, 0.5, 0.5, 1)
+        else:
+            projectSettings['SXToolsRefLayers'][layerName] = (0, 0, 0, 0)
+        
+        projectSettings['SXToolsRefIndices'][layerName] = refIndex
+        projectSettings['SXToolsRefNames'][refIndex] = layerName
+        
+
+    channels = [u'occlusion', u'specular', u'transmission', u'emission']
+    for channel in channels:
+        if maya.cmds.checkBox( channel, query=True, value=True ):
+            refIndex += 1
+            if channel == 'occlusion':
+                projectSettings['SXToolsRefLayers'][channel] = (1, 1, 1, 1)
+            else:
+                projectSettings['SXToolsRefLayers'][channel] = (0, 0, 0, 1)
+            
+            projectSettings['SXToolsRefIndices'][channel] = refIndex
+            projectSettings['SXToolsRefNames'][refIndex] = channel
+    
+    projectSettings['SXToolsChannelCount'] = refIndex - projectSettings['SXToolsLayerCount']    
+
+
+def setPreferencesFile():
+    filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Preferences File', dialogStyle=2, fm=0)    
+    maya.cmds.optionVar(stringValue=('SXToolsPrefsFile', filePath[0]))
+    print('SX Tools: Preferences file set to ' + filePath[0])
+
+
+def savePreferences():
+    if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
+        filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
+        with open(filePath, 'w') as output:
+            output.write('SX Tools Project Settings: \r\n' + str(projectSettings) + '\r\n')
+            output.write('SX Tools Master Palette Dictionary: \r\n' + str(masterPaletteDict) + '\r\n')
+            output.close()
+        print('SX Tools: Preferences saved')
+    else:
+        print('SX Tools Warning: Preferences file location not set!')
+
+
+def loadPreferences():
+    global projectSettings, masterPaletteDict
+    
+    if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
+        filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
+        with open(filePath, 'r') as input:
+            prefData = input.readlines()
+            projectSettings = eval(prefData[1])
+            masterPaletteDict = eval(prefData[3])
+            input.close()
+
+        print('SX Tools: Preferences loaded from ' + filePath)        
+        setPreferences()
+        frameStates['setupFrameCollapse']=True
+        updateSXTools()
+    else:
+        print('SX Tools: No preferences found')
+
+
 def createSXShader(numLayers, occlusion=False, specular=False, transmission=False, emission=False):
     global material, nodeDict
 
@@ -309,12 +341,12 @@ def createSXShader(numLayers, occlusion=False, specular=False, transmission=Fals
         shadingGroup = maya.cmds.listConnections('SXShader', type='shadingEngine')
         componentsWithMaterial = maya.cmds.sets(shadingGroup, q=True)
         maya.cmds.delete('SXShader')
-        print('SX Tools: Updating default materials\n')
+        print('SX Tools: Updating default materials')
     if maya.cmds.objExists('SXShaderSG'):
         maya.cmds.delete('SXShaderSG')
 
     else:
-        print('SX Tools: Creating default materials\n')
+        print('SX Tools: Creating default materials')
 
     materialName = 'SXShader'
     material = SFXNetwork.create(materialName)
@@ -1290,7 +1322,7 @@ def createSXPBShader():
 # The pre-vis material depends on lights in the scene to correctly display occlusion
 def createDefaultLights():
     if len(maya.cmds.ls(type='light')) == 0:
-        print('SX Tools: No lights found in scene, creating default lights.\n')
+        print('SX Tools: No lights found in scene, creating default lights.')
         maya.cmds.directionalLight(name='defaultSXDirectionalLight', rotation=(-25, 30, 0), position=(0, 50, 0))
         maya.cmds.setAttr('defaultSXDirectionalLight.useDepthMapShadows', 1)
         maya.cmds.setAttr('defaultSXDirectionalLight.dmapFilterSize', 5)
@@ -1443,9 +1475,9 @@ def layerToUV(selected, uvID, numLayers, offset):
             for k in range(lenLayerArray):
                 # NOTE: Alpha inadvertedly gets written with a low non-zero values when using brush tools.
                 # The tolerance threshold helps fix that.
-                if (layerArray[k].a >= exportToleranceValue) and (axis == 'u'):
+                if (layerArray[k].a >= projectSettings['SXToolsAlphaTolerance']) and (axis == 'u'):
                     uArray[k] = float(i)
-                elif (layerArray[k].a >= exportToleranceValue) and (axis == 'v'):
+                elif (layerArray[k].a >= projectSettings['SXToolsAlphaTolerance']) and (axis == 'v'):
                     vArray[k] = float(i)
         
     MFnMesh.setUVs(uArray, vArray, targetUVSet)
@@ -1598,7 +1630,7 @@ def processObjects(sourceArray):
                 offsetZ += offsetDist
     
     totalTime = maya.cmds.timerX (startTime=startTime0)
-    print ('SX Tools: Total time ' + str(totalTime) + '\n')
+    print ('SX Tools: Total time ' + str(totalTime))
     maya.cmds.select('_staticExports', r=True)
     maya.cmds.editDisplayLayerMembers( 'exportsLayer', maya.cmds.ls(sl=True) )
     viewExported()
@@ -1607,7 +1639,7 @@ def processObjects(sourceArray):
 # Writing FBX files to a user-defined folder includes finding the unique file
 # using their fullpath names, then stripping the path to create a clean name for the file.
 def exportObjects(exportPath):
-    print( 'SX Tools: Writing FBX files, please hold.\n')
+    print( 'SX Tools: Writing FBX files, please hold.')
     exportArray = maya.cmds.listRelatives('_staticExports', children=True, fullPath=True )
     for export in exportArray:
         maya.cmds.select(export)
@@ -1715,7 +1747,7 @@ def bakeOcclusionArnold():
         maya.cmds.setAttr('aiSXAO.nearClip', 0.01)
         maya.cmds.setAttr('aiSXAO.farClip', 100)
         maya.cmds.setAttr('aiSXAO.selfOnly', 0)
-        print('SX Tools: Creating occlusion material\n')
+        print('SX Tools: Creating occlusion material')
         
     if maya.cmds.objExists('SXAOTexture') == False:
         maya.cmds.shadingNode('file', asTexture=True, name='SXAOTexture')
@@ -2341,7 +2373,7 @@ def resetLayers(objects):
                 maya.cmds.polyColorSet(object, delete=True, colorSet=colorSet)
 
         # Create color sets        
-        for layer in projectSettings['SXToolsRefLayers'].keys():
+        for layer in sortLayers(projectSettings['SXToolsRefLayers'].keys()):
             maya.cmds.polyColorSet(object, create=True, clamped=True, representation='RGBA', colorSet=str(layer))
             clearSelectedLayer([object,], layer)
             maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=str(layer))
@@ -2458,9 +2490,9 @@ def verifyLayerState(layer):
     state[0] = maya.cmds.getAttr(str(object)+'.'+str(layer)+'Visibility')
     
     for k in range(len(layerColors)):
-        if (layerColors[k].a > 0 and layerColors[k].a < exportToleranceValue):
+        if (layerColors[k].a > 0 and layerColors[k].a < projectSettings['SXToolsAlphaTolerance']):
             state[2] = True
-        elif (layerColors[k].a >= exportToleranceValue and layerColors[k].a <= 1):
+        elif (layerColors[k].a >= projectSettings['SXToolsAlphaTolerance'] and layerColors[k].a <= 1):
             state[1] = True
 
     if state[0] == False:
@@ -2947,7 +2979,7 @@ def saveMasterPalette():
             storePalette('masterPalette', masterPaletteDict, preset)
 
         else:
-            print 'SX Tools Error: Invalid palette name!'
+            print 'SX Tools Error: Invalid preset name!'
 
 
 def getMasterPaletteItem():
@@ -3024,42 +3056,13 @@ def setLayerBlendMode():
     getSelectedLayer()
 
 
-def setPreferences():
-    filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Preferences File', dialogStyle=2, fm=0)    
-    maya.cmds.optionVar(stringValue=('SXToolsPrefsFile', filePath[0]))
-    print('SX Tools: Preferences set to ' + filePath[0] +'\n')
-
-
-def savePreferences():
-    if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
-        filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
-        with open(filePath, 'w') as output:
-            output.write('SX Tools Project Settings: \r\n' + str(projectSettings) + '\r\n')
-            output.write('SX Tools Master Palette Dictionary: \r\n' + str(masterPaletteDict) + '\r\n')
-            output.close()
+def setExportPath():
+    path = str(maya.cmds.fileDialog2(cap='Select Export Folder', dialogStyle=2, fm=3)[0])
+    if path.endswith('/'):
+        projectSettings['SXToolsExportPath'] = path
     else:
-        print('SX Tools: Preferences file location not set! \n')
-    
-    print('SX Tools: Preferences saved. \n')
-
-
-def loadPreferences():
-    global projectSettings, masterPaletteDict
-    
-    if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
-        filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
-        with open(filePath, 'r') as input:
-            prefData = input.readlines()
-            print(prefData[1])
-            print(prefData[3])
-            projectSettings = eval(prefData[1])
-            masterPaletteDict = eval(prefData[3])
-            input.close()
-        
-        setProjectDefaults()
-        print('SX Tools: Preferences loaded from ' + filePath + '\n')
-    else:
-        print('SX Tools: No preferences found. \n')
+        projectSettings['SXToolsExportPath'] = path+'/'
+    savePreferences()
 
 
 def resetSXTools():
@@ -3098,16 +3101,11 @@ def setupProjectUI():
                       rowSpacing=5, adjustableColumn=True )
 
     maya.cmds.button(label='Set Preferences Location', parent='prefsColumn',
-                     command='sxtools.setPreferences()')
+                     command='sxtools.setPreferencesFile()')
             
     maya.cmds.button(label='Load and Apply Preferences', parent='prefsColumn',
-                     command=("sxtools.loadPreferences()\n"
-                              "sxtools.refreshProjectDefaults()\n"
-                              "sxtools.setProjectDefaults()\n"
-                              "sxtools.frameStates['setupFrameCollapse']=True\n"
-                              "sxtools.updateSXTools()") )
+                     command=("sxtools.loadPreferences()") )
 
-                        
     maya.cmds.rowColumnLayout( 'refLayerRowColumns', parent='setupFrame',
                  numberOfColumns=3,
                  columnWidth=((1, 90), (2, 70), (3, 70)),
@@ -3180,11 +3178,12 @@ def setupProjectUI():
     maya.cmds.text(label='(Shift-click below to reset defaults)', parent='refLayerColumn')
     maya.cmds.button( label='Apply Project Defaults', parent='refLayerColumn',
                 statusBarMessage='Shift-click button to use the built-in template reference layer set',
-                command=("sxtools.setProjectDefaults()\n"
+                command=("sxtools.updatePreferences()\n"
+                         "sxtools.setPreferences()\n"
                          "sxtools.frameStates['setupFrameCollapse']=True\n"
                          "sxtools.updateSXTools()") )
     
-    refreshProjectDefaults()
+    refreshSetupProjectView()
 
     maya.cmds.workspaceControl( dockID, edit=True, resizeHeight=5, resizeWidth=250 )
 
@@ -3220,27 +3219,20 @@ def exportObjectsUI():
                         onCommand3=("sxtools.viewExportedMaterial()"),
                         onCommand4=("sxtools.viewExportedMaterial()") )
     
-    maya.cmds.text( label='Export Path:' )
-    if (('SXToolsExportPath' in projectSettings) and
-        (len(str(projectSettings['SXToolsExportPath'])) == 0)):
-        maya.cmds.textField( 'exportPath', placeholderText='D:/UnityProjects/ProjectName/Assets/Objects/',
-                       enterCommand=("sxtools.projectSettings['SXToolsExportPath'] = str(maya.cmds.textField('exportPath', query=True, text=True)\n"
-                                     "maya.cmds.setFocus('MayaWindow')"),
-                       alwaysInvokeEnterCommandOnReturn=True)
+    maya.cmds.button( label='Choose Export Path', width=120,
+                      command=("sxtools.setExportPath()\n"
+                               "sxtools.updateSXTools()"))
+    
+    if (('SXToolsExportPath' in projectSettings) and (len(projectSettings['SXToolsExportPath']) == 0)):
+        maya.cmds.text( label='No export folder selected!' )
     elif 'SXToolsExportPath' in projectSettings:
-        exportPathText=projectSettings['SXToolsExportPath']
-        maya.cmds.textField('exportPath', text=exportPathText,
-                       enterCommand=("sxtools.projectSettings['SXToolsExportPath'] = str(maya.cmds.textField('exportPath', query=True, text=True)\n"
-                                     "maya.cmds.setFocus('MayaWindow')"),
-                       alwaysInvokeEnterCommandOnReturn=True)
+        exportPathText=('Export Path: ' + projectSettings['SXToolsExportPath'])
+        maya.cmds.text( label=exportPathText )
+        maya.cmds.button( label='Export Objects in _staticExports', width=120,
+                          command=("sxtools.exportObjects(sxtools.projectSettings['SXToolsExportPath'])") )
     else:
-        maya.cmds.textField( 'exportPath', placeholderText='D:/UnityProjects/ProjectName/Assets/Objects/',
-                       enterCommand=("sxtools.projectSettings['SXToolsExportPath'] = str(maya.cmds.textField('exportPath', query=True, text=True)\n"
-                                     "maya.cmds.setFocus('MayaWindow')"),
-                       alwaysInvokeEnterCommandOnReturn=True)
-    maya.cmds.button( label='Export Objects in _staticExports', width=120,
-                command=("sxtools.projectSettings['SXToolsExportPath'] = str(maya.cmds.textField('exportPath', query=True, text=True)\n"
-                         "sxtools.exportObjects(maya.cmds.textField('exportPath', query=True, text=True))") )
+        maya.cmds.text( label='No export folder selected!' )
+    
     maya.cmds.setParent( 'exportObjFrame' )
     maya.cmds.setParent( 'canvas' )
     maya.cmds.workspaceControl( dockID, edit=True, resizeHeight=5, resizeWidth=250 )
@@ -3673,12 +3665,14 @@ def startSXTools():
     if maya.cmds.workspaceControl(dockID, exists=True):
         maya.cmds.deleteUI(dockID, control=True)
 
-    global job1ID, job2ID, job3ID, job4ID, job5ID, displayScalingValue
+    global job1ID, job2ID, job3ID, job4ID, job5ID
 
     platform = maya.cmds.about(os=True)
 
     if platform == 'win' or platform == 'win64':
         displayScalingValue = maya.cmds.mayaDpiSetting( query=True, realScaleValue=True )
+    else:
+        displayScalingValue = 1.0
 
     maya.cmds.workspaceControl( dockID, label='SX Tools', uiScript='sxtools.updateSXTools()',
                           retain=False, floating=True,
@@ -3690,9 +3684,9 @@ def startSXTools():
     job1ID = maya.cmds.scriptJob(event=['SelectionChanged', 'sxtools.updateSXTools()'])
     job2ID = maya.cmds.scriptJob(event=['NameChanged', 'sxtools.updateSXTools()'])
     job3ID = maya.cmds.scriptJob(event=['SceneOpened', 'sxtools.frameStates["setupFrameCollapse"]=False\n'
-                                                       'sxtools.setProjectDefaults()'])
+                                                       'sxtools.setPreferences()'])
     job4ID = maya.cmds.scriptJob(event=['NewSceneOpened', 'sxtools.frameStates["setupFrameCollapse"]=False\n'
-                                                          'sxtools.setProjectDefaults()'])
+                                                          'sxtools.setPreferences()'])
     job5ID = maya.cmds.scriptJob(runOnce=True, event=['quitApplication', 'maya.cmds.deleteUI(sxtools.dockID)'])
     
     maya.cmds.scriptJob(runOnce=True, uiDeleted=[dockID, 'maya.cmds.scriptJob(kill=sxtools.job1ID)\n'
@@ -3704,6 +3698,8 @@ def startSXTools():
     # Set correct lighting and shading mode at start
     maya.mel.eval('DisplayShadedAndTextured;')
     maya.mel.eval('DisplayLight;')
+    
+    loadPreferences()
 
 
 # Avoids UI refresh from being included in the undo list
