@@ -83,6 +83,9 @@ frameStates = { 'setupFrameCollapse': False, 'toolFrameCollapse': False,
                'creaseFrameCollapse': True, 'noiseFrameCollapse': True,
                'applyColorFrameCollapse': True, 'swapLayerFrameCollapse': True,
                'gradientFrameCollapse': True, 'copyLayerFrameCollapse': True }
+toolStates = { 'noiseMonochrome': False, 'noiseValue': 0.500,
+               'bakeGroundPlane': True, 'bakeGroundScale': 100.0,
+               'bakeGroundOffset': 1.0, 'bakeBlend': False }               
 refArray = [u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
             u'layer6', u'layer7', u'layer8', u'layer9', u'layer10',
             u'occlusion', u'specular', u'transmission', u'emission']
@@ -1674,7 +1677,8 @@ def bakeOcclusion():
     groundBool = maya.cmds.checkBox('ground', query=True, value=True)
     groundScale = maya.cmds.floatField('groundScale', query=True, value=True)
     groundOffset = maya.cmds.floatField('groundOffset', query=True, value=True)
-    
+    blend = maya.cmds.checkBox('blendcheck', query=True, value=True)
+        
     bbox = []
     bakeList = shapeArray
     modifiers = maya.cmds.getModifiers()
@@ -1697,6 +1701,11 @@ def bakeOcclusion():
         maya.cmds.setAttr( 'sxVertexBakeSet.filterNormalTolerance', 5 )
         maya.cmds.setAttr( 'sxVertexBakeSet.colorMode', 3 )
         maya.cmds.setAttr( 'sxVertexBakeSet.occlusionRays', 256 )
+    
+    if blend == True:
+        maya.cmds.setAttr( 'sxVertexBakeSet.colorBlending', 5)
+    else:
+        maya.cmds.setAttr( 'sxVertexBakeSet.colorBlending', 0)
 
     if shift == True:
         if groundBool == True:
@@ -1946,56 +1955,55 @@ def applyMasterPalette(objects):
 
 
 def gradientFill(axis):
-    for shape in shapeArray:
-        if len(componentArray) > 0:
-            components = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tvf=True), fl=True)
-            tempFaceArray = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tf=True), fl=True)
-            # tempFaceArray is constructed because polyEvaluate doesn't work on face vertices
-            maya.cmds.select(tempFaceArray)
-            objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
-        else:
-            components = maya.cmds.ls(maya.cmds.polyListComponentConversion(shape, tv=True), fl=True)
-            objectBounds = maya.cmds.polyEvaluate(shape, b=True, ae=True)
-            
-        objectBoundsXmin = objectBounds[0][0]
-        objectBoundsXmax = objectBounds[0][1]
-        objectBoundsYmin = objectBounds[1][0]
-        objectBoundsYmax = objectBounds[1][1]
-        objectBoundsZmin = objectBounds[2][0]
-        objectBoundsZmax = objectBounds[2][1]
+    if len(componentArray) > 0:
+        components = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tvf=True), fl=True)
+        # tempFaceArray is constructed because polyEvaluate doesn't work on face vertices
+        tempFaceArray = maya.cmds.ls(maya.cmds.polyListComponentConversion(componentArray, tf=True), fl=True)
+        maya.cmds.select(tempFaceArray)
+        objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
+    else:
+        components = maya.cmds.ls(maya.cmds.polyListComponentConversion(shapeArray, tv=True), fl=True)
+        objectBounds = maya.cmds.polyEvaluate(shapeArray, b=True, ae=True)
+                            
+    objectBoundsXmin = objectBounds[0][0]
+    objectBoundsXmax = objectBounds[0][1]
+    objectBoundsYmin = objectBounds[1][0]
+    objectBoundsYmax = objectBounds[1][1]
+    objectBoundsZmin = objectBounds[2][0]
+    objectBoundsZmax = objectBounds[2][1]
         
-        for component in components:
-            compPos = maya.cmds.xform( component, query=True, worldSpace=True, translation=True )
-            if axis == 1:
-                ratioRaw = (compPos[0] - objectBoundsXmin) / (objectBoundsXmax - objectBoundsXmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
-                compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
-                maya.cmds.polyColorPerVertex(component,
-                                        r=compColor[0],
-                                        g=compColor[1],
-                                        b=compColor[2],
-                                        a=compAlpha[0] )
-            elif axis == 2:
-                ratioRaw = (compPos[1] - objectBoundsYmin) / (objectBoundsYmax - objectBoundsYmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
-                compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
-                maya.cmds.polyColorPerVertex(component,
-                                        r=compColor[0],
-                                        g=compColor[1],
-                                        b=compColor[2],
-                                        a=compAlpha[0] )
-            elif axis == 3:
-                ratioRaw = (compPos[2] - objectBoundsZmin) / (objectBoundsZmax - objectBoundsZmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
-                compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
-                maya.cmds.polyColorPerVertex(component,
-                                        r=compColor[0],
-                                        g=compColor[1],
-                                        b=compColor[2],
-                                        a=compAlpha[0] )
+    for component in components:
+        compPos = maya.cmds.xform( component, query=True, worldSpace=True, translation=True )
+        if axis == 1:
+            ratioRaw = (compPos[0] - objectBoundsXmin) / (objectBoundsXmax - objectBoundsXmin)
+            ratio = max(min(ratioRaw, 1), 0)
+            compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
+            compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
+            maya.cmds.polyColorPerVertex(component,
+                                    r=compColor[0],
+                                    g=compColor[1],
+                                    b=compColor[2],
+                                    a=compAlpha[0] )
+        elif axis == 2:
+            ratioRaw = (compPos[1] - objectBoundsYmin) / (objectBoundsYmax - objectBoundsYmin)
+            ratio = max(min(ratioRaw, 1), 0)
+            compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
+            compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
+            maya.cmds.polyColorPerVertex(component,
+                                    r=compColor[0],
+                                    g=compColor[1],
+                                    b=compColor[2],
+                                    a=compAlpha[0] )
+        elif axis == 3:
+            ratioRaw = (compPos[2] - objectBoundsZmin) / (objectBoundsZmax - objectBoundsZmin)
+            ratio = max(min(ratioRaw, 1), 0)
+            compColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(ratio), v=(ratio) )
+            compAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=(ratio), v=(ratio) )
+            maya.cmds.polyColorPerVertex(component,
+                                    r=compColor[0],
+                                    g=compColor[1],
+                                    b=compColor[2],
+                                    a=compAlpha[0] )
     
     getLayerPaletteOpacity(shapeArray[len(shapeArray)-1], getSelectedLayer())
     refreshLayerList()
@@ -2011,12 +2019,20 @@ def colorFill():
         fillAlpha = 1
         
     fillColor = maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)
-    maya.cmds.polyColorPerVertex(selectionArray,
-                            r=fillColor[0],
-                            g=fillColor[1],
-                            b=fillColor[2],
-                            a=fillAlpha,
-                            representation=4, cdo=True)
+    if len(componentArray) > 0:
+        maya.cmds.polyColorPerVertex(componentArray,
+                                r=fillColor[0],
+                                g=fillColor[1],
+                                b=fillColor[2],
+                                a=fillAlpha,
+                                representation=4, cdo=True)
+    else:
+        maya.cmds.polyColorPerVertex(shapeArray,
+                                r=fillColor[0],
+                                g=fillColor[1],
+                                b=fillColor[2],
+                                a=fillAlpha,
+                                representation=4, cdo=True)        
     getLayerPaletteOpacity(shapeArray[len(shapeArray)-1], getSelectedLayer())
     refreshLayerList()
     refreshSelectedItem()
@@ -2024,8 +2040,8 @@ def colorFill():
 
 def colorNoise(objects):
     for object in objects:
-        mono = maya.cmds.checkBox( 'mono', query=True, value=True )
-        value = maya.cmds.floatField( 'noiseValue', query=True, value=True )
+        mono = toolStates['noiseMonochrome']
+        value = toolStates['noiseValue']
         layer = getSelectedLayer()
 
         selectionList = OM.MSelectionList()
@@ -2164,57 +2180,56 @@ def swapLayers(object):
         print('SXTools Error: Invalid layers!')
 
 
-def copyLayer(object):
+def copyLayer(objects):
     refLayers = sortLayers(projectSettings['SXToolsRefLayers'].keys())
     
     layerA = maya.cmds.textField('layersrc', query=True, text=True)
     layerB = maya.cmds.textField('layertgt', query=True, text=True)
 
-    selected = str(shapeArray[len(shapeArray)-1])
-
     if (layerA in refLayers) and (layerB in refLayers): 
+        for idx, obj in enumerate(objects):
+            selected = str(shapeArray[idx])
+            attrA = '.'+layerA+'BlendMode'
+            modeA = maya.cmds.getAttr(selected+attrA)
+            attrB = '.'+layerB+'BlendMode'
 
-        attrA = '.'+layerA+'BlendMode'
-        modeA = maya.cmds.getAttr(selected+attrA)
-        attrB = '.'+layerB+'BlendMode'
+            selectionList = OM.MSelectionList()
+            selectionList.add(obj)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
 
-        selectionList = OM.MSelectionList()
-        selectionList.add(object)
-        nodeDagPath = OM.MDagPath()
-        nodeDagPath = selectionList.getDagPath(0)
-        MFnMesh = OM.MFnMesh(nodeDagPath)
+            layerAColors = OM.MColorArray()
+            layerAColors = MFnMesh.getFaceVertexColors(colorSet = layerA)
 
-        layerAColors = OM.MColorArray()
-        layerAColors = MFnMesh.getFaceVertexColors(colorSet = layerA)
-
-        faceIds = OM.MIntArray()
-        vtxIds = OM.MIntArray()
+            faceIds = OM.MIntArray()
+            vtxIds = OM.MIntArray()
+                
+            lenSel = len(layerAColors)
             
-        lenSel = len(layerAColors)
-        
-        faceIds.setLength(lenSel)
-        vtxIds.setLength(lenSel)
-       
-        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+            faceIds.setLength(lenSel)
+            vtxIds.setLength(lenSel)
+           
+            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
-        k = 0
-        while not fvIt.isDone():
-            faceIds[k] = fvIt.faceId()
-            vtxIds[k] = fvIt.vertexId()
-            k += 1
-            fvIt.next()
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                vtxIds[k] = fvIt.vertexId()
+                k += 1
+                fvIt.next()
 
-        maya.cmds.polyColorSet(currentColorSet=True, colorSet=layerB)
-        MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)  
-        
-        maya.cmds.setAttr(selected+attrB, modeA)
-
-        getLayerPaletteOpacity(shapeArray[len(shapeArray)-1], getSelectedLayer())
-        refreshLayerList()
-        refreshSelectedItem()
-        maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+            maya.cmds.polyColorSet(currentColorSet=True, colorSet=layerB)
+            MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)  
+            
+            maya.cmds.setAttr(selected+attrB, modeA)
     else:
         print('SXTools Error: Invalid layers!')
+
+    getLayerPaletteOpacity(shapeArray[len(shapeArray)-1], getSelectedLayer())
+    refreshLayerList()
+    refreshSelectedItem()
+    maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
 
 # Layer management functions
@@ -2582,13 +2597,10 @@ def checkHistory(objList):
     history = False
     for obj in objList:
         histList = maya.cmds.listHistory(obj)
-        objName = str(obj)
-        objNameStripped = objName.rstrip('0123456789')
-        nameDigits = objName.replace(objNameStripped,'')
-        objName = objNameStripped.translate(None, '|') + "Shape" + nameDigits
+        objName = str(obj).rstrip('0123456789')
+        if '|' in objName:
+            objName = objName.rsplit('|', 1)[1]            
 
-        if objName in histList:
-            histList.remove(objName)
         for hist in reversed(histList):
             if objName in str(hist):
                 histList.remove(hist)
@@ -2609,6 +2621,7 @@ def checkHistory(objList):
             history = True
   
     if history == True:
+        print('SX Tools: History found: ' + str(histList))
         maya.cmds.columnLayout('warningLayout', parent='canvas', rowSpacing=5, adjustableColumn=True)
         maya.cmds.text( label='WARNING: Objects with construction history!',
                   backgroundColor=(0.35, 0.1, 0), ww=True )
@@ -2630,20 +2643,20 @@ def viewExported():
 # so the tool must present a different UI when any of these are selected.
 def checkExported(objects):
     if len(objectArray) > 0:
-        for object in objects:
-            parent = maya.cmds.listRelatives(str(object), parent=True)
+        for obj in objects:
+            parent = maya.cmds.listRelatives(str(obj), parent=True)
             if parent is not None:
                 if str(parent[0]) == '_staticExports':
                     return True
                     break
-                elif str(object).endswith('_paletted') == True:
+                elif str(obj).endswith('_paletted') == True:
                     return True
                     break
-                elif str(object).endswith('_transparent') == True:
+                elif str(obj).endswith('_transparent') == True:
                     return True
                     break
             elif parent is None:
-                if str(object) == '_staticExports':
+                if str(obj) == '_staticExports':
                     return True
                     break
     else:
@@ -3489,9 +3502,11 @@ def colorNoiseToolUI():
                  columnAttach=[(1, 'left', 0 ), (2, 'both', 5)],
                  rowSpacing=(1, 5))
     maya.cmds.text( 'monoLabel', label='Monochromatic:' )
-    maya.cmds.checkBox( 'mono', label='' )
+    maya.cmds.checkBox( 'mono', label='', value=toolStates['noiseMonochrome'], 
+                        changeCommand=("sxtools.toolStates['noiseMonochrome'] = maya.cmds.checkBox('mono', query=True, value=True)") )
     maya.cmds.text( 'noiseValueLabel', label='Noise Value (0-1):' )
-    maya.cmds.floatField( 'noiseValue',  precision=3, value=0.5, minValue=0.0, maxValue=1.0 )
+    maya.cmds.floatField( 'noiseValue',  precision=3, value=toolStates['noiseValue'], minValue=0.0, maxValue=1.0,
+                          changeCommand=("sxtools.toolStates['noiseValue'] = maya.cmds.floatField('noiseValue', query=True, value=True)") )
     maya.cmds.button(label='Apply Noise', parent='noiseColumn',
                 height=30, width=100,
                 command="sxtools.colorNoise(sxtools.objectArray)\n"
@@ -3525,20 +3540,22 @@ def bakeOcclusionToolUI():
     maya.cmds.text(label='Offset')
 
     maya.cmds.text( 'groundLabel', label='Groundplane:' )
-    maya.cmds.checkBox( 'ground', label='', value=True )
-    maya.cmds.floatField( 'groundScale', value=100.0, precision=1, minValue=0.0 )
-    maya.cmds.floatField( 'groundOffset', value=1.0, precision=1, minValue=0.0 )
-
+    maya.cmds.checkBox( 'ground', label='', value=toolStates['bakeGroundPlane'],
+                        changeCommand=("sxtools.toolStates['bakeGroundPlane'] = maya.cmds.checkBox('ground', query=True, value=True)") )
+    maya.cmds.floatField( 'groundScale', value=toolStates['bakeGroundScale'], precision=1, minValue=0.0,
+                          changeCommand=("sxtools.toolStates['bakeGroundScale'] = maya.cmds.floatField('groundScale', query=True, value=True)") )
+    maya.cmds.floatField( 'groundOffset', value=toolStates['bakeGroundOffset'], precision=1, minValue=0.0,
+                          changeCommand=("sxtools.toolStates['bakeGroundOffset'] = maya.cmds.floatField('groundOffset', query=True, value=True)") )
     
     maya.cmds.rowColumnLayout( 'occlusionRowColumns2', parent='occlusionColumn',
                  numberOfColumns=2,
-                 columnWidth=((1, 80), (2, 150)),
+                 columnWidth=((1, 130), (2, 110)),
                  columnAttach=[(1, 'left', 0 ), (2, 'left', 0)],
                  rowSpacing=(1, 0))
-                     
-    maya.cmds.text( 'bake label', label='Bake folder:' )
-    maya.cmds.textField('bakepath', enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-                   placeholderText='C:/')
+
+    maya.cmds.text( 'blend label', label='Blend with current:')
+    maya.cmds.checkBox('blendcheck', label='', value=toolStates['bakeBlend'],
+                       changeCommand=("sxtools.toolStates['bakeBlend'] = maya.cmds.checkBox('blendcheck', query=True, value=True)"))                    
 
     plugList = maya.cmds.pluginInfo( query=True, listPlugins=True )
     if 'Mayatomr' in plugList:
@@ -3546,6 +3563,14 @@ def bakeOcclusionToolUI():
                     height=30, width=100, ann='Shift-click to bake all objects together',
                     command='sxtools.bakeOcclusion()')
     if 'mtoa' in plugList:
+        maya.cmds.rowColumnLayout( 'occlusionRowColumns3', parent='occlusionColumn',
+                     numberOfColumns=2,
+                     columnWidth=((1, 130), (2, 110)),
+                     columnAttach=[(1, 'left', 0 ), (2, 'left', 0)],
+                     rowSpacing=(1, 0))    
+        maya.cmds.text( 'bake label', label='Bake folder:' )
+        maya.cmds.textField('bakepath', enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+                       placeholderText='C:/')
         maya.cmds.button(label='Bake Occlusion (Arnold)', parent='occlusionColumn',
                     height=30, width=100, ann='Shift-click to bake all objects together',
                     command="sxtools.bakeOcclusionArnold()")               
@@ -3631,7 +3656,7 @@ def copyLayerToolUI():
     maya.cmds.setParent( 'copyLayerFrame' )
     maya.cmds.button(label='Copy Layer', parent='copyLayerColumn',
                 height=30, width=100,
-                command=('sxtools.copyLayer(sxtools.selectionArray[0])'))
+                command=('sxtools.copyLayer(sxtools.objectArray)'))
     maya.cmds.setParent( 'toolFrame' )
 
 
@@ -3698,6 +3723,7 @@ def startSXTools():
     # Set correct lighting and shading mode at start
     maya.mel.eval('DisplayShadedAndTextured;')
     maya.mel.eval('DisplayLight;')
+    maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
     
     loadPreferences()
 
@@ -3728,7 +3754,8 @@ def selectionManager():
             onlyShapes = False
     if onlyShapes == True:
         shapeArray = selectionArray
-   
+        objectArray = maya.cmds.listRelatives(shapeArray, parent=True, fullPath=True)
+
     # Maintain correct object selection even if only components are selected
     if (shapeArray is None and componentArray is not None):
         shapeArray = maya.cmds.ls(selectionArray, o=True, dag=True, type='mesh', long=True)
@@ -3823,5 +3850,6 @@ def refreshSXTools():
         if verifyShadingMode() == 0:
             maya.cmds.polyOptions(activeObjects=True, colorMaterialChannel='ambientDiffuse', colorShadedDisplay=True)
             maya.mel.eval('DisplayLight;')
+            maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
 
     maya.cmds.setFocus('MayaWindow')
