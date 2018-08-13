@@ -99,6 +99,8 @@ Is similar to popular 2D paint programs:
 
 **Multiply** - darkens the layer below
 
+![Blend Mode Demonstration](/images/blendModes.gif)
+
 ### The layer list:
 * Click to select layers
 * Double-click to hide/unhide layer
