@@ -17,10 +17,11 @@ Changing the topology of your model while coloring and creasing is probably fine
 1. Copy sxtools.py and sfx folder to Maya scripts folder
 2. Load shelf_SX.mel, start SX Tools by pressing shelf icon
 3. Click on empty space
-4. Shift-click on **Apply Project Defaults** to start with basic configuration
-5. Import or load a mesh object
-6. Click on object, press **Add Missing Color Sets**
-7. Done, start painting vertex colors!
+4. Click on ***Set Preferences Location*** and choose a place for your preferences file
+5. Shift-click on **Apply Project Defaults** to start with basic configuration
+6. Import or load a mesh object
+7. Click on object, press **Add Missing Color Sets**
+8. Done, start painting vertex colors!
 
 ## Caveats
 Viewport shading only works on Windows. The tools may still be useful on other platforms.
@@ -44,6 +45,12 @@ Start SX Tools by clicking the shelf icon, dock the tool window according to you
 
 ## Project Setup
 In this screen, the number of albedo layers and material channels to be painted can be selected. Exporting to a game engine requires layer and material data to be processed into the extra UV channels of the object. The screen allows selecting which UV set and axis is used for each data channel.
+
+### Set Preferences Location
+Allows you to pick a file in which SX Tools saves its preferences. This is useful if you wish to share palettes between computers.
+
+### Load and Apply Preferences
+If you copy a prefs file from another computer, pick it with the Set Location function, and then apply the settings with this.
 
 ### Alpha-to-mask limit
 Controls the threshold between a Mask layer and an Adjustment layer. More on that later.
@@ -135,16 +142,21 @@ Allows for a custom ramp texture to be applied to the object or objects. Differe
 At value 1 creates noise between 0 and 1, so typically values below 0.1 will yield subtle results.
 
 ### Bake Occlusion
-This section shows up only if Mental Ray for Maya is installed.
-It can be downloaded from:
+This section shows up only if Mental Ray for Maya or Arnold is installed.
+Mental Ray for Maya can be downloaded from:
 http://www.nvidia.com/object/download-mental-ray.html
 
-By default, each selected object is rendered separately, with an optional groundplane occluder.
-Shift-clicking the bake button will allow objects to occlude each other.
+Mental Ray provides a straight-to-vertex occlusion baking, while the Arnold implementation bakes occlusion to a texture and reads that back to vertex colors. Using Mental Ray is recommended.
 
-![Master Palette Example](/images/sxtools_palettevariations.jpg)
+With Mental Ray, SX Tools bakes both the self-occlusion-only and everything-occludes-everything passes, and presents a slider for blending between the two.
+
+![Occlusion Blending Example](/images/AOblend.gif)
+
+By default, each selected object is rendered separately, with an optional groundplane occluder.
+With Arnold, Shift-clicking the bake button will allow objects to occlude each other.
 
 ### Apply Master Palette
+![Master Palette Example](/images/sxtools_palettevariations.jpg)
 Sets the first five layers of the object to the selected palette.
 For palettes, check out:
 https://color.adobe.com/explore/
@@ -166,11 +178,12 @@ Export objects are by default marked with the suffix
 If layer1 opacity is below 1, the object is instead marked with the suffix
 `_transparency`
 
-Export objects can be written out to a selected folder in fbx format.
+Export objects can be written out to a selected folder in fbx format. Optionally the suffix can be disabled.
 
 ## SX Tools Components
 
 The following nodes and attributes are created by the project setup phase:
+* preferences file in a user-selected location
 * sxCreaseSet0-4
 * sxVertexBakeSet (when occlusion is baked)
 * Maya OptionVars starting with ‘SXTools’
@@ -182,7 +195,7 @@ To remove all optionVars created by SX Tools:
 `sxtools.resetSXTools()` in Maya's scripting window
 
 
-(c) 2017 Jani Kahrama / Secret Exit Ltd
+(c) 2017-2018 Jani Kahrama / Secret Exit Ltd
 
 
 # Acknowledgments
