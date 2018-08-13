@@ -89,7 +89,7 @@ frameStates = { 'setupFrameCollapse': False, 'toolFrameCollapse': False,
 toolStates = { 'noiseMonochrome': False, 'noiseValue': 0.500,
                'bakeGroundPlane': True, 'bakeGroundScale': 100.0,
                'bakeGroundOffset': 1.0, 'bakeTogether': False,
-               'blendSlider': 0.0 }               
+               'blendSlider': 0.0, 'exportSuffix': False }               
 refArray = [u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
             u'layer6', u'layer7', u'layer8', u'layer9', u'layer10',
             u'occlusion', u'specular', u'transmission', u'emission']
@@ -1653,7 +1653,13 @@ def exportObjects(exportPath):
     exportArray = maya.cmds.listRelatives('_staticExports', children=True, fullPath=True )
     for export in exportArray:
         maya.cmds.select(export)
-        exportName = str(export).split('|')[-1]+'.fbx'
+        if toolStates['exportSuffix'] is True:
+            exportName = str(export).split('|')[-1]+'.fbx'
+        else:
+            if str(export).endswith('_paletted'):
+                exportName = str(str(export)[:-9]).split('|')[-1]+'.fbx'
+            else:
+                exportName = str(export).split('|')[-1]+'.fbx'
         exportString = exportPath + exportName
         print(exportString+'\n')
         maya.cmds.file(exportString, force=True, options='v=0', typ='FBX export', pr=True, es=True)
@@ -2610,6 +2616,9 @@ def verifyLayerState(layer):
 # Maps the selected list item in the layerlist UI to the parameters of the pre-vis material
 # and object colorsets
 def getSelectedLayer():
+    if len(objectArray) == 0:
+        return (projectSettings['SXToolsRefNames'][1])
+
     selectedIndex = maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)
     if selectedIndex is None:
         maya.cmds.textScrollList('layerList', edit=True, selectIndexedItem=1)
@@ -2901,24 +2910,26 @@ def setLayerOpacity():
 
 
 def getLayerMask():
-    vertFaceList = maya.cmds.ls(maya.cmds.polyListComponentConversion(shapeArray[len(shapeArray)-1], tvf=True), fl=True)
     maskList = []
-    
-    modifiers = maya.cmds.getModifiers()
-    shift = bool((modifiers & 1) > 0)
 
-    if shift == True:
-        for vertFace in vertFaceList:
-            if maya.cmds.polyColorPerVertex(vertFace, query=True, a=True)[0] == 0:
-                maskList.append(vertFace)
-    elif shift == False:
-        for vertFace in vertFaceList:
-            if maya.cmds.polyColorPerVertex(vertFace, query=True, a=True)[0] > 0:
-                maskList.append(vertFace)
-                
-    if len(maskList) == 0:
-        print('SX Tools: No layer mask found')
-        return selectionArray
+    for shape in shapeArray:
+        vertFaceList = maya.cmds.ls(maya.cmds.polyListComponentConversion(shape, tvf=True), fl=True)
+        
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+
+        if shift == True:
+            for vertFace in vertFaceList:
+                if maya.cmds.polyColorPerVertex(vertFace, query=True, a=True)[0] == 0:
+                    maskList.append(vertFace)
+        elif shift == False:
+            for vertFace in vertFaceList:
+                if maya.cmds.polyColorPerVertex(vertFace, query=True, a=True)[0] > 0:
+                    maskList.append(vertFace)
+                    
+        if len(maskList) == 0:
+            print('SX Tools: No layer mask found')
+            return selectionArray
         
     return maskList
 
@@ -3323,6 +3334,13 @@ def exportObjectsUI():
         maya.cmds.text( label=exportPathText )
         maya.cmds.button( label='Export Objects in _staticExports', width=120,
                           command=("sxtools.exportObjects(sxtools.projectSettings['SXToolsExportPath'])") )
+        maya.cmds.rowColumnLayout( 'exportSuffixRowColumns', parent='exportedColumn',
+             numberOfColumns=2,
+             columnWidth=((1, 120), (2, 120)),
+             columnAttach=[(1, 'left', 0 ), (2, 'both', 5)],
+             rowSpacing=(1, 5))
+        maya.cmds.text( label='Add _paletted suffix')
+        maya.cmds.checkBox( 'suffixCheck', label='', value=toolStates['exportSuffix'], changeCommand=("sxtools.toolStates['exportSuffix'] = maya.cmds.checkBox('suffixCheck', query=True, value=True)") )
     else:
         maya.cmds.text( label='No export folder selected!' )
     
