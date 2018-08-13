@@ -1183,9 +1183,8 @@ def createSXPBShader():
     channels = ('occlusion', 'specular', 'transmission', 'emission')
     matChannels = projectSettings['SXToolsMatChannels']
     uvChannels = projectSettings['SXToolsExportChannels']
-    #uvChannels.pop(0)
-    matDict = {'occlusion': uvChannels[0], 'specular': uvChannels[1],
-               'transmission': uvChannels[2], 'emission': uvChannels[3]}
+    matDict = {'occlusion': uvChannels[1], 'specular': uvChannels[2],
+               'transmission': uvChannels[3], 'emission': uvChannels[4]}
     maskID = uvChannels[0]
     maskAxis = str(maskID[0])
     maskIndex = int(maskID[1])
