@@ -2177,7 +2177,10 @@ def remapRamp(object):
     fvCol = OM.MColor()
     faceIds = OM.MIntArray()
     vtxIds = OM.MIntArray()
-        
+    
+    mod = OM.MDGModifier()
+    colorRep = MFnMesh.kRGBA
+    
     lenSel = len(layerColors)
 
     faceIds.setLength(lenSel)
@@ -2192,15 +2195,17 @@ def remapRamp(object):
         
         fvCol = layerColors[k]
         luminance = (fvCol.r + fvCol.r + fvCol.b + fvCol.g + fvCol.g + fvCol.g)/6
-        outColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=(0), v=luminance )
+        outColor = maya.cmds.colorAtPoint( 'SXRamp', o='RGB', u=luminance, v=luminance )
+        outAlpha = maya.cmds.colorAtPoint( 'SXAlphaRamp', o='A', u=luminance, v=luminance )
         layerColors[k].r = outColor[0]
         layerColors[k].g = outColor[1]
         layerColors[k].b = outColor[2]
+        layerColors[k].a = outAlpha[0]
                 
         k += 1
         fvIt.next()
 
-    MFnMesh.setFaceVertexColors(layerColors, faceIds, vtxIds)  
+    MFnMesh.setFaceVertexColors(layerColors, faceIds, vtxIds, mod, colorRep)  
 
 
 def swapLayers(object):
