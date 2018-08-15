@@ -1224,7 +1224,7 @@ def createSXPBShader():
         if matChannels[k] == True:
             if int(matDict[channel][1]) == 1:
                 uv_node = pbmat.add(pbsnodes.Texcoord1)
-            elif int(matDict[channel][1]) == 2:
+            elif int(matDict[channel][1]) == 2: 
                 uv_node = pbmat.add(pbsnodes.Texcoord2)
             elif int(matDict[channel][1]) == 3:
                 uv_node = pbmat.add(pbsnodes.Texcoord3)
@@ -3065,6 +3065,8 @@ def getPalette(paletteUI, targetDict, preset):
 
 def deletePalette(targetDict, preset):
     del targetDict[preset]
+    if toolStates['palettePreset'] == preset:
+        toolStates['palettePreset'] = None
 
 
 def saveMasterPalette():    
@@ -3072,15 +3074,26 @@ def saveMasterPalette():
     shift = bool((modifiers & 1) > 0)
 
     if shift == True:
-        preset = maya.cmds.optionMenu( 'masterPalettes', query=True, value=True )    
-        deletePalette(masterPaletteDict, preset)
-        
-    elif shift == False:
-        currentCell = maya.cmds.palettePort( 'masterPalette', query=True, scc=True )
-        preset = maya.cmds.textField( 'savePaletteName', query=True, text=True )
-        if len(preset) > 0:
-            storePalette('masterPalette', masterPaletteDict, preset)
+        preset = maya.cmds.optionMenu( 'masterPalettes', query=True, value=True )
+        if preset is not None:
+            deletePalette(masterPaletteDict, preset)
+            maya.cmds.deleteUI(preset)
+            savePreferences()
+            getMasterPaletteItem()
+        else:
+            print 'SX Tools Error: No preset to delete!'
 
+    elif shift == False:
+        itemList = maya.cmds.optionMenu( 'masterPalettes', query=True, ils=True )
+        preset = maya.cmds.textField( 'savePaletteName', query=True, text=True )
+        if (len(preset) > 0) and ((itemList is None) or (preset not in itemList)):
+            toolStates['palettePreset'] = preset
+            storePalette('masterPalette', masterPaletteDict, preset)
+            maya.cmds.menuItem(preset, label=preset, parent='masterPalettes' )
+            itemList = maya.cmds.optionMenu( 'masterPalettes', query=True, ils=True )
+            idx =  itemList.index(preset) + 1
+            maya.cmds.optionMenu( 'masterPalettes', edit=True, select=idx )
+            savePreferences()
         else:
             print 'SX Tools Error: Invalid preset name!'
 
@@ -3089,9 +3102,10 @@ def getMasterPaletteItem():
     if len(masterPaletteDict) > 0:
         preset = maya.cmds.optionMenu( 'masterPalettes', query=True, value=True )
         getPalette('masterPalette', masterPaletteDict, preset)
-    storePalette('masterPalette', masterPaletteDict, preset)
+        toolStates['palettePreset'] = preset
+        storePalette('masterPalette', paletteDict, 'SXToolsMasterPalette')
 
-    
+
 def refreshSelectedItem():
     selectedColorSet = str(maya.cmds.polyColorSet(shapeArray[len(shapeArray)-1], query=True, currentColorSet=True)[0])
     maya.cmds.textScrollList( 'layerList', edit=True, selectIndexedItem=projectSettings['SXToolsRefIndices'][selectedColorSet] )
@@ -3140,7 +3154,12 @@ def refreshMasterPaletteMenu():
     paletteNameArray = masterPaletteDict.keys()
     if paletteNameArray != 0:
         for paletteName in paletteNameArray:
-            maya.cmds.menuItem( label=paletteName, parent='masterPalettes' )
+            maya.cmds.menuItem(paletteName, label=paletteName, parent='masterPalettes' )
+
+        if ('palettePreset' in toolStates) and (toolStates['palettePreset'] is not None):        
+            itemList = maya.cmds.optionMenu( 'masterPalettes', query=True, ils=True )
+            idx =  itemList.index(toolStates['palettePreset']) + 1
+            maya.cmds.optionMenu( 'masterPalettes', edit=True, select=idx )
 
 
 def refreshRampMenu():
@@ -3695,19 +3714,24 @@ def masterPaletteToolUI():
                          rowSpacing=(1, 5))
     maya.cmds.button( 'saveMasterPalette', label='Save Preset', width=100,
                 ann='Shift-click to delete preset',
-                command='sxtools.saveMasterPalette()\nsxtools.updateSXTools()\nsxtools.savePreferences()' )
+                command='sxtools.saveMasterPalette()' )
     maya.cmds.textField('savePaletteName', enterCommand=("maya.cmds.setFocus('MayaWindow')"),
                    placeholderText='Preset Name')
     maya.cmds.text( 'masterPaletteLabel', label='Palette Colors:' )
     maya.cmds.palettePort( 'masterPalette', dimensions=(5, 1), width=120,
                      height=10, actualTotal=5,
                      editable=True, colorEditable=True,
-                     colorEdited="sxtools.storePalette('masterPalette', sxtools.masterPaletteDict, 'SXToolsMasterPalette')" )
+                     changeCommand="sxtools.storePalette('masterPalette', sxtools.paletteDict, 'SXToolsMasterPalette')\nsxtools.toolStates['palettePreset']=None",
+                     colorEdited="sxtools.storePalette('masterPalette', sxtools.paletteDict, 'SXToolsMasterPalette')" )
     maya.cmds.button(label='Apply Master Palette', parent='masterPaletteColumn',
                 height=30, width=100,
                 command=('sxtools.applyMasterPalette(sxtools.objectArray)'))
     maya.cmds.setParent( 'toolFrame' )
-    getPalette('masterPalette', masterPaletteDict, 'SXToolsMasterPalette')
+    
+    if ('palettePreset' in toolStates) and (toolStates['palettePreset'] is None):
+        getPalette('masterPalette', paletteDict, 'SXToolsMasterPalette')
+    else:
+        getMasterPaletteItem()
 
 
 def swapLayerToolUI():
