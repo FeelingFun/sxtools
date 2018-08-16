@@ -2565,6 +2565,11 @@ def refreshLayerList():
                                                 "maya.cmds.shaderfx(sfxnode='SXShader', update=True)") )
 
 
+def refreshSelectedItem():
+    selectedColorSet = str(maya.cmds.polyColorSet(shapeArray[len(shapeArray)-1], query=True, currentColorSet=True)[0])
+    maya.cmds.textScrollList( 'layerList', edit=True, selectIndexedItem=projectSettings['SXToolsRefIndices'][selectedColorSet] )
+
+
 def sortLayers(layers):
     global refArray
     sortedLayers = []
@@ -2939,6 +2944,18 @@ def getLayerMask():
 
 
 def getLayerPaletteOpacity(object,layer):
+    if 'layer' not in layer:
+        if maya.cmds.text('layerOpacityLabel', exists=True):
+            maya.cmds.text('layerOpacityLabel', edit=True, enable=False)
+        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=False)
+        return
+    else:
+        if maya.cmds.text('layerOpacityLabel', exists=True):
+            maya.cmds.text('layerOpacityLabel', edit=True, enable=True)
+        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=True)        
+        
     global layerAlphaMax
 
     selectionList = OM.MSelectionList()
@@ -3109,11 +3126,6 @@ def getMasterPaletteItem():
         getPalette('masterPalette', masterPaletteDict, preset)
         toolStates['palettePreset'] = preset
         storePalette('masterPalette', paletteDict, 'SXToolsMasterPalette')
-
-
-def refreshSelectedItem():
-    selectedColorSet = str(maya.cmds.polyColorSet(shapeArray[len(shapeArray)-1], query=True, currentColorSet=True)[0])
-    maya.cmds.textScrollList( 'layerList', edit=True, selectIndexedItem=projectSettings['SXToolsRefIndices'][selectedColorSet] )
 
 
 def gradientToolManager(mode, group=1):
