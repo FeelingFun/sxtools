@@ -146,7 +146,9 @@ At value 1 creates noise between 0 and 1, so typically values below 0.1 will yie
 ### Bake Occlusion
 This section shows up only if Mental Ray for Maya or Arnold is installed.
 Mental Ray for Maya can be downloaded from:
-http://www.nvidia.com/object/download-mental-ray.html
+https://forum.nvidia-arc.com/showthread.php?16656-Mental-Ray-for-Maya-2018-Version-1-2-1-Update
+Please note that Mental Ray has been discontinued by NVIDIA, but the plugin is still offered for free, without support.
+https://forum.nvidia-arc.com/showthread.php?16431-Withdrawal-of-NVIDIA-Mental-Ray-and-Mental-Ray-plugins-effective-November-20-2017&p=67166#post67166
 
 Mental Ray provides a straight-to-vertex occlusion baking, while the Arnold implementation bakes occlusion to a texture and reads that back to vertex colors. Using Mental Ray is recommended.
 
