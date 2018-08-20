@@ -309,12 +309,10 @@ def setPreferencesFile():
     modifiers = maya.cmds.getModifiers()
     shift = bool((modifiers & 1) > 0)
     if shift == False:
-        filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Preferences File', dialogStyle=2, fm=0)    
+        filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Settings File', dialogStyle=2, fm=0)    
         maya.cmds.optionVar(stringValue=('SXToolsPrefsFile', filePath[0]))
-        print('SX Tools: Preferences file set to ' + filePath[0])
     else:
         loadPreferences()
-    updateSXTools()
 
 
 def savePreferences():
@@ -343,7 +341,6 @@ def loadPreferences():
         print('SX Tools: Preferences loaded from ' + filePath)        
         setPreferences()
         frameStates['setupFrameCollapse']=True
-        updateSXTools()
     else:
         print('SX Tools: No preferences found')
 
@@ -3246,15 +3243,16 @@ def setupProjectUI():
     maya.cmds.columnLayout( 'prefsColumn', parent='setupFrame',
                       rowSpacing=5, adjustableColumn=True )
 
-    maya.cmds.button(label='Set Preferences File', parent='prefsColumn',
-                     statusBarMessage='Shift-click button to reload preferences from file',
-                     command='sxtools.setPreferencesFile()')
+    maya.cmds.button(label='Select Settings File', parent='prefsColumn',
+                     statusBarMessage='Shift-click button to reload settings from file',
+                     command='sxtools.setPreferencesFile()\n'
+                             'sxtools.updateSXTools()')
 
     if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
-        maya.cmds.text(label='Current preferences location:')
+        maya.cmds.text(label='Current settings location:')
         maya.cmds.text(label=maya.cmds.optionVar(query='SXToolsPrefsFile'))
     else:
-        maya.cmds.text( label='WARNING: Preferences location not set!',
+        maya.cmds.text( label='WARNING: Settings file location not set!',
                   backgroundColor=(0.35, 0.1, 0), ww=True )
         
     maya.cmds.text(label=' ')
@@ -3328,13 +3326,15 @@ def setupProjectUI():
     maya.cmds.columnLayout( 'refLayerColumn', parent='setupFrame',
                       rowSpacing=5, adjustableColumn=True )
     maya.cmds.text(label=' ', parent='refLayerColumn')
-    maya.cmds.text(label='(Shift-click below to reset defaults)', parent='refLayerColumn')
-    maya.cmds.button( label='Apply Project Defaults', parent='refLayerColumn',
-                statusBarMessage='Shift-click button to use the built-in template reference layer set',
-                command=("sxtools.updatePreferences()\n"
-                         "sxtools.setPreferences()\n"
-                         "sxtools.frameStates['setupFrameCollapse']=True\n"
-                         "sxtools.updateSXTools()") )
+    
+    if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
+        maya.cmds.text(label='(Shift-click below to apply built-in defaults)', parent='refLayerColumn')
+        maya.cmds.button( label='Apply Project Settings', parent='refLayerColumn',
+                    statusBarMessage='Shift-click button to use the built-in default settings',
+                    command=("sxtools.updatePreferences()\n"
+                             "sxtools.setPreferences()\n"
+                             "sxtools.frameStates['setupFrameCollapse']=True\n"
+                             "sxtools.updateSXTools()") )
     
     refreshSetupProjectView()
 
@@ -3854,6 +3854,8 @@ def startSXTools():
     else:
         displayScalingValue = 1.0
 
+    loadPreferences()  
+
     maya.cmds.workspaceControl( dockID, label='SX Tools', uiScript='sxtools.updateSXTools()',
                           retain=False, floating=True,
                           initialHeight=5, initialWidth=250*displayScalingValue,
@@ -3879,8 +3881,6 @@ def startSXTools():
     maya.mel.eval('DisplayShadedAndTextured;')
     maya.mel.eval('DisplayLight;')
     maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
-    
-    loadPreferences()
 
 
 # Avoids UI refresh from being included in the undo list
@@ -3946,8 +3946,8 @@ def refreshSXTools():
                       horizontalScrollBarThickness=16, verticalScrollBarThickness=16,
                       verticalScrollBarAlwaysVisible=False )
 
-    # If nothing selected, construct setup view
-    if len(shapeArray) == 0:
+    # If nothing selected, or defaults not set, construct setup view
+    if (len(shapeArray) == 0) or (maya.cmds.optionVar(exists='SXToolsPrefsFile') == False) or (len(projectSettings) == 0):
         setupProjectUI()
 
     # If exported objects selected, construct message
