@@ -2483,6 +2483,7 @@ def resetLayers(objects):
             clearSelectedLayer([object,], layer)
             maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=str(layer))
 
+        maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
         maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
 
 
