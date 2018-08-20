@@ -2943,19 +2943,7 @@ def getLayerMask():
     return maskList
 
 
-def getLayerPaletteOpacity(object,layer):
-    if 'layer' not in layer:
-        if maya.cmds.text('layerOpacityLabel', exists=True):
-            maya.cmds.text('layerOpacityLabel', edit=True, enable=False)
-        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
-            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=False)
-        return
-    else:
-        if maya.cmds.text('layerOpacityLabel', exists=True):
-            maya.cmds.text('layerOpacityLabel', edit=True, enable=True)
-        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
-            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=True)        
-        
+def getLayerPaletteOpacity(object,layer):            
     global layerAlphaMax
 
     selectionList = OM.MSelectionList()
@@ -3002,7 +2990,19 @@ def getLayerPaletteOpacity(object,layer):
                               layerPaletteArray[k].g,
                               layerPaletteArray[k].b) )
         maya.cmds.palettePort( 'layerPalette', edit=True, redraw=True )
-        
+
+    if 'layer' not in layer:
+        if maya.cmds.text('layerOpacityLabel', exists=True):
+            maya.cmds.text('layerOpacityLabel', edit=True, enable=False)
+        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=False)
+        return
+    else:
+        if maya.cmds.text('layerOpacityLabel', exists=True):
+            maya.cmds.text('layerOpacityLabel', edit=True, enable=True)
+        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+            maya.cmds.floatSlider('layerOpacitySlider', edit=True, enable=True)    
+
                 
 def setPaintColor():
     global currentColor
