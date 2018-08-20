@@ -306,9 +306,15 @@ def updatePreferences():
 
 
 def setPreferencesFile():
-    filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Preferences File', dialogStyle=2, fm=0)    
-    maya.cmds.optionVar(stringValue=('SXToolsPrefsFile', filePath[0]))
-    print('SX Tools: Preferences file set to ' + filePath[0])
+    modifiers = maya.cmds.getModifiers()
+    shift = bool((modifiers & 1) > 0)
+    if shift == False:
+        filePath = maya.cmds.fileDialog2(fileFilter='*.txt', cap='Select SX Tools Preferences File', dialogStyle=2, fm=0)    
+        maya.cmds.optionVar(stringValue=('SXToolsPrefsFile', filePath[0]))
+        print('SX Tools: Preferences file set to ' + filePath[0])
+    else:
+        loadPreferences()
+    updateSXTools()
 
 
 def savePreferences():
@@ -3240,11 +3246,18 @@ def setupProjectUI():
     maya.cmds.columnLayout( 'prefsColumn', parent='setupFrame',
                       rowSpacing=5, adjustableColumn=True )
 
-    maya.cmds.button(label='Set Preferences Location', parent='prefsColumn',
+    maya.cmds.button(label='Set Preferences File', parent='prefsColumn',
+                     statusBarMessage='Shift-click button to reload preferences from file',
                      command='sxtools.setPreferencesFile()')
-            
-    maya.cmds.button(label='Load and Apply Preferences', parent='prefsColumn',
-                     command=("sxtools.loadPreferences()") )
+
+    if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
+        maya.cmds.text(label='Current preferences location:')
+        maya.cmds.text(label=maya.cmds.optionVar(query='SXToolsPrefsFile'))
+    else:
+        maya.cmds.text( label='WARNING: Preferences location not set!',
+                  backgroundColor=(0.35, 0.1, 0), ww=True )
+        
+    maya.cmds.text(label=' ')
 
     maya.cmds.rowColumnLayout( 'refLayerRowColumns', parent='setupFrame',
                  numberOfColumns=3,
@@ -3446,7 +3459,7 @@ def layerViewUI():
                          onCommand1=("sxtools.setShadingMode(0)\n"
                                      "maya.cmds.polyOptions(activeObjects=True, colorMaterialChannel='ambientDiffuse', colorShadedDisplay=True)\n"
                                      "maya.mel.eval('DisplayLight;')"),
-                         onCommand2=("sxtools.setShadingMode(0)\n\n"
+                         onCommand2=("sxtools.setShadingMode(1)\n"
                                      "maya.cmds.polyOptions(activeObjects=True, colorMaterialChannel='none', colorShadedDisplay=True)\n"
                                      "maya.mel.eval('DisplayShadedAndTextured;')"),
                          onCommand3=("sxtools.setShadingMode(2)\n"
