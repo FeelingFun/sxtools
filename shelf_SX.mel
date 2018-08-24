@@ -31,7 +31,7 @@ global proc shelf_SX () {
         -style "iconOnly" 
         -marginWidth 1
         -marginHeight 1
-        -command "import sxtools\nsxtools.startSXTools()\n" 
+        -command "import sxtools\nsxtools.start()\n" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
