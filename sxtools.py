@@ -1,4 +1,4 @@
-# --------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 #   SX Tools - Maya vertex painting toolkit
 #   (c) 2017-2018  Jani Kahrama / Secret Exit Ltd
 #   Released under MIT license
@@ -51,7 +51,7 @@
 #   processObjects()      - the main export function, goes through
 #                           the steps of calling the other functions
 #
-# --------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 import maya.api.OpenMaya as OM
 import maya.cmds
@@ -671,32 +671,32 @@ class SceneSetup(object):
             settings.material.connect(vertcol_node.outputs.rgb, (rgbPathID, 0))
             settings.material.connect(vertcol_node.outputs.alpha, (alphaPathID, 0))
             settings.material.connect(bool_node.outputs.value,
-                                                                                                                    visModePath_node.inputs.options)
+                                    visModePath_node.inputs.options)
             settings.material.connect(blendMode_node.outputs.value,
-                                                                                                                    blendModePath_node.inputs.options)
+                                    blendModePath_node.inputs.options)
 
         settings.material.connect(mode_node.outputs.value, finalTest_node.inputs.a)
         settings.material.connect(mode_node.outputs.value, debugTest_node.inputs.a)
         settings.material.connect(mode_node.outputs.value, grayTest_node.inputs.a)
 
         settings.material.connect(transparency_node.outputs.value,
-                                                                                                                transparencyCast_node.inputs.value)
+                                    transparencyCast_node.inputs.value)
         settings.material.connect(transparencyCast_node.outputs.result,
-                                                                                                                transComp_node.inputs.condition)
+                                    transComp_node.inputs.condition)
 
         settings.material.connect(alphaValue_node.outputs.float,
-                                                                                                                finalTest_node.inputs.b)
+                                    finalTest_node.inputs.b)
         settings.material.connect(addValue_node.outputs.float,
-                                                                                                                debugTest_node.inputs.b)
+                                    debugTest_node.inputs.b)
         settings.material.connect(mulValue_node.outputs.float,
-                                                                                                                grayTest_node.inputs.b)
+                                    grayTest_node.inputs.b)
 
         settings.material.connect(alphaPath_node.outputs.result,
-                                                                                                                vectconst_node.inputs.x)
+                                    vectconst_node.inputs.x)
         settings.material.connect(alphaPath_node.outputs.result,
-                                                                                                                vectconst_node.inputs.y)
+                                    vectconst_node.inputs.y)
         settings.material.connect(alphaPath_node.outputs.result,
-                                                                                                                vectconst_node.inputs.z)
+                                    vectconst_node.inputs.z)
 
         settings.material.connect(rgbPath_node.outputs.result, (premulID, 0))
         settings.material.connect((vectconstID, 1), (premulID, 1))
@@ -707,18 +707,18 @@ class SceneSetup(object):
         settings.material.connect(invOne_node.outputs.result, wlerp_node.inputs.mix)
 
         settings.material.connect(vectconst_node.outputs.float3,
-                                                                                                                ifMask_node.inputs.true)
+                                    ifMask_node.inputs.true)
         settings.material.connect(rgbPath_node.outputs.result,
-                                                                                                                ifMask_node.inputs.false)
+                                    ifMask_node.inputs.false)
         settings.material.connect(grayTest_node.outputs.result,
-                                                                                                                ifMask_node.inputs.condition)
+                                    ifMask_node.inputs.condition)
         settings.material.connect((ifMaskID, 0), (lerpID, 1))
 
         settings.material.connect(premul_node.outputs.result, (addID, 1))
         settings.material.connect(wlerp_node.outputs.result, (mulID, 1))
 
         settings.material.connect(alphaPath_node.outputs.result,
-                                                                                                                lerp_node.inputs.mix)
+                                    lerp_node.inputs.mix)
 
         settings.material.connect(output_node.outputs.float3, (lerpID, 0))
         settings.material.connect(output_node.outputs.float3, (addID, 0))
@@ -727,33 +727,33 @@ class SceneSetup(object):
         settings.material.connect(count_node.outputs.int, repeat_node.inputs.count)
         settings.material.connect(index_node.outputs.int, repeat_node.inputs.index)
         settings.material.connect(output_node.outputs.float3,
-                                                                                                                repeat_node.inputs.output)
+                                    repeat_node.inputs.output)
 
         settings.material.connect(alphaPath_node.outputs.result, (alphaAddID, 0))
         settings.material.connect(count_node.outputs.int,
-                                                                                                                repeatAlpha_node.inputs.count)
+                                    repeatAlpha_node.inputs.count)
         settings.material.connect(index_node.outputs.int,
-                                                                                                                repeatAlpha_node.inputs.index)
+                                    repeatAlpha_node.inputs.index)
         settings.material.connect(alphaVar_node.outputs.float,
-                                                                                                                repeatAlpha_node.inputs.output)
+                                    repeatAlpha_node.inputs.output)
         settings.material.connect(alphaVar_node.outputs.float, (alphaAddID, 1))
 
         settings.material.connect(alphaAdd_node.outputs.result,
-                                                                                                                repeatAlpha_node.inputs.calculation)
+                                    repeatAlpha_node.inputs.calculation)
 
         settings.material.connect(index_node.outputs.int, rgbPath_node.inputs.index)
         settings.material.connect(index_node.outputs.int,
-                                                                                                                alphaPath_node.inputs.index)
+                                    alphaPath_node.inputs.index)
         settings.material.connect(index_node.outputs.int,
-                                                                                                                visModePath_node.inputs.index)
+                                    visModePath_node.inputs.index)
         settings.material.connect(index_node.outputs.int,
-                                                                                                                blendModePath_node.inputs.index)
+                                    blendModePath_node.inputs.index)
 
         settings.material.connect(blendModePath_node.outputs.result,
-                                                                                                                grayIf_node.inputs.false)
+                                    grayIf_node.inputs.false)
 
         settings.material.connect(alphaValue_node.outputs.float,
-                                                                                                                alphaTest_node.inputs.b)
+                                    alphaTest_node.inputs.b)
         settings.material.connect(addValue_node.outputs.float, addTest_node.inputs.b)
         settings.material.connect(mulValue_node.outputs.float, mulTest_node.inputs.b)
 
@@ -766,42 +766,42 @@ class SceneSetup(object):
         settings.material.connect(mul_node.outputs.result, mulIf_node.inputs.true)
 
         settings.material.connect(grayIf_node.outputs.result,
-                                                                                                                alphaTest_node.inputs.a)
+                                    alphaTest_node.inputs.a)
         settings.material.connect(grayIf_node.outputs.result, addTest_node.inputs.a)
         settings.material.connect(grayIf_node.outputs.result, mulTest_node.inputs.a)
 
         settings.material.connect(alphaTest_node.outputs.result,
-                                                                                                                alphaIf_node.inputs.condition)
+                                    alphaIf_node.inputs.condition)
         settings.material.connect(addTest_node.outputs.result,
-                                                                                                                addIf_node.inputs.condition)
+                                    addIf_node.inputs.condition)
         settings.material.connect(mulTest_node.outputs.result,
-                                                                                                                mulIf_node.inputs.condition)
+                                    mulIf_node.inputs.condition)
 
         settings.material.connect(finalTest_node.outputs.result,
-                                                                                                                finalIf_node.inputs.condition)
+                                    finalIf_node.inputs.condition)
         settings.material.connect(debugTest_node.outputs.result,
-                                                                                                                debugIf_node.inputs.condition)
+                                    debugIf_node.inputs.condition)
         settings.material.connect(grayTest_node.outputs.result,
-                                                                                                                grayIf_node.inputs.condition)
+                                    grayIf_node.inputs.condition)
 
         settings.material.connect(alphaValue_node.outputs.float,
-                                                                                                                grayIf_node.inputs.true)
+                                    grayIf_node.inputs.true)
 
         settings.material.connect(alphaIf_node.outputs.result, (layerCompID, 0))
         settings.material.connect(addIf_node.outputs.result, (layerCompID, 1))
         settings.material.connect(mulIf_node.outputs.result, (layerCompID, 1))
 
         settings.material.connect(layerComp_node.outputs.result,
-                                                                                                                visPath_node.inputs.true)
+                                    visPath_node.inputs.true)
         settings.material.connect(output_node.outputs.float3,
-                                                                                                                visPath_node.inputs.false)
+                                    visPath_node.inputs.false)
         settings.material.connect(visModePath_node.outputs.result,
-                                                                                                                visTest_node.inputs.value)
+                                    visTest_node.inputs.value)
         settings.material.connect(visTest_node.outputs.result,
-                                                                                                                visPath_node.inputs.condition)
+                                    visPath_node.inputs.condition)
 
         settings.material.connect(visPath_node.outputs.result,
-                                                                                                                repeat_node.inputs.calculation)
+                                    repeat_node.inputs.calculation)
 
         #
         # Create material channels
@@ -929,11 +929,11 @@ class SceneSetup(object):
                 settings.material.connect((emiss_nodeID, 0), (shaderID, 1))
 
             settings.material.connect(chanbool_node.outputs.value,
-                                                                                                                    chanCast_node.inputs.value)
+                                        chanCast_node.inputs.value)
             settings.material.connect(chanCast_node.outputs.result,
-                                                                                                                    if3_node.inputs.condition)
+                                        if3_node.inputs.condition)
             settings.material.connect(grayTest_node.outputs.result,
-                                                                                                                    if4_node.inputs.condition)
+                                        if4_node.inputs.condition)
             settings.material.connect(if3_node.outputs.result, if4_node.inputs.false)
 
         #
@@ -941,13 +941,13 @@ class SceneSetup(object):
         #
 
         settings.material.connect(grayTest_node.outputs.result,
-                                                                                                                diffComp_node.inputs.condition)
+                                    diffComp_node.inputs.condition)
         settings.material.connect(repeat_node.outputs.output,
-                                                                                                                diffComp_node.inputs.false)
+                                    diffComp_node.inputs.false)
         settings.material.connect(repeatAlpha_node.outputs.output,
-                                                                                                                transComp_node.inputs.true)
+                                    transComp_node.inputs.true)
         settings.material.connect(addValue_node.outputs.float,
-                                                                                                                transComp_node.inputs.false)
+                                    transComp_node.inputs.false)
         settings.material.connect(bcol_node.outputs.rgb, diffComp_node.inputs.true)
 
         # Connect diffuse
@@ -966,10 +966,8 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo1')
         maya.cmds.connectAttr('SXShader.oc', 'SXShaderSG.ss')
         maya.cmds.connectAttr('SXShaderSG.msg', 'SXMaterials_materialInfo1.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
+        maya.cmds.relationship('link', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -1137,19 +1135,19 @@ class SceneSetup(object):
         # Create connections
         settings.material.connect(index_node.outputs.int, uvPath_node.inputs.index)
         settings.material.connect(uv0_node.outputs.string,
-                                                                                                                uvPath_node.inputs.options)
+                                    uvPath_node.inputs.options)
         settings.material.connect(uv1_node.outputs.string,
-                                                                                                                uvPath_node.inputs.options)
+                                    uvPath_node.inputs.options)
         settings.material.connect(uv2_node.outputs.string,
-                                                                                                                uvPath_node.inputs.options)
+                                    uvPath_node.inputs.options)
         settings.material.connect(uv3_node.outputs.string,
-                                                                                                                uvPath_node.inputs.options)
+                                    uvPath_node.inputs.options)
         settings.material.connect(uvPath_node.outputs.result, (uvID, 1))
 
         settings.material.connect(index_node.outputs.int, ifUv3_node.inputs.a)
         settings.material.connect(indexRef_node.outputs.int, ifUv3_node.inputs.b)
         settings.material.connect(indexBool_node.outputs.bool,
-                                                                                                                ifUv3_node.inputs.true)
+                                    ifUv3_node.inputs.true)
         settings.material.connect((indexBoolID, 1), ifUv3_node.inputs.false)
 
         settings.material.connect(ifUv3_node.outputs.result, (uPathID, 0))
@@ -1175,15 +1173,15 @@ class SceneSetup(object):
         settings.material.connect(vConst_node.outputs.float3, vPath_node.inputs.b)
 
         settings.material.connect(uvBool_node.outputs.bool,
-                                                                                                                uvIf_node.inputs.condition)
+                                    uvIf_node.inputs.condition)
         settings.material.connect(uPath_node.outputs.result, uvIf_node.inputs.true)
         settings.material.connect(vPath_node.outputs.result, uvIf_node.inputs.false)
 
         settings.material.connect(colorBool_node.outputs.bool,
-                                                                                                                alphaIf_node.inputs.condition)
+                                    alphaIf_node.inputs.condition)
         settings.material.connect(vertcol_node.outputs.rgb, alphaIf_node.inputs.true)
         settings.material.connect(uvIf_node.outputs.result,
-                                                                                                                alphaIf_node.inputs.false)
+                                    alphaIf_node.inputs.false)
 
         settings.material.connect(alphaIf_node.outputs.result, (shaderID, 1))
 
@@ -1203,11 +1201,8 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo2')
         maya.cmds.connectAttr('SXExportShader.oc', 'SXExportShaderSG.ss')
         maya.cmds.connectAttr('SXExportShaderSG.msg', 'SXMaterials_materialInfo2.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXExportShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1',
-                                                                                                    'SXExportShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
+        maya.cmds.relationship('link', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXExportShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -1376,10 +1371,8 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo3')
         maya.cmds.connectAttr('SXPBShader.oc', 'SXPBShaderSG.ss')
         maya.cmds.connectAttr('SXPBShaderSG.msg', 'SXMaterials_materialInfo3.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXPBShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXPBShaderSG.message',
-                                                                                                    ':defaultLightSet.message')
+        maya.cmds.relationship('link', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXPBShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -2004,22 +1997,20 @@ class ToolActions(object):
         return None
 
     def assignToCreaseSet(self, setName):
-        creaseSets = ('sxCrease0', 'sxCrease1', 'sxCrease2', 'sxCrease3',
-                                                                'sxCrease4')
-        for component in settings.componentArray:
-            if ((maya.cmds.filterExpand(component, sm=31) is not None) or
-                            (maya.cmds.filterExpand(component, sm=32) is not None)):
+        creaseSets = ('sxCrease0', 'sxCrease1', 'sxCrease2', 'sxCrease3', 'sxCrease4')
+        if ((maya.cmds.filterExpand(settings.componentArray, sm=31) is not None) or
+                        (maya.cmds.filterExpand(settings.componentArray, sm=32) is not None)):
 
-                for set in creaseSets:
-                    if maya.cmds.sets(component, isMember=set):
-                        maya.cmds.sets(component, remove=set)
-                maya.cmds.sets(component, forceElement=setName)
-            else:
-                edgeList = maya.cmds.polyListComponentConversion(component, te=True)
-                for set in creaseSets:
-                    if maya.cmds.sets(edgeList, isMember=set):
-                        maya.cmds.sets(edgeList, remove=set)
-                maya.cmds.sets(edgeList, forceElement=setName)
+            for set in creaseSets:
+                if maya.cmds.sets(settings.componentArray, isMember=set):
+                    maya.cmds.sets(settings.componentArray, remove=set)
+            maya.cmds.sets(settings.componentArray, forceElement=setName)
+        else:
+            edgeList = maya.cmds.polyListComponentConversion(settings.componentArray, te=True)
+            for set in creaseSets:
+                if maya.cmds.sets(edgeList, isMember=set):
+                    maya.cmds.sets(edgeList, remove=set)
+            maya.cmds.sets(edgeList, forceElement=setName)
 
     def bakeOcclusion(self):
         bbox = []
@@ -2422,19 +2413,20 @@ class ToolActions(object):
         layers.refreshSelectedItem()
 
     def applyMasterPalette(self, objects):
-        for object in objects:
-            for i in range(0, 5):
-                layers = maya.cmds.polyColorSet(query=True, allColorSets=True)
-                maya.cmds.palettePort('masterPalette', edit=True, scc=i)
-                settings.currentColor = maya.cmds.palettePort(
-                    'masterPalette', query=True, rgb=True)
-                maya.cmds.polyColorSet(currentColorSet=True, colorSet=str(layers[i]))
-                maya.cmds.polyColorPerVertex(
-                    r=settings.currentColor[0],
-                    g=settings.currentColor[1],
-                    b=settings.currentColor[2])
+        refLayers = layers.sortLayers(
+            settings.projectSettings['SXToolsRefLayers'].keys())
+        for i in xrange(5):
+            maya.cmds.palettePort('masterPalette', edit=True, scc=i)
+            settings.currentColor = maya.cmds.palettePort(
+                'masterPalette', query=True, rgb=True)
+            maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=str(refLayers[i]))
+            maya.cmds.polyColorPerVertex(objects,
+                r=settings.currentColor[0],
+                g=settings.currentColor[1],
+                b=settings.currentColor[2])
 
     def gradientFill(self, axis):
+        start = maya.cmds.timerX()
         if len(settings.componentArray) > 0:
             components = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(settings.componentArray, tvf=True),
@@ -2459,36 +2451,71 @@ class ToolActions(object):
         objectBoundsZmin = objectBounds[2][0]
         objectBoundsZmax = objectBounds[2][1]
 
-        for component in components:
-            compPos = maya.cmds.xform(
-                component, query=True, worldSpace=True, translation=True)
-            if axis == 1:
-                ratioRaw = (compPos[0] - objectBoundsXmin) / (
-                    objectBoundsXmax - objectBoundsXmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio), v=(ratio))
-                compAlpha = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
-                maya.cmds.polyColorPerVertex(
-                    component, r=compColor[0], g=compColor[1], b=compColor[2], a=compAlpha[0])
-            elif axis == 2:
-                ratioRaw = (compPos[1] - objectBoundsYmin) / (
-                    objectBoundsYmax - objectBoundsYmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio), v=(ratio))
-                compAlpha = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
-                maya.cmds.polyColorPerVertex(
-                    component, r=compColor[0], g=compColor[1], b=compColor[2], a=compAlpha[0])
-            elif axis == 3:
-                ratioRaw = (compPos[2] - objectBoundsZmin) / (
-                    objectBoundsZmax - objectBoundsZmin)
-                ratio = max(min(ratioRaw, 1), 0)
-                compColor = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio), v=(ratio))
-                compAlpha = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
-                maya.cmds.polyColorPerVertex(
-                    component, r=compColor[0], g=compColor[1], b=compColor[2], a=compAlpha[0])
+        if len(settings.componentArray) > 0:
+            compPos = [float] * len(components)
+            ratioRaw = [float] * len(components)
+            ratio = [float] * len(components)
+            compColor = [float] * len(components)
+            compAlpha = [float] * len(components)
+
+            for i in range(len(components)):
+                compPos[i] = maya.cmds.xform(components[i], query=True, worldSpace=True, translation=True)            
+                if axis == 1:
+                    ratioRaw[i] = (compPos[i][0]-objectBoundsXmin)/(objectBoundsXmax-objectBoundsXmin)
+                elif axis == 2:
+                    ratioRaw[i] = (compPos[i][1]-objectBoundsYmin)/(objectBoundsYmax-objectBoundsYmin)
+                elif axis == 3:
+                    ratioRaw[i] = (compPos[i][2]-objectBoundsZmin)/(objectBoundsZmax-objectBoundsZmin)                
+                ratio[i] = max(min(ratioRaw[i], 1), 0)
+                compColor[i] = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
+                compAlpha[i] = maya.cmds.colorAtPoint('SXAlphaRamp', o='A', u=(ratio[i]), v=(ratio[i]))[0]
+                maya.cmds.polyColorPerVertex(components[i], rgb=compColor[i], a=compAlpha[i])
+        else:
+            for object in settings.objectArray:
+                layer = layers.getSelectedLayer()
+
+                selectionList = OM.MSelectionList()
+                selectionList.add(object)
+                nodeDagPath = OM.MDagPath()
+                nodeDagPath = selectionList.getDagPath(0)
+                MFnMesh = OM.MFnMesh(nodeDagPath)
+                space = OM.MSpace.kWorld
+                layerColors = OM.MColorArray()
+                layerColors = MFnMesh.getFaceVertexColors(colorSet=layer)
+                faceIds = OM.MIntArray()
+                vtxIds = OM.MIntArray()
+                mod = OM.MDGModifier()
+                colorRep = MFnMesh.kRGBA
+
+                lenSel = len(layerColors)
+
+                faceIds.setLength(lenSel)
+                vtxIds.setLength(lenSel)
+
+                fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+
+                k = 0
+                while not fvIt.isDone():
+                    faceIds[k] = fvIt.faceId()
+                    vtxIds[k] = fvIt.vertexId()
+                    fvPos = fvIt.position(space)
+                    if axis == 1:
+                        ratioRaw = (fvPos[0]-objectBoundsXmin)/(objectBoundsXmax-objectBoundsXmin)
+                    elif axis == 2:
+                        ratioRaw = (fvPos[1]-objectBoundsYmin)/(objectBoundsYmax-objectBoundsYmin)
+                    elif axis == 3:
+                        ratioRaw = (fvPos[2]-objectBoundsZmin)/(objectBoundsZmax-objectBoundsZmin)
+                    ratio = max(min(ratioRaw, 1), 0)
+                    outColor = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio), v=(ratio))
+                    outAlpha = maya.cmds.colorAtPoint('SXAlphaRamp', o='A', u=(ratio), v=(ratio))
+                    layerColors[k].r = outColor[0]
+                    layerColors[k].g = outColor[1]
+                    layerColors[k].b = outColor[2]
+                    layerColors[k].a = outAlpha[0]
+                    k += 1
+                    fvIt.next()
+
+                MFnMesh.setFaceVertexColors(layerColors, faceIds, vtxIds, mod, colorRep)
 
         self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
                                                                 layers.getSelectedLayer())
@@ -3171,36 +3198,36 @@ class ToolActions(object):
         layers.refreshSelectedItem()
         maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
-    def copyFaceVertexColors(self, object, layerA, layerB):
-        selectionList = OM.MSelectionList()
-        selectionList.add(object)
-        nodeDagPath = OM.MDagPath()
-        nodeDagPath = selectionList.getDagPath(0)
-        MFnMesh = OM.MFnMesh(nodeDagPath)
+    def copyFaceVertexColors(self, objects, layerA, layerB):
+        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=layerB)
+        for object in objects:
+            selectionList = OM.MSelectionList()
+            selectionList.add(object)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
 
-        layerAColors = OM.MColorArray()
-        layerAColors = MFnMesh.getFaceVertexColors(colorSet=layerA)
+            layerAColors = OM.MColorArray()
+            layerAColors = MFnMesh.getFaceVertexColors(colorSet=layerA)
 
-        faceIds = OM.MIntArray()
-        vtxIds = OM.MIntArray()
+            faceIds = OM.MIntArray()
+            vtxIds = OM.MIntArray()
 
-        lenSel = len(layerAColors)
+            lenSel = len(layerAColors)
 
-        faceIds.setLength(lenSel)
-        vtxIds.setLength(lenSel)
+            faceIds.setLength(lenSel)
+            vtxIds.setLength(lenSel)
 
-        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
-        k = 0
-        while not fvIt.isDone():
-            faceIds[k] = fvIt.faceId()
-            vtxIds[k] = fvIt.vertexId()
-            k += 1
-            fvIt.next()
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                vtxIds[k] = fvIt.vertexId()
+                k += 1
+                fvIt.next()
 
-        maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=layerB)
-        MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
-
+            MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
 
 class LayerManagement(object):
     def __init__(self):
@@ -3415,22 +3442,21 @@ class LayerManagement(object):
                 for colorSet in colorSets:
                     maya.cmds.polyColorSet(object, delete=True, colorSet=colorSet)
 
-            # Create color sets
-            for layer in self.sortLayers(
-                    settings.projectSettings['SXToolsRefLayers'].keys()):
-                maya.cmds.polyColorSet(
-                    object,
-                    create=True,
-                    clamped=True,
-                    representation='RGBA',
-                    colorSet=str(layer))
-                self.clearSelectedLayer([
-                    object,
-                ], layer)
-                # maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=str(layer))
+        # Create color sets
+        refLayers = self.sortLayers(
+                settings.projectSettings['SXToolsRefLayers'].keys())
+        for layer in refLayers:
+            maya.cmds.polyColorSet(
+                objects,
+                create=True,
+                clamped=True,
+                representation='RGBA',
+                colorSet=str(layer))
+            self.clearSelectedLayer(objects, layer)
+            # maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=str(layer))
 
-            maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
-            maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
+        maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
+        maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
 
     def getLayerSet(self, object):
         values = []
@@ -3453,44 +3479,42 @@ class LayerManagement(object):
             return
 
         refLayers = self.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
-        for object in objects:
-            var = varIdx
-            if var == 0:
-                for layer in refLayers:
-                    layerName = str(layer) + '_var' + str(var)
-                    maya.cmds.polyColorSet(object, copy=True,
-                    colorSet=layer, newColorSet=layerName)
-                    tools.copyFaceVertexColors(object, layer, layerName)
-                var += 1
-                for layer in refLayers:
-                    layerName = str(layer) + '_var' + str(var)
-                    maya.cmds.polyColorSet(object, copy=True,
-                    colorSet=layer, newColorSet=layerName)
-                    tools.copyFaceVertexColors(object, layer, layerName)
-            else:
-                var += 1
-                for layer in refLayers:
-                    layerName = str(layer) + '_var' + str(var)
-                    maya.cmds.polyColorSet(object, copy=True,
-                    colorSet=layer, newColorSet=layerName)
-                    tools.copyFaceVertexColors(object, layer, layerName)    
-            
-            print('SX Tools: Layer Set ' + str(var) + ' added to ' + str(object))
-            maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
+        var = varIdx
+        if var == 0:
+            for layer in refLayers:
+                layerName = str(layer) + '_var' + str(var)
+                maya.cmds.polyColorSet(objects, copy=True,
+                colorSet=layer, newColorSet=layerName)
+                tools.copyFaceVertexColors2(objects, layer, layerName)
+            var += 1
+            for layer in refLayers:
+                layerName = str(layer) + '_var' + str(var)
+                maya.cmds.polyColorSet(objects, copy=True,
+                colorSet=layer, newColorSet=layerName)
+                tools.copyFaceVertexColors2(objects, layer, layerName)
+        else:
+            var += 1
+            for layer in refLayers:
+                layerName = str(layer) + '_var' + str(var)
+                maya.cmds.polyColorSet(objects, copy=True,
+                colorSet=layer, newColorSet=layerName)
+                tools.copyFaceVertexColors2(objects, layer, layerName)    
+
+        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
 
     def clearSelectedLayer(self, objects, layer):
+        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=layer)
+        color = settings.projectSettings['SXToolsRefLayers'][layer]
+        maya.cmds.polyColorPerVertex(
+            objects,
+            r=color[0],
+            g=color[1],
+            b=color[2],
+            a=color[3],
+            representation=4,
+            cdo=True)
+        attr = '.' + str(layer) + 'BlendMode'
         for object in objects:
-            maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=layer)
-            color = settings.projectSettings['SXToolsRefLayers'][layer]
-            maya.cmds.polyColorPerVertex(
-                object,
-                r=color[0],
-                g=color[1],
-                b=color[2],
-                a=color[3],
-                representation=4,
-                cdo=True)
-            attr = '.' + str(layer) + 'BlendMode'
             maya.cmds.setAttr(str(object) + attr, 0)
         if maya.cmds.objExists('SXShader'):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
@@ -3664,6 +3688,7 @@ class LayerManagement(object):
 
     # Color sets of any selected object are checked
     # to see if they match the reference set.
+    # Also verifies subdivision mode.
     def verifyObjectLayers(self, objects):
         refLayers = self.sortLayers(
             settings.projectSettings['SXToolsRefLayers'].keys())
@@ -3671,6 +3696,10 @@ class LayerManagement(object):
         empty = False
 
         setup.setPrimVars()
+        
+        for shape in settings.shapeArray:
+          maya.cmds.setAttr(str(shape)+'.useGlobalSmoothDrawType', False)
+          maya.cmds.setAttr(str(shape)+'.smoothDrawType', 2)
 
         for object in objects:
             testLayers = maya.cmds.polyColorSet(object, query=True, allColorSets=True)
@@ -4458,8 +4487,7 @@ class UI(object):
             parent='occlusionColumn',
             numberOfColumns=4,
             columnWidth=((1, 80), (2, 50), (3, 50), (4, 50)),
-            columnAttach=[(1, 'left', 0), (2, 'left', 0), (3, 'left', 0), (4, 'left',
-                                                                                                                                                                                                                                                                        0)],
+            columnAttach=[(1, 'left', 0), (2, 'left', 0), (3, 'left', 0), (4, 'left', 0)],
             rowSpacing=(1, 0))
 
         maya.cmds.text(label=' ')
