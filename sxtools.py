@@ -129,8 +129,9 @@ class Settings(object):
             self.projectSettings['SXToolsAlphaTolerance'] = 1.0
             self.projectSettings['SXToolsSmoothExport'] = 0
             self.projectSettings['SXToolsExportOffset'] = 5
-            self.projectSettings['SXToolsLayerCount'] = 8
+            self.projectSettings['SXToolsLayerCount'] = 10
             self.projectSettings['SXToolsChannelCount'] = 4
+            self.projectSettings['SXToolsOverlays'] = ('layer9', 'layer10') 
 
             self.projectSettings['SXToolsRefLayers'] = {
                 u'layer1': (0.5, 0.5, 0.5, 1),
@@ -141,6 +142,8 @@ class Settings(object):
                 u'layer6': (0, 0, 0, 0),
                 u'layer7': (0, 0, 0, 0),
                 u'layer8': (0, 0, 0, 0),
+                u'layer9': (0, 0, 0, 0),
+                u'layer10': (0, 0, 0, 0),
                 u'occlusion': (1, 1, 1, 1),
                 u'specular': (0, 0, 0, 1),
                 u'transmission': (0, 0, 0, 1),
@@ -156,10 +159,12 @@ class Settings(object):
                 u'layer6': 6,
                 u'layer7': 7,
                 u'layer8': 8,
-                u'occlusion': 9,
-                u'specular': 10,
-                u'transmission': 11,
-                u'emission': 12
+                u'layer9': 9,
+                u'layer10': 10,
+                u'occlusion': 11,
+                u'specular': 12,
+                u'transmission': 13,
+                u'emission': 14
             }
 
             self.projectSettings['SXToolsRefNames'] = {
@@ -171,14 +176,17 @@ class Settings(object):
                 6: u'layer6',
                 7: u'layer7',
                 8: u'layer8',
-                9: u'occlusion',
-                10: u'specular',
-                11: u'transmission',
-                12: u'emission'
+                9: u'layer9',
+                10: u'layer10',
+                11: u'occlusion',
+                12: u'specular',
+                13: u'transmission',
+                14: u'emission'
             }
 
             self.projectSettings['SXToolsMatChannels'] = (1, 1, 1, 1)
             self.projectSettings['SXToolsExportChannels'] = ('U3', 'U1', 'V1', 'U2', 'V2')
+            self.projectSettings['SXToolsOverlaysExportChannels'] = (('UV4', 'UV5'), ('UV6', 'UV7'))
 
         self.savePreferences()
 
@@ -217,12 +225,18 @@ class Settings(object):
             int(maya.cmds.checkBox('specular', query=True, value=True)),
             int(maya.cmds.checkBox('transmission', query=True, value=True)),
             int(maya.cmds.checkBox('emission', query=True, value=True)))
+        self.projectSettings['SXToolsOverlays'] = (
+            maya.cmds.textField('overlay1', query=True, text=True),
+            maya.cmds.textField('overlay2', query=True, text=True))
         self.projectSettings['SXToolsExportChannels'] = (
             maya.cmds.textField('maskExport', query=True, text=True),
             maya.cmds.textField('occlusionExport', query=True, text=True),
             maya.cmds.textField('specularExport', query=True, text=True),
             maya.cmds.textField('transmissionExport', query=True, text=True),
             maya.cmds.textField('emissionExport', query=True, text=True))
+        self.projectSettings['SXToolsOverlaysExportChannels'] = (
+            str(maya.cmds.textField('overlay1Export', query=True, text=True)).split(','),
+            str(maya.cmds.textField('overlay2Export', query=True, text=True)).split(','))
         self.projectSettings['SXToolsRefLayers'] = {}
         self.projectSettings['SXToolsRefIndices'] = {}
         self.projectSettings['SXToolsRefNames'] = {}
@@ -1582,6 +1596,41 @@ class Export(object):
         elapsedTime = maya.cmds.timerX(startTime=startTime1)
         # print ('Elapsed Time for '+uSourceColorSet+' and '+vSourceColorSet+': '+str(elapsedTime)+'\n')
 
+    def overlayToUV(self, selected, layers, targetUVSetList):
+        for idx, layer in enumerate(layers):
+            selectionList = OM.MSelectionList()
+            selectionList.add(selected)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
+
+            colorArray = OM.MColorArray()
+            uvIdArray = (OM.MIntArray(), OM.MIntArray())
+            uArray1 = OM.MFloatArray()
+            vArray1 = OM.MFloatArray()
+            uArray2 = OM.MFloatArray()
+            vArray2 = OM.MFloatArray()
+            
+            colorArray = MFnMesh.getFaceVertexColors(colorSet=layer)
+            lenColorArray = len(colorArray)
+            uvIdArray = MFnMesh.getAssignedUVs()
+
+            uArray1.setLength(lenColorArray)
+            vArray1.setLength(lenColorArray)
+            uArray2.setLength(lenColorArray)
+            vArray2.setLength(lenColorArray)
+
+            for k in range(lenColorArray):
+                uArray1[k] = colorArray[k].r
+                vArray1[k] = colorArray[k].g
+                uArray2[k] = colorArray[k].b
+                vArray2[k] = colorArray[k].a
+
+            MFnMesh.setUVs(uArray1, vArray1, targetUVSetList[idx][0])
+            MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSetList[idx][0])
+            MFnMesh.setUVs(uArray2, vArray2, targetUVSetList[idx][1])
+            MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSetList[idx][1])
+
     # The layer masks are written to UV3 using an offset value.
     # This makes it simpler to separate each vertex to the correct layer in the game engine.
 
@@ -1589,7 +1638,7 @@ class Export(object):
         axis = str.lower(str(uvID[0]))
         targetUVSet = 'UV' + str(uvID[1])
 
-        startTime1 = maya.cmds.timerX()
+        # startTime1 = maya.cmds.timerX()
 
         selectionList = OM.MSelectionList()
         selectionList.add(selected)
@@ -1628,7 +1677,7 @@ class Export(object):
         MFnMesh.setUVs(uArray, vArray, targetUVSet)
         MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
 
-        elapsedTime = maya.cmds.timerX(startTime=startTime1)
+        # elapsedTime = maya.cmds.timerX(startTime=startTime1)
         # print ('Elapsed Time for layer baking '+str(elapsedTime)+'\n')
 
     def channelsToUV(self, exportShape):
@@ -1681,10 +1730,12 @@ class Export(object):
 
         refLayers = layers.sortLayers(
             settings.projectSettings['SXToolsRefLayers'].keys())
-        numLayers = settings.projectSettings['SXToolsLayerCount']
+        numLayers = settings.projectSettings['SXToolsLayerCount']-2
         maskExport = settings.projectSettings['SXToolsExportChannels'][0]
         exportSmoothValue = settings.projectSettings['SXToolsSmoothExport']
         exportOffsetValue = settings.projectSettings['SXToolsExportOffset']
+        overlayArray = settings.projectSettings['SXToolsOverlays']
+        overlayUVArray = settings.projectSettings['SXToolsOverlaysExportChannels']
         
         sourceNamesArray = maya.cmds.ls(sourceArray, dag=True, tr=True)
         exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)
@@ -1758,13 +1809,20 @@ class Export(object):
             self.initUVs(exportShape, 'UV1')
             self.initUVs(exportShape, 'UV2')
             self.initUVs(exportShape, 'UV3')
+            self.initUVs(exportShape, 'UV4')
+            self.initUVs(exportShape, 'UV5')
+            self.initUVs(exportShape, 'UV6')
+            self.initUVs(exportShape, 'UV7')
 
             # Bake material properties to UV channels
             self.channelsToUV(exportShape)
 
             # Bake masks
             self.layerToUV(exportShape, maskExport, numLayers, 1)
-
+            
+            # Bake overlays
+            self.overlayToUV(exportShape, overlayArray, overlayUVArray)
+            
             # Delete history
             maya.cmds.delete(exportShape, ch=True)
 
@@ -3175,9 +3233,9 @@ class ToolActions(object):
             refLayers = layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
             for layer in refLayers:
                 oldColors = str(layer) + '_var' + str(currentMode)
-                self.copyFaceVertexColors(object, layer, oldColors)
+                self.copyFaceVertexColors([object, ], layer, oldColors)
                 newColors = str(layer) + '_var' + str(targetSet)
-                self.copyFaceVertexColors(object, newColors, layer)
+                self.copyFaceVertexColors([object, ], newColors, layer)
 
             maya.cmds.setAttr(selected + attr, targetSet)
             maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
@@ -3411,7 +3469,6 @@ class LayerManagement(object):
         else:
             sourceLayer = settings.projectSettings['SXToolsRefNames'][layerIndex+1]
             targetLayer = settings.projectSettings['SXToolsRefNames'][layerIndex]
-        print(sourceLayer, targetLayer, up)
         self.mergeLayers(settings.shapeArray[len(settings.shapeArray)-1], sourceLayer, targetLayer, up)
         self.patchLayers(
             [settings.shapeArray[len(settings.shapeArray)-1]], )
@@ -3475,20 +3532,20 @@ class LayerManagement(object):
                 layerName = str(layer) + '_var' + str(var)
                 maya.cmds.polyColorSet(objects, copy=True,
                 colorSet=layer, newColorSet=layerName)
-                tools.copyFaceVertexColors2(objects, layer, layerName)
+                tools.copyFaceVertexColors(objects, layer, layerName)
             var += 1
             for layer in refLayers:
                 layerName = str(layer) + '_var' + str(var)
                 maya.cmds.polyColorSet(objects, copy=True,
                 colorSet=layer, newColorSet=layerName)
-                tools.copyFaceVertexColors2(objects, layer, layerName)
+                tools.copyFaceVertexColors(objects, layer, layerName)
         else:
             var += 1
             for layer in refLayers:
                 layerName = str(layer) + '_var' + str(var)
                 maya.cmds.polyColorSet(objects, copy=True,
                 colorSet=layer, newColorSet=layerName)
-                tools.copyFaceVertexColors2(objects, layer, layerName)    
+                tools.copyFaceVertexColors(objects, layer, layerName)    
 
         maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
 
@@ -3534,16 +3591,16 @@ class LayerManagement(object):
         for shape in settings.shapeArray:
             maya.cmds.setAttr(
                 str(shape) + '.' + str(layer) + 'Visibility', not checkState)
-            state = self.verifyLayerState(layer)
-            layerIndex = int(
-                maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)[
-                    0])
-            maya.cmds.textScrollList(
-                'layerList', edit=True, removeIndexedItem=layerIndex)
-            maya.cmds.textScrollList(
-                'layerList', edit=True, appendPosition=(layerIndex, state))
-            maya.cmds.textScrollList(
-                'layerList', edit=True, selectIndexedItem=layerIndex)
+        state = self.verifyLayerState(layer)
+        layerIndex = int(
+            maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)[
+                0])
+        maya.cmds.textScrollList(
+            'layerList', edit=True, removeIndexedItem=layerIndex)
+        maya.cmds.textScrollList(
+            'layerList', edit=True, appendPosition=(layerIndex, state))
+        maya.cmds.textScrollList(
+            'layerList', edit=True, selectIndexedItem=layerIndex)
 
     # Called when the user hides or shows all vertex color layers in the tool UI
     def toggleAllLayers(self):
@@ -3621,8 +3678,7 @@ class LayerManagement(object):
 
         # States: visibility, mask, adjustment
         state = [False, False, False]
-
-        state[0] = maya.cmds.getAttr(str(object) + '.' + str(layer) + 'Visibility')
+        state[0] = bool(maya.cmds.getAttr(str(object) + '.' + str(layer) + 'Visibility'))
 
         for k in range(len(layerColors)):
             if (layerColors[k].a > 0 and
@@ -3765,19 +3821,19 @@ class UI(object):
             'refLayerRowColumns',
             parent='setupFrame',
             numberOfColumns=3,
-            columnWidth=((1, 90), (2, 70), (3, 70)),
+            columnWidth=((1, 90), (2, 60), (3, 80)),
             columnAttach=[(1, 'left', 0), (2, 'left', 0), (3, 'left', 0)],
             rowSpacing=(1, 0))
 
         maya.cmds.text(label=' ')
         maya.cmds.text(label='Count')
-        maya.cmds.text(label='Export UV')
+        maya.cmds.text(label='Mask Export')
 
         # Max layers 10. Going higher causes instability.
         maya.cmds.text(label='Color layers:')
         maya.cmds.intField(
             'layerCount',
-            value=8,
+            value=10,
             minValue=1,
             maxValue=10,
             step=1,
@@ -3801,6 +3857,10 @@ class UI(object):
         maya.cmds.checkBox('specular', label='', value=True)
         maya.cmds.textField('specularExport', text='V1')
 
+        # maya.cmds.text('specularRGBLabel', label='Specular (RGB):')
+        # maya.cmds.checkBox('specularRGB', label='', value=True)
+        # maya.cmds.textField('specularRGBExport', text='V1, UV2')
+
         maya.cmds.text('transmissionLabel', label='Transmission:')
         maya.cmds.checkBox('transmission', label='', value=True)
         maya.cmds.textField('transmissionExport', text='U2')
@@ -3808,6 +3868,18 @@ class UI(object):
         maya.cmds.text('emissionLabel', label='Emission:')
         maya.cmds.checkBox('emission', label='', value=True)
         maya.cmds.textField('emissionExport', text='V2')
+
+        # maya.cmds.text('emissionRGBLabel', label='Emission (RGB):')
+        # maya.cmds.checkBox('emissionRGB', label='', value=True)
+        # maya.cmds.textField('emissionRGBExport', text='UV3, UV4')
+
+        maya.cmds.text('overlay1Label', label='Overlay1 (RGBA):')
+        maya.cmds.textField('overlay1', text='layer9')
+        maya.cmds.textField('overlay1Export', text='UV4,UV5')
+
+        maya.cmds.text('overlay2Label', label='Overlay2 (RGBA):')
+        maya.cmds.textField('overlay2', text='layer10')
+        maya.cmds.textField('overlay2Export', text='UV6,UV7')
 
         maya.cmds.rowColumnLayout(
             'numLayerColumns',
