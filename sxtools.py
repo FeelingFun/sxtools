@@ -112,7 +112,6 @@ class Settings(object):
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
             'blendSlider': 0.0,
-            'exportSuffix': False
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5', u'layer6', u'layer7',
@@ -187,6 +186,7 @@ class Settings(object):
             self.projectSettings['SXToolsMatChannels'] = (1, 1, 1, 1)
             self.projectSettings['SXToolsExportChannels'] = ('U3', 'U1', 'V1', 'U2', 'V2')
             self.projectSettings['SXToolsOverlaysExportChannels'] = (('UV4', 'UV5'), ('UV6', 'UV7'))
+            self.projectSettings['SXToolsExportSuffix'] = True
 
         self.savePreferences()
 
@@ -240,6 +240,7 @@ class Settings(object):
         self.projectSettings['SXToolsRefLayers'] = {}
         self.projectSettings['SXToolsRefIndices'] = {}
         self.projectSettings['SXToolsRefNames'] = {}
+        self.projectSettings['SXToolsExportSuffix'] = maya.cmds.checkBox('suffixCheck', query=True, value=True)
 
         refIndex = 0
         for k in range(0, self.projectSettings['SXToolsLayerCount']):
@@ -985,6 +986,12 @@ class SceneSetup(object):
         maya.cmds.connectAttr('SXShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXShader.msg', ':defaultShaderList1.s', na=True)
 
+        # automatically assign shader to existing multi-layer meshes
+        meshList = maya.cmds.ls(ni=True, typ='mesh')
+        for mesh in meshList:
+            if maya.cmds.attributeQuery('activeLayerSet', node=mesh, exists=True):
+                maya.cmds.sets(mesh, e=True, forceElement='SXShaderSG')
+
     def createSXExportShader(self):
         if maya.cmds.objExists('SXExportShader'):
             shadingGroup = maya.cmds.listConnections(
@@ -1719,24 +1726,32 @@ class Export(object):
     # 2) Rename new objects to match originals but with a suffix
     # 3) Call the mesh processing functions 
     # 4) Delete history on the processed meshes.
-    def processObjects(self, sourceArray):
+    def processObjects(self, selectionArray):
         # Timer for evaluating script performance
         startTime0 = maya.cmds.timerX()
+
+        sourceArray = []
+        refLayers = layers.sortLayers(
+            settings.projectSettings['SXToolsRefLayers'].keys())
+        maskExport = settings.projectSettings['SXToolsExportChannels'][0]
+        exportSmoothValue = settings.projectSettings['SXToolsSmoothExport']
+        exportOffsetValue = settings.projectSettings['SXToolsExportOffset']
+        overlayArray = settings.projectSettings['SXToolsOverlays']
+        overlayUVArray = settings.projectSettings['SXToolsOverlaysExportChannels']
+        numLayers = settings.projectSettings['SXToolsLayerCount']-len(overlayArray)
 
         # Clear existing static exports folder and create if necessary
         if maya.cmds.objExists('_staticExports'):
             maya.cmds.delete('_staticExports')
         maya.cmds.group(empty=True, name='_staticExports')
 
-        refLayers = layers.sortLayers(
-            settings.projectSettings['SXToolsRefLayers'].keys())
-        numLayers = settings.projectSettings['SXToolsLayerCount']-2
-        maskExport = settings.projectSettings['SXToolsExportChannels'][0]
-        exportSmoothValue = settings.projectSettings['SXToolsSmoothExport']
-        exportOffsetValue = settings.projectSettings['SXToolsExportOffset']
-        overlayArray = settings.projectSettings['SXToolsOverlays']
-        overlayUVArray = settings.projectSettings['SXToolsOverlaysExportChannels']
-        
+        # Find the root nodes of all selected elements
+        for selection in selectionArray:
+            source = maya.cmds.ls(selection, l=True)[0].split("|")[1]
+            if source not in sourceArray:
+                sourceArray.append(source)
+
+        # Duplicate all selected objects for export
         sourceNamesArray = maya.cmds.ls(sourceArray, dag=True, tr=True)
         exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)
 
@@ -1766,26 +1781,27 @@ class Export(object):
             if var > 0:
                 tools.swapLayerSets([exportShape, ], 0)                
             for x in xrange(1, var+1):
-                variant = str(maya.cmds.duplicate(exportShape)[0])
-                # maya.cmds.rename(variant, str(variant[0])+'_var'+str(x))
-                # variant = str(variant[0])+'_var'+str(x)
-                tools.swapLayerSets([variant, ], x)   
+                variant = maya.cmds.duplicate(exportShape, name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
+                tools.swapLayerSets([variant, ], x)
 
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
-                
+        
+        # Suffix the export objects        
         for exportShape in exportShapeArray:
-            # Create duplicate object for export
             if maya.cmds.getAttr(str(exportShape) + '.transparency') == 1:
                 exportName = str(exportShape).split('|')[-1] + '_transparent'
-            else:
+            elif settings.projectSettings['SXToolsExportSuffix'] is True:
                 exportName = str(exportShape).split('|')[-1] + '_paletted'
+            else:
+                exportName = str(exportShape).split('|')[-1]
             maya.cmds.rename(exportShape, str(exportName), ignoreShape=True)
 
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
+
         for exportShape in exportShapeArray:
             # Check for existing additional UV sets and delete them,
             # create default UVs to UV0
@@ -1809,10 +1825,10 @@ class Export(object):
             self.initUVs(exportShape, 'UV1')
             self.initUVs(exportShape, 'UV2')
             self.initUVs(exportShape, 'UV3')
-            self.initUVs(exportShape, 'UV4')
-            self.initUVs(exportShape, 'UV5')
-            self.initUVs(exportShape, 'UV6')
-            self.initUVs(exportShape, 'UV7')
+            if overlayUVArray is not None:
+                for uvSet in overlayUVArray:
+                    for uv in uvSet:
+                        self.initUVs(exportShape, uv)
 
             # Bake material properties to UV channels
             self.channelsToUV(exportShape)
@@ -1839,7 +1855,7 @@ class Export(object):
             # Set layer1 visible for userfriendliness
             maya.cmds.polyColorSet(exportShape, currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
-
+            
             # Smooth mesh as last step for export
             if exportSmoothValue > 0:
                 maya.cmds.polySmooth(
@@ -1882,7 +1898,7 @@ class Export(object):
             '_staticExports', children=True, fullPath=True)
         for export in exportArray:
             maya.cmds.select(export)
-            if settings.toolStates['exportSuffix'] is True:
+            if settings.projectSettings['SXToolsExportSuffix'] is True:
                 exportName = str(export).split('|')[-1] + '.fbx'
             else:
                 if str(export).endswith('_paletted'):
@@ -1914,21 +1930,10 @@ class Export(object):
     def checkExported(self, objects):
         if len(settings.objectArray) > 0:
             for obj in objects:
-                parent = maya.cmds.listRelatives(str(obj), parent=True)
-                if parent is not None:
-                    if str(parent[0]) == '_staticExports':
-                        return True
-                        break
-                    elif str(obj).endswith('_paletted') is True:
-                        return True
-                        break
-                    elif str(obj).endswith('_transparent') is True:
-                        return True
-                        break
-                elif parent is None:
-                    if str(obj) == '_staticExports':
-                        return True
-                        break
+                root = maya.cmds.ls(obj, l=True)[0].split("|")[1]
+                if root == '_staticExports':
+                    return True
+                    break
         else:
             return False
 
@@ -2041,6 +2046,15 @@ class Export(object):
                 parent = maya.cmds.listRelatives(node, fullPath=True, parent=True)
                 transforms.append(parent[0])
         return transforms
+
+    def stripPrimVars(self, objects):
+        attrList = maya.cmds.listAttr(objects[0], ud=True)
+        print attrList
+        for object in objects:
+            for attr in attrList:
+                print attr
+                print object
+                maya.cmds.deleteAttr(object, at=attr)
 
 
 class ToolActions(object):
@@ -2570,13 +2584,30 @@ class ToolActions(object):
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
-    def colorFill(self):
+    def colorFill(self, overwriteAlpha=False):
         alphaMax = settings.layerAlphaMax
+        fillColor = settings.currentColor
+        #maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)
 
-        fillColor = maya.cmds.colorSliderGrp(
-            'sxApplyColor', query=True, rgbValue=True)
-
-        if (len(settings.componentArray) > 0) and (settings.layerAlphaMax != 0):
+        if (len(settings.componentArray) > 0) and (overwriteAlpha is True):
+            maya.cmds.polyColorPerVertex(
+                settings.componentArray,
+                r=fillColor[0],
+                g=fillColor[1],
+                b=fillColor[2],
+                a=1,
+                representation=4,
+                cdo=True)
+        elif (len(settings.componentArray) == 0) and (overwriteAlpha is True):
+            maya.cmds.polyColorPerVertex(
+                settings.shapeArray,
+                r=fillColor[0],
+                g=fillColor[1],
+                b=fillColor[2],
+                a=1,
+                representation=4,
+                cdo=True)            
+        elif (len(settings.componentArray) > 0) and (settings.layerAlphaMax != 0):
             maya.cmds.polyColorPerVertex(
                 settings.componentArray,
                 r=fillColor[0],
@@ -3136,7 +3167,7 @@ class ToolActions(object):
                 settings.savePreferences()
                 self.getMasterPaletteItem()
             else:
-                print 'SX Tools Error: No preset to delete!'
+                print('SX Tools Error: No preset to delete!')
 
         elif shift is False:
             itemList = maya.cmds.optionMenu('masterPalettes', query=True, ils=True)
@@ -3150,7 +3181,7 @@ class ToolActions(object):
                 maya.cmds.optionMenu('masterPalettes', edit=True, select=idx)
                 settings.savePreferences()
             else:
-                print 'SX Tools Error: Invalid preset name!'
+                print('SX Tools Error: Invalid preset name!')
 
     def getMasterPaletteItem(self):
         if len(settings.masterPaletteDict) > 0:
@@ -3173,13 +3204,13 @@ class ToolActions(object):
                 maya.cmds.nodePreset(delete=('SXRamp', maya.cmds.optionMenu(
                     'rampPresets', query=True, value=True)))
             elif len(presetNameArray) == 0:
-                print 'SXTools: Preset list empty!'
+                print('SXTools: Preset list empty!')
         elif mode == 'preset' and shift is False:
             name = maya.cmds.textField('presetName', query=True, text=True)
             if len(name) > 0:
                 maya.cmds.nodePreset(save=('SXRamp', name))
             elif len(name) == 0:
-                print 'SXTools: Invalid preset name!'
+                print('SXTools: Invalid preset name!')
         elif group == 1:
             if mode == 2:
                 settings.projectSettings['SXToolsGradientDirection'] = 5
@@ -3226,9 +3257,8 @@ class ToolActions(object):
 
     def swapLayerSets(self, objects, targetSet):
         for object in objects:
-            selected = str(object)
             attr = '.activeLayerSet'
-            currentMode = int(maya.cmds.getAttr(selected + attr))
+            currentMode = int(maya.cmds.getAttr(str(object) + attr))
             # Create color sets
             refLayers = layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
             for layer in refLayers:
@@ -3237,7 +3267,7 @@ class ToolActions(object):
                 newColors = str(layer) + '_var' + str(targetSet)
                 self.copyFaceVertexColors([object, ], newColors, layer)
 
-            maya.cmds.setAttr(selected + attr, targetSet)
+            maya.cmds.setAttr(object + attr, targetSet)
             maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
 
         self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
@@ -3449,7 +3479,7 @@ class LayerManagement(object):
     def mergeLayerDirection(self, up):
         sourceLayer = self.getSelectedLayer()
         if len(settings.shapeArray) > 1:
-            print 'SX Tools: Merge Layer requires a single object'
+            print('SX Tools: Merge Layer requires a single object')
             return
         elif str(sourceLayer) == 'layer1' and up is True:
             print('SX Tools Error: Cannot merge layer1')
@@ -3648,6 +3678,9 @@ class LayerManagement(object):
                 settings.shapeArray[len(settings.shapeArray)-1],
                 query=True,
                 currentColorSet=True)[0])
+        if selectedColorSet not in settings.projectSettings['SXToolsRefLayers'].keys():
+            maya.cmds.polyColorSet(settings.shapeArray, edit=True, currentColorSet=True, colorSet='layer1')
+            selectedColorSet = 'layer1'
         maya.cmds.textScrollList(
             'layerList',
             edit=True,
@@ -3918,6 +3951,15 @@ class UI(object):
             step=1,
             enterCommand=("maya.cmds.setFocus('MayaWindow')"))
 
+        maya.cmds.text(label='Use "_paletted" export suffix:')
+        maya.cmds.checkBox(
+            'suffixCheck',
+            label='',
+            value=True,
+            changeCommand=(
+                "sxtools.settings.projectSettings['SXToolsExportSuffix'] = maya.cmds.checkBox('suffixCheck', query=True, value=True)"
+            ))
+
         maya.cmds.columnLayout(
             'refLayerColumn', parent='setupFrame', rowSpacing=5, adjustableColumn=True)
         maya.cmds.text(label=' ', parent='refLayerColumn')
@@ -4068,21 +4110,6 @@ class UI(object):
                 width=120,
                 command=(
                     "sxtools.export.exportObjects(sxtools.settings.projectSettings['SXToolsExportPath'])"
-                ))
-            maya.cmds.rowColumnLayout(
-                'exportSuffixRowColumns',
-                parent='exportedColumn',
-                numberOfColumns=2,
-                columnWidth=((1, 120), (2, 120)),
-                columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-                rowSpacing=(1, 5))
-            maya.cmds.text(label='Add _paletted suffix')
-            maya.cmds.checkBox(
-                'suffixCheck',
-                label='',
-                value=settings.toolStates['exportSuffix'],
-                changeCommand=(
-                    "sxtools.settings.toolStates['exportSuffix'] = maya.cmds.checkBox('suffixCheck', query=True, value=True)"
                 ))
         else:
             maya.cmds.text(label='No export folder selected!')
@@ -4321,15 +4348,18 @@ class UI(object):
             columnWidth3=(80, 20, 60),
             adjustableColumn3=3,
             columnAlign3=('left', 'left', 'left'),
-            changeCommand="sxtools.settings.currentColor = maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)"
+            changeCommand="sxtools.settings.currentColor=maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)"
         )
-        maya.cmds.setParent('applyColorFrame')
+        maya.cmds.setParent('applyColorColumn')
+        maya.cmds.checkBox('overwriteAlpha', label='Overwrite Alpha', value=False)
         maya.cmds.button(
             label='Apply Color',
             parent='applyColorColumn',
             height=30,
             width=100,
-            command=('sxtools.tools.colorFill()\nsxtools.tools.updateRecentPalette()')
+            command=('sxtools.settings.currentColor=maya.cmds.colorSliderGrp("sxApplyColor", query=True, rgbValue=True)\n'
+            'sxtools.tools.colorFill(maya.cmds.checkBox("overwriteAlpha", query=True, value=True))\n'
+            'sxtools.tools.updateRecentPalette()')
             )
         maya.cmds.setParent("toolFrame")
         tools.getCurrentColor()
@@ -4857,6 +4887,9 @@ class UI(object):
                 value=maya.cmds.getAttr(str(settings.shapeArray[0]) + '.activeLayerSet'),
                 changeCommand=(
                 'sxtools.tools.swapLayerSets(sxtools.settings.objectArray, maya.cmds.intSlider("swapLayerSetsSlider", query=True, value=True))\n'
+                'maya.cmds.text("layerSetLabel", edit=True, label=("Current Layer Set: " + str(int(maya.cmds.getAttr(str(sxtools.settings.shapeArray[0]) + ".activeLayerSet")))))'),
+                dragCommand=(
+                'sxtools.tools.swapLayerSets(sxtools.settings.objectArray, maya.cmds.intSlider("swapLayerSetsSlider", query=True, value=True))\n'
                 'maya.cmds.text("layerSetLabel", edit=True, label=("Current Layer Set: " + str(int(maya.cmds.getAttr(str(sxtools.settings.shapeArray[0]) + ".activeLayerSet")))))')
             )
 
@@ -4949,7 +4982,7 @@ class Core(object):
         for var in varList:
             if ('SXTools' in var):
                 maya.cmds.optionVar(remove=str(var))
-        print 'SX Tools: Settings reset'
+        print('SX Tools: Settings reset')
 
     # The user can have various different types of objects selected.
     # The selections are filtered for the tool.
