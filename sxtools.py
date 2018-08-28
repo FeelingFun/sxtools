@@ -3171,7 +3171,7 @@ class ToolActions(object):
 
         elif shift is False:
             itemList = maya.cmds.optionMenu('masterPalettes', query=True, ils=True)
-            preset = maya.cmds.textField('savePaletteName', query=True, text=True)
+            preset = maya.cmds.textField('savePaletteName', query=True, text=True).replace(' ', '_')
             if (len(preset) > 0) and ((itemList is None) or (preset not in itemList)):
                 settings.toolStates['palettePreset'] = preset
                 self.storePalette('masterPalette', settings.masterPaletteDict, preset)
@@ -3206,7 +3206,7 @@ class ToolActions(object):
             elif len(presetNameArray) == 0:
                 print('SXTools: Preset list empty!')
         elif mode == 'preset' and shift is False:
-            name = maya.cmds.textField('presetName', query=True, text=True)
+            name = maya.cmds.textField('presetName', query=True, text=True).replace(' ', '_')
             if len(name) > 0:
                 maya.cmds.nodePreset(save=('SXRamp', name))
             elif len(name) == 0:
