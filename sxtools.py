@@ -81,7 +81,7 @@ class Settings(object):
         self.componentArray = []
         self.patchArray = []
         self.bakeSet = []
-        self.currentColor = (0, 0, 0)
+        self.currentColor = (1, 1, 1)
         self.layerAlphaMax = 0
         self.material = None
         self.nodeDict = {}
@@ -105,13 +105,15 @@ class Settings(object):
             'swapLayerSetsFrameCollapse': True
         }
         self.toolStates = {
+            'recentPaletteIndex': 1,
+            'overwriteAlpha': False,
             'noiseMonochrome': False,
             'noiseValue': 0.500,
             'bakeGroundPlane': True,
             'bakeGroundScale': 100.0,
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
-            'blendSlider': 0.0,
+            'blendSlider': 0.0
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5', u'layer6', u'layer7',
@@ -3087,12 +3089,10 @@ class ToolActions(object):
                     ])
 
     def setApplyColor(self):
+        settings.toolStates['recentPaletteIndex'] = maya.cmds.palettePort(
+            'recentPalette', query=True, scc=True)
         settings.currentColor = maya.cmds.palettePort(
             'recentPalette', query=True, rgb=True)
-        maya.cmds.colorSliderGrp(
-            'sxApplyColor', edit=True, rgbValue=settings.currentColor)
-
-    def getCurrentColor(self):
         maya.cmds.colorSliderGrp(
             'sxApplyColor', edit=True, rgbValue=settings.currentColor)
 
@@ -3133,9 +3133,7 @@ class ToolActions(object):
         paletteArray = []
         for i in range(0, paletteLength):
             maya.cmds.palettePort(paletteUI, edit=True, scc=i)
-            settings.currentColor = maya.cmds.palettePort(
-                paletteUI, query=True, rgb=True)
-            paletteArray.append(settings.currentColor)
+            paletteArray.append(maya.cmds.palettePort(paletteUI, query=True, rgb=True))
 
         targetDict[preset] = paletteArray
 
@@ -4095,8 +4093,10 @@ class UI(object):
         maya.cmds.button(
             label='Choose Export Path',
             width=120,
-            command=("sxtools.export.setExportPath()\n"
-                                                "sxtools.sx.updateSXTools()"))
+            command=(
+                "sxtools.export.setExportPath()\n"
+                "sxtools.sx.updateSXTools()")
+                )
 
         if (('SXToolsExportPath' in settings.projectSettings) and
                         (len(settings.projectSettings['SXToolsExportPath']) == 0)):
@@ -4340,18 +4340,26 @@ class UI(object):
             actualTotal=8,
             editable=True,
             colorEditable=False,
+            scc=settings.toolStates['recentPaletteIndex'],
             changeCommand='sxtools.tools.setApplyColor()')
         maya.cmds.colorSliderGrp(
             'sxApplyColor',
             parent='applyColorColumn',
             label='Color:',
+            rgb=settings.currentColor,
             columnWidth3=(80, 20, 60),
             adjustableColumn3=3,
             columnAlign3=('left', 'left', 'left'),
             changeCommand="sxtools.settings.currentColor=maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)"
         )
         maya.cmds.setParent('applyColorColumn')
-        maya.cmds.checkBox('overwriteAlpha', label='Overwrite Alpha', value=False)
+        maya.cmds.checkBox(
+            'overwriteAlpha',
+            label='Overwrite Alpha',
+            value=settings.toolStates['overwriteAlpha'],
+            changeCommand=(
+                'sxtools.settings.toolStates["overwriteAlpha"]=maya.cmds.checkBox("overwriteAlpha", query=True, value=True)')
+                )
         maya.cmds.button(
             label='Apply Color',
             parent='applyColorColumn',
@@ -4362,7 +4370,6 @@ class UI(object):
             'sxtools.tools.updateRecentPalette()')
             )
         maya.cmds.setParent("toolFrame")
-        tools.getCurrentColor()
         tools.getPalette('recentPalette', settings.paletteDict, 'SXToolsRecentPalette')
 
     def gradientToolUI(self):
@@ -4411,7 +4418,10 @@ class UI(object):
             label='Save Preset',
             width=100,
             ann='Shift-click to delete preset',
-            command="sxtools.tools.gradientToolManager('preset')\nsxtools.sx.updateSXTools()\nsxtools.settings.savePreferences()"
+            command=(
+                "sxtools.tools.gradientToolManager('preset')\n"
+                "sxtools.sx.updateSXTools()\n"
+                "sxtools.settings.savePreferences()")
         )
         maya.cmds.textField(
             'presetName',
@@ -4873,8 +4883,9 @@ class UI(object):
             parent='swapLayerSetsColumn',
             height=30,
             width=100,
-            command=('sxtools.layers.addLayerSet(sxtools.settings.objectArray, sxtools.layers.getLayerSet(sxtools.settings.objectArray[0]))\n'
-                        'sxtools.sx.updateSXTools()'))
+            command=(
+                'sxtools.layers.addLayerSet(sxtools.settings.objectArray, sxtools.layers.getLayerSet(sxtools.settings.objectArray[0]))\n'
+                'sxtools.sx.updateSXTools()'))
         maya.cmds.text('layerSetLabel', label=('Current Layer Set: ' + str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) + '.activeLayerSet')))))
         if layers.getLayerSet(settings.objectArray[0]) > 0:
             maya.cmds.intSlider(
@@ -4971,11 +4982,26 @@ class Core(object):
         maya.cmds.undoInfo(stateWithoutFlush=True)
 
     def exitSXTools(self):
+        global settings, setup, export, tools, layers, ui, sx
         scriptJobs = maya.cmds.scriptJob(listJobs=True)
         for job in scriptJobs:
             if ('sxtools' in job) and ('uiDeleted' not in job):
                 index = int(job.split(':')[0])
                 maya.cmds.scriptJob(kill=index)
+        if settings:
+            del settings
+        if setup:
+            del setup
+        if export:
+            del export
+        if tools:
+            del tools
+        if layers:
+            del layers
+        if ui:
+            del ui
+        if sx:
+            del sx
 
     def resetSXTools(self):
         varList = maya.cmds.optionVar(list=True)
