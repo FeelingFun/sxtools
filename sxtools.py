@@ -113,7 +113,12 @@ class Settings(object):
             'bakeGroundScale': 100.0,
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
-            'blendSlider': 0.0
+            'blendSlider': 0.0,
+            'paletteTarget1': ['layer1', ],
+            'paletteTarget2': ['layer2', ],
+            'paletteTarget3': ['layer3', ],
+            'paletteTarget4': ['layer4', ],
+            'paletteTarget5': ['layer5', ]
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5', u'layer6', u'layer7',
@@ -2478,17 +2483,25 @@ class ToolActions(object):
         layers.refreshSelectedItem()
 
     def applyMasterPalette(self, objects):
-        refLayers = layers.sortLayers(
-            settings.projectSettings['SXToolsRefLayers'].keys())
-        for i in xrange(5):
-            maya.cmds.palettePort('masterPalette', edit=True, scc=i)
-            settings.currentColor = maya.cmds.palettePort(
-                'masterPalette', query=True, rgb=True)
-            maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=str(refLayers[i]))
-            maya.cmds.polyColorPerVertex(objects,
-                r=settings.currentColor[0],
-                g=settings.currentColor[1],
-                b=settings.currentColor[2])
+        for i in xrange(1, 6):
+            targetLayers = settings.toolStates['paletteTarget'+str(i)]
+            maya.cmds.palettePort('masterPalette', edit=True, scc=i-1)
+            for layer in targetLayers:
+                state = layers.verifyLayerState(layer)
+                if ('(H)' in state) or ('(M)' in state) or ('(A)' in state):
+                    maya.cmds.polyColorSet(
+                        objects,
+                        currentColorSet=True,
+                        colorSet=layer)
+                    maya.cmds.polyColorPerVertex(
+                        objects,
+                        r=maya.cmds.palettePort(
+                        'masterPalette', query=True, rgb=True)[0],
+                        g=maya.cmds.palettePort(
+                        'masterPalette', query=True, rgb=True)[1],
+                        b=maya.cmds.palettePort(
+                        'masterPalette', query=True, rgb=True)[2])
+        sx.updateSXTools()
 
     def gradientFill(self, axis):
         if len(settings.componentArray) > 0:
@@ -2560,6 +2573,8 @@ class ToolActions(object):
 
                 k = 0
                 while not fvIt.isDone():
+                    ratioRaw = None
+                    ratio = None
                     faceIds[k] = fvIt.faceId()
                     vtxIds[k] = fvIt.vertexId()
                     fvPos = fvIt.position(space)
@@ -3187,6 +3202,22 @@ class ToolActions(object):
             self.getPalette('masterPalette', settings.masterPaletteDict, preset)
             settings.toolStates['palettePreset'] = preset
             self.storePalette('masterPalette', settings.paletteDict, 'SXToolsMasterPalette')
+
+    def checkTarget(self, targets, index):
+        refLayers = layers.sortLayers(
+            settings.projectSettings['SXToolsRefLayers'].keys())
+
+        splitList = []
+        targetList = []
+        splitList = targets.split(',')
+        for item in splitList:
+            targetList.append(item.strip())
+
+        if set(targetList).issubset(refLayers) is False:
+            print('SX Tools Error: Invalid layer target!')
+            maya.cmds.textField('masterTarget'+str(index), edit=True, text=''.join(settings.toolStates['paletteTarget'+str(index)]))
+            return
+        settings.toolStates['paletteTarget'+str(index)] = targetList
 
     def gradientToolManager(self, mode, group=1):
         modifiers = maya.cmds.getModifiers()
@@ -4703,9 +4734,9 @@ class UI(object):
             rowSpacing=(1, 5))
         maya.cmds.button(
             'saveMasterPalette',
-            label='Save Preset',
+            label='Save Palette',
             width=100,
-            ann='Shift-click to delete preset',
+            ann='Shift-click to delete palette',
             command='sxtools.tools.saveMasterPalette()')
         maya.cmds.textField(
             'savePaletteName',
@@ -4726,6 +4757,66 @@ class UI(object):
             colorEdited=
             "sxtools.tools.storePalette('masterPalette', sxtools.settings.paletteDict, 'SXToolsMasterPalette')"
         )
+        maya.cmds.text(label='Color 1 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget1',
+            parent='masterPaletteRowColumns',
+            text=', '.join(settings.toolStates['paletteTarget1']),
+            enterCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget1', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget1', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),            
+            placeholderText='layer1')
+        maya.cmds.text(label='Color 2 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget2',
+            parent='masterPaletteRowColumns',
+            text=', '.join(settings.toolStates['paletteTarget2']),
+            enterCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget2', query=True, text=True), 2)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget2', query=True, text=True), 2)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer2')
+        maya.cmds.text(label='Color 3 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget3',
+            parent='masterPaletteRowColumns',
+            text=', '.join(settings.toolStates['paletteTarget3']),
+            enterCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget3', query=True, text=True), 3)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget3', query=True, text=True), 3)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer3')
+        maya.cmds.text(label='Color 4 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget4',
+            parent='masterPaletteRowColumns',
+            text=', '.join(settings.toolStates['paletteTarget4']),
+            enterCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget4', query=True, text=True), 4)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget4', query=True, text=True), 4)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer4')
+        maya.cmds.text(label='Color 5 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget5',
+            parent='masterPaletteRowColumns',
+            text=', '.join(settings.toolStates['paletteTarget5']),
+            enterCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget5', query=True, text=True), 5)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget(maya.cmds.textField('masterTarget5', query=True, text=True), 5)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer5')
         maya.cmds.button(
             label='Apply Master Palette',
             parent='masterPaletteColumn',
