@@ -3290,23 +3290,26 @@ class ToolActions(object):
             currentMode = int(maya.cmds.getAttr(str(object) + attr))
             # Create color sets
             refLayers = layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
+            oldColors = []
+            newColors = []
             for layer in refLayers:
-                oldColors = str(layer) + '_var' + str(currentMode)
-                self.copyFaceVertexColors([object, ], layer, oldColors)
-                newColors = str(layer) + '_var' + str(targetSet)
-                self.copyFaceVertexColors([object, ], newColors, layer)
+                oldColors.append(str(layer) + '_var' + str(currentMode))
+                newColors.append(str(layer) + '_var' + str(targetSet))
+            self.copyFaceVertexColors([object, ], refLayers, oldColors)
+            self.copyFaceVertexColors([object, ], newColors, refLayers)
 
             maya.cmds.setAttr(object + attr, targetSet)
-            maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
+
+        self.getLayerPaletteOpacity(
+            settings.shapeArray[len(settings.shapeArray)-1],
+            layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
         maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
-    def copyFaceVertexColors(self, objects, layerA, layerB):
-        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=layerB)
+    def copyFaceVertexColors(self, objects, sourceLayers, targetLayers):
         for object in objects:
             selectionList = OM.MSelectionList()
             selectionList.add(object)
@@ -3315,26 +3318,30 @@ class ToolActions(object):
             MFnMesh = OM.MFnMesh(nodeDagPath)
 
             layerAColors = OM.MColorArray()
-            layerAColors = MFnMesh.getFaceVertexColors(colorSet=layerA)
 
-            faceIds = OM.MIntArray()
-            vtxIds = OM.MIntArray()
+            for idx, source in enumerate(sourceLayers):
+                maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=targetLayers[idx])
+                
+                layerAColors = MFnMesh.getFaceVertexColors(colorSet=source)
 
-            lenSel = len(layerAColors)
+                faceIds = OM.MIntArray()
+                vtxIds = OM.MIntArray()
 
-            faceIds.setLength(lenSel)
-            vtxIds.setLength(lenSel)
+                lenSel = len(layerAColors)
 
-            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                faceIds.setLength(lenSel)
+                vtxIds.setLength(lenSel)
 
-            k = 0
-            while not fvIt.isDone():
-                faceIds[k] = fvIt.faceId()
-                vtxIds[k] = fvIt.vertexId()
-                k += 1
-                fvIt.next()
+                fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
-            MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
+                k = 0
+                while not fvIt.isDone():
+                    faceIds[k] = fvIt.faceId()
+                    vtxIds[k] = fvIt.vertexId()
+                    k += 1
+                    fvIt.next()
+
+                MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
 
 class LayerManagement(object):
     def __init__(self):
@@ -3589,21 +3596,21 @@ class LayerManagement(object):
         if var == 0:
             for layer in refLayers:
                 layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, copy=True,
-                colorSet=layer, newColorSet=layerName)
+                maya.cmds.polyColorSet(objects, create=True,
+                colorSet=layerName)
                 tools.copyFaceVertexColors(objects, layer, layerName)
             var += 1
             for layer in refLayers:
                 layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, copy=True,
-                colorSet=layer, newColorSet=layerName)
+                maya.cmds.polyColorSet(objects, create=True,
+                colorSet=layerName)
                 tools.copyFaceVertexColors(objects, layer, layerName)
         else:
             var += 1
             for layer in refLayers:
                 layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, copy=True,
-                colorSet=layer, newColorSet=layerName)
+                maya.cmds.polyColorSet(objects, create=True,
+                colorSet=layerName)
                 tools.copyFaceVertexColors(objects, layer, layerName)    
 
         maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
@@ -3682,24 +3689,25 @@ class LayerManagement(object):
             maya.cmds.textScrollList('layerList', edit=True, removeAll=True)
 
         layers = self.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
-
+        states = []
         for layer in layers:
-            state = self.verifyLayerState(layer)
-            maya.cmds.textScrollList(
-                'layerList',
-                edit=True,
-                append=state,
-                numberOfRows=(settings.projectSettings['SXToolsLayerCount'] +
-                                                                        settings.projectSettings['SXToolsChannelCount']),
-                selectCommand=(
-                    "sxtools.layers.setColorSet(sxtools.layers.getSelectedLayer())\n"
-                    "sxtools.tools.getLayerPaletteOpacity(sxtools.settings.shapeArray[len(sxtools.settings.shapeArray)-1], sxtools.layers.getSelectedLayer())\n"
-                    "maya.cmds.text( 'layerOpacityLabel', edit=True, label=str(sxtools.layers.getSelectedLayer())+' opacity:' )\n"
-                    "maya.cmds.text( 'layerColorLabel', edit=True, label=str(sxtools.layers.getSelectedLayer())+' colors:' )"
-                ),
-                doubleClickCommand=(
-                    "sxtools.layers.toggleLayer(sxtools.layers.getSelectedLayer())\n"
-                    "maya.cmds.shaderfx(sfxnode='SXShader', update=True)"))
+            states.append(self.verifyLayerState(layer))
+        maya.cmds.textScrollList(
+            'layerList',
+            edit=True,
+            append=states,
+            numberOfRows=(
+                settings.projectSettings['SXToolsLayerCount'] +
+                settings.projectSettings['SXToolsChannelCount']),
+            selectCommand=(
+                "sxtools.layers.setColorSet(sxtools.layers.getSelectedLayer())\n"
+                "sxtools.tools.getLayerPaletteOpacity(sxtools.settings.shapeArray[len(sxtools.settings.shapeArray)-1], sxtools.layers.getSelectedLayer())\n"
+                "maya.cmds.text( 'layerOpacityLabel', edit=True, label=str(sxtools.layers.getSelectedLayer())+' opacity:' )\n"
+                "maya.cmds.text( 'layerColorLabel', edit=True, label=str(sxtools.layers.getSelectedLayer())+' colors:' )"
+            ),
+            doubleClickCommand=(
+                "sxtools.layers.toggleLayer(sxtools.layers.getSelectedLayer())\n"
+                "maya.cmds.shaderfx(sfxnode='SXShader', update=True)"))
 
     def refreshSelectedItem(self):
         selectedColorSet = str(
