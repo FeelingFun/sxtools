@@ -2181,11 +2181,8 @@ class Export(object):
 
     def stripPrimVars(self, objects):
         attrList = maya.cmds.listAttr(objects[0], ud=True)
-        print attrList
         for object in objects:
             for attr in attrList:
-                print attr
-                print object
                 maya.cmds.deleteAttr(object, at=attr)
 
 
