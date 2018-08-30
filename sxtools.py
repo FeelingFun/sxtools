@@ -1918,7 +1918,7 @@ class Export(object):
             for i in indices:
                 if i == 0:
                     name = maya.cmds.getAttr(
-                        str(exportName) + '.uvSet[' + str(i) + '].uvSetName')
+                        str(exportShape) + '.uvSet[' + str(i) + '].uvSetName')
                     maya.cmds.polyUVSet(
                     	exportShape,
                     	rename=True,
