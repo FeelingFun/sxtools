@@ -3048,12 +3048,14 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
         if shift is True:
-            layers.clearAllLayers()
+            layers.clearLayer(
+                layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys()),
+                settings.shapeArray)
         elif shift is False:
             if len(settings.componentArray) > 0:
-                layers.clearSelectedComponents(layers.getSelectedLayer())
+                layers.clearLayer([layers.getSelectedLayer(), ])
             else:
-                layers.clearSelectedLayer(settings.shapeArray, layers.getSelectedLayer())
+                layers.clearLayer([layers.getSelectedLayer(), ], settings.shapeArray)
 
     def setLayerOpacity(self):
         alphaMax = settings.layerAlphaMax
@@ -3637,9 +3639,7 @@ class LayerManagement(object):
                             clamped=True,
                             representation='RGBA',
                             colorSet=str(layer))
-                        self.clearSelectedLayer([
-                            object,
-                        ], layer)
+                        self.clearLayer([layer, ], [object, ])
 
                 maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=refLayers[0])
                 maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
@@ -3706,7 +3706,7 @@ class LayerManagement(object):
                 clamped=True,
                 representation='RGBA',
                 colorSet=str(layer))
-            self.clearSelectedLayer(objects, layer)
+            self.clearLayer([layer, ], objects)
 
         maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
         maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
@@ -3743,44 +3743,37 @@ class LayerManagement(object):
 
         maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
 
-    def clearSelectedLayer(self, objects, layer):
-        maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=layer)
-        color = settings.projectSettings['SXToolsRefLayers'][layer]
-        maya.cmds.polyColorPerVertex(
-            objects,
-            r=color[0],
-            g=color[1],
-            b=color[2],
-            a=color[3],
-            representation=4,
-            cdo=True)
-        attr = '.' + str(layer) + 'BlendMode'
-        for object in objects:
-            maya.cmds.setAttr(str(object) + attr, 0)
+    def clearLayer(self, layers, objList=None):
+        objects = []
+        for layer in layers:
+            if objList is None:
+                objects = settings.shapeArray
+            else:
+                objects = objList
+            maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=layer)
+            color = settings.projectSettings['SXToolsRefLayers'][layer]
+            if objList is None:
+                maya.cmds.polyColorPerVertex(
+                    r=color[0],
+                    g=color[1],
+                    b=color[2],
+                    a=color[3],
+                    representation=4,
+                    cdo=True)
+            else:
+                maya.cmds.polyColorPerVertex(
+                    objects,
+                    r=color[0],
+                    g=color[1],
+                    b=color[2],
+                    a=color[3],
+                    representation=4,
+                    cdo=True)
+            attr = '.' + str(layer) + 'BlendMode'
+            for object in objects:
+                maya.cmds.setAttr(str(object) + attr, 0)
         if maya.cmds.objExists('SXShader'):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
-
-    def clearSelectedComponents(self, layer):
-        maya.cmds.polyColorSet(settings.objectArray, currentColorSet=True, colorSet=layer)
-        color = settings.projectSettings['SXToolsRefLayers'][layer]
-        maya.cmds.polyColorPerVertex(
-            r=color[0],
-            g=color[1],
-            b=color[2],
-            a=color[3],
-            representation=4,
-            cdo=True)
-        attr = '.' + str(layer) + 'BlendMode'
-        for object in settings.shapeArray:
-            maya.cmds.setAttr(str(object) + attr, 0)
-        if maya.cmds.objExists('SXShader'):
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
-
-    def clearAllLayers(self):
-        refLayers = self.sortLayers(
-            settings.projectSettings['SXToolsRefLayers'].keys())
-        for layer in refLayers:
-            self.clearSelectedLayer(settings.shapeArray, layer)
 
     # Called when the user double-clicks a layer in the tool UI
     def toggleLayer(self, layer):
