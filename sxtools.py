@@ -198,14 +198,15 @@ class Settings(object):
         self.savePreferences()
 
         if shift is True:
-            setup.createSXShader(self.projectSettings['SXToolsLayerCount'],
-                                                        True, True, True, True)
+            setup.createSXShader(
+            	self.projectSettings['SXToolsLayerCount'],True, True, True, True)
         elif shift is False:
-            setup.createSXShader(self.projectSettings['SXToolsLayerCount'],
-                                                        self.projectSettings['SXToolsMatChannels'][0],
-                                                        self.projectSettings['SXToolsMatChannels'][1],
-                                                        self.projectSettings['SXToolsMatChannels'][2],
-                                                        self.projectSettings['SXToolsMatChannels'][3])
+            setup.createSXShader(
+            	self.projectSettings['SXToolsLayerCount'],
+                self.projectSettings['SXToolsMatChannels'][0],
+                self.projectSettings['SXToolsMatChannels'][1],
+                self.projectSettings['SXToolsMatChannels'][2],
+                self.projectSettings['SXToolsMatChannels'][3])
         setup.createSXExportShader()
         setup.createSXPBShader()
 
@@ -988,8 +989,10 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo1')
         maya.cmds.connectAttr('SXShader.oc', 'SXShaderSG.ss')
         maya.cmds.connectAttr('SXShaderSG.msg', 'SXMaterials_materialInfo1.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'link', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'shadowLink', ':lightLinker1', 'SXShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -1229,8 +1232,10 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo2')
         maya.cmds.connectAttr('SXExportShader.oc', 'SXExportShaderSG.ss')
         maya.cmds.connectAttr('SXExportShaderSG.msg', 'SXMaterials_materialInfo2.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'link', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'shadowLink', ':lightLinker1', 'SXExportShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXExportShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -1399,8 +1404,10 @@ class SceneSetup(object):
         maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo3')
         maya.cmds.connectAttr('SXPBShader.oc', 'SXPBShaderSG.ss')
         maya.cmds.connectAttr('SXPBShaderSG.msg', 'SXMaterials_materialInfo3.sg')
-        maya.cmds.relationship('link', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
-        maya.cmds.relationship('shadowLink', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'link', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+        	'shadowLink', ':lightLinker1', 'SXPBShaderSG.message', ':defaultLightSet.message')
         maya.cmds.connectAttr('SXPBShaderSG.pa', ':renderPartition.st', na=True)
         # maya.cmds.connectAttr('SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
@@ -1426,39 +1433,72 @@ class SceneSetup(object):
 
     def createCreaseSets(self):
         if maya.cmds.objExists('sxCreasePartition') is False:
-            maya.cmds.createNode('partition', n='sxCreasePartition')
+            maya.cmds.createNode(
+                'partition',
+                n='sxCreasePartition')
         if maya.cmds.objExists('sxCrease0') is False:
-            maya.cmds.createNode('creaseSet', n='sxCrease0')
-            maya.cmds.setAttr('sxCrease0.creaseLevel', 0.0)
-            maya.cmds.connectAttr('sxCrease0.partition', 'sxCreasePartition.sets[0]')
+            maya.cmds.createNode(
+                'creaseSet',
+                n='sxCrease0')
+            maya.cmds.setAttr(
+                'sxCrease0.creaseLevel', 0.0)
+            maya.cmds.connectAttr(
+                'sxCrease0.partition',
+                'sxCreasePartition.sets[0]')
         if maya.cmds.objExists('sxCrease1') is False:
-            maya.cmds.createNode('creaseSet', n='sxCrease1')
-            maya.cmds.setAttr('sxCrease1.creaseLevel', 0.5)
-            maya.cmds.setAttr('sxCrease1.memberWireframeColor', 3)
-            maya.cmds.connectAttr('sxCrease1.partition', 'sxCreasePartition.sets[1]')
+            maya.cmds.createNode(
+                'creaseSet',
+                n='sxCrease1')
+            maya.cmds.setAttr(
+                'sxCrease1.creaseLevel', 0.5)
+            maya.cmds.setAttr(
+                'sxCrease1.memberWireframeColor', 3)
+            maya.cmds.connectAttr(
+                'sxCrease1.partition',
+                'sxCreasePartition.sets[1]')
         if maya.cmds.objExists('sxCrease2') is False:
-            maya.cmds.createNode('creaseSet', n='sxCrease2')
-            maya.cmds.setAttr('sxCrease2.creaseLevel', 1.0)
-            maya.cmds.setAttr('sxCrease2.memberWireframeColor', 5)
-            maya.cmds.connectAttr('sxCrease2.partition', 'sxCreasePartition.sets[2]')
+            maya.cmds.createNode(
+                'creaseSet',
+                n='sxCrease2')
+            maya.cmds.setAttr(
+                'sxCrease2.creaseLevel', 1.0)
+            maya.cmds.setAttr(
+                'sxCrease2.memberWireframeColor', 5)
+            maya.cmds.connectAttr(
+                'sxCrease2.partition',
+                'sxCreasePartition.sets[2]')
         if maya.cmds.objExists('sxCrease3') is False:
-            maya.cmds.createNode('creaseSet', n='sxCrease3')
-            maya.cmds.setAttr('sxCrease3.creaseLevel', 2.0)
-            maya.cmds.setAttr('sxCrease3.memberWireframeColor', 6)
-            maya.cmds.connectAttr('sxCrease3.partition', 'sxCreasePartition.sets[3]')
+            maya.cmds.createNode(
+                'creaseSet',
+                n='sxCrease3')
+            maya.cmds.setAttr(
+                'sxCrease3.creaseLevel', 2.0)
+            maya.cmds.setAttr(
+                'sxCrease3.memberWireframeColor', 6)
+            maya.cmds.connectAttr(
+                'sxCrease3.partition',
+                'sxCreasePartition.sets[3]')
         if maya.cmds.objExists('sxCrease4') is False:
-            maya.cmds.createNode('creaseSet', n='sxCrease4')
-            maya.cmds.setAttr('sxCrease4.creaseLevel', 10.0)
-            maya.cmds.setAttr('sxCrease4.memberWireframeColor', 7)
-            maya.cmds.connectAttr('sxCrease4.partition', 'sxCreasePartition.sets[4]')
+            maya.cmds.createNode(
+                'creaseSet',
+                n='sxCrease4')
+            maya.cmds.setAttr(
+                'sxCrease4.creaseLevel', 10.0)
+            maya.cmds.setAttr(
+                'sxCrease4.memberWireframeColor', 7)
+            maya.cmds.connectAttr(
+                'sxCrease4.partition',
+                'sxCreasePartition.sets[4]')
 
     def createDisplayLayers(self):
         if 'assetsLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating assetsLayer')
-            maya.cmds.createDisplayLayer(name='assetsLayer', number=1, empty=True)
+            maya.cmds.createDisplayLayer(
+                name='assetsLayer', number=1, empty=True)
         if 'exportsLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating exportsLayer')
-            maya.cmds.createDisplayLayer(name='exportsLayer', number=2, empty=True)
+            maya.cmds.createDisplayLayer(
+                name='exportsLayer', number=2, empty=True)
 
     def setPrimVars(self):
         refLayers = layers.sortLayers(
@@ -1471,73 +1511,139 @@ class SceneSetup(object):
         attrList = maya.cmds.listAttr(settings.shapeArray, ud=True)
         if attrList is None:
             maya.cmds.addAttr(
-                settings.shapeArray, ln='activeLayerSet', at='double', min=0, max=9, dv=0)
+                settings.shapeArray,
+                ln='activeLayerSet',
+                at='double', min=0, max=9, dv=0)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='transparency', at='double', min=0, max=1, dv=0)
-            maya.cmds.addAttr(settings.shapeArray, ln='shadingMode', at='double', min=0, max=2, dv=0)
+                settings.shapeArray,
+                ln='numLayerSets',
+                at='double', min=0, max=9, dv=0)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='occlusionVisibility', at='double', min=0, max=1, dv=1)
+                settings.shapeArray,
+                ln='transparency',
+                at='double', min=0, max=1, dv=0)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='specularVisibility', at='double', min=0, max=1, dv=1)
+            	settings.shapeArray,
+            	ln='shadingMode',
+            	at='double', min=0, max=2, dv=0)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='transmissionVisibility', at='double', min=0, max=1, dv=1)
+                settings.shapeArray,
+                ln='occlusionVisibility',
+                at='double', min=0, max=1, dv=1)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='emissionVisibility', at='double', min=0, max=1, dv=1)
+                settings.shapeArray,
+                ln='specularVisibility',
+                at='double', min=0, max=1, dv=1)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='occlusionBlendMode', at='double', min=0, max=2, dv=0)
+                settings.shapeArray,
+                ln='transmissionVisibility',
+                at='double', min=0, max=1, dv=1)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='specularBlendMode', at='double', min=0, max=2, dv=0)
+                settings.shapeArray,
+                ln='emissionVisibility',
+                at='double', min=0, max=1, dv=1)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='transmissionBlendMode', at='double', min=0, max=2, dv=0)
+                settings.shapeArray,
+                ln='occlusionBlendMode',
+                at='double', min=0, max=2, dv=0)
             maya.cmds.addAttr(
-                settings.shapeArray, ln='emissionBlendMode', at='double', min=0, max=2, dv=0)
+                settings.shapeArray,
+                ln='specularBlendMode',
+                at='double', min=0, max=2, dv=0)
+            maya.cmds.addAttr(
+                settings.shapeArray,
+                ln='transmissionBlendMode',
+                at='double', min=0, max=2, dv=0)
+            maya.cmds.addAttr(
+                settings.shapeArray,
+                ln='emissionBlendMode',
+                at='double', min=0, max=2, dv=0)
             for k in range(0, settings.projectSettings['SXToolsLayerCount']):
                 visName = str(refLayers[k]) + 'Visibility'
                 blendName = str(refLayers[k]) + 'BlendMode'
-                maya.cmds.addAttr(settings.shapeArray, ln=visName, at='double', min=0, max=1, dv=1)
-                maya.cmds.addAttr(settings.shapeArray, ln=blendName, at='double', min=0, max=2, dv=0)
+                maya.cmds.addAttr(
+                	settings.shapeArray,
+                	ln=visName,
+                	at='double', min=0, max=1, dv=1)
+                maya.cmds.addAttr(
+                	settings.shapeArray,
+                	ln=blendName,
+                	at='double', min=0, max=2, dv=0)
         else:
             if ('activeLayerSet' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='activeLayerSet', at='double', min=0, max=10, dv=0)
+                    settings.shapeArray,
+                    ln='activeLayerSet',
+                    at='double', min=0, max=10, dv=0)
+            if ('numLayerSets' not in attrList):
+                maya.cmds.addAttr(
+                    settings.shapeArray,
+                    ln='numLayerSets',
+                    at='double', min=0, max=9, dv=0)
             if ('transparency' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='transparency', at='double', min=0, max=1, dv=0)
+                    settings.shapeArray,
+                    ln='transparency',
+                    at='double', min=0, max=1, dv=0)
             if ('shadingMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='shadingMode', at='double', min=0, max=2, dv=0)
+                    settings.shapeArray,
+                    ln='shadingMode',
+                    at='double', min=0, max=2, dv=0)
             if ('occlusionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='occlusionVisibility', at='double', min=0, max=1, dv=1)
+                    settings.shapeArray,
+                    ln='occlusionVisibility',
+                    at='double', min=0, max=1, dv=1)
             if ('specularVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='specularVisibility', at='double', min=0, max=1, dv=1)
+                    settings.shapeArray,
+                    ln='specularVisibility',
+                    at='double', min=0, max=1, dv=1)
             if ('transmissionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='transmissionVisibility', at='double', min=0, max=1, dv=1)
+                    settings.shapeArray,
+                    ln='transmissionVisibility',
+                    at='double', min=0, max=1, dv=1)
             if ('emissionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='emissionVisibility', at='double', min=0, max=1, dv=1)
+                    settings.shapeArray,
+                    ln='emissionVisibility',
+                    at='double', min=0, max=1, dv=1)
             if ('occlusionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='occlusionBlendMode', at='double', min=0, max=2, dv=0)
+                    settings.shapeArray,
+                    ln='occlusionBlendMode',
+                    at='double', min=0, max=2, dv=0)
             if ('specularBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='specularBlendMode', at='double', min=0, max=2, dv=0)
+                    settings.shapeArray,
+                    ln='specularBlendMode',
+                    at='double', min=0, max=2, dv=0)
             if ('transmissionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='transmissionBlendMode', at='double', min=0, max=2, dv=0)
+                    settings.shapeArray,
+                    ln='transmissionBlendMode',
+                    at='double', min=0, max=2, dv=0)
             if ('emissionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray, ln='emissionBlendMode', at='double', min=0, max=2, dv=0)
+                    settings.shapeArray,
+                    ln='emissionBlendMode',
+                    at='double', min=0, max=2, dv=0)
 
             for k in range(0, settings.projectSettings['SXToolsLayerCount']):
                 blendName = str(refLayers[k]) + 'BlendMode'
                 visName = str(refLayers[k]) + 'Visibility'
                 if (blendName not in attrList):
-                    maya.cmds.addAttr(settings.shapeArray, ln=blendName, at='double', min=0, max=2, dv=0)
+                    maya.cmds.addAttr(
+                    	settings.shapeArray,
+                    	ln=blendName,
+                    	at='double', min=0, max=2, dv=0)
                 if (visName not in attrList):
-                    maya.cmds.addAttr(settings.shapeArray, ln=visName, at='double', min=0, max=1, dv=1)
+                    maya.cmds.addAttr(
+                    	settings.shapeArray,
+                    	ln=visName,
+                    	at='double', min=0, max=1, dv=1)
 
 
 class Export(object):
@@ -1556,20 +1662,15 @@ class Export(object):
         sx.selectionManager()
 
     def flattenLayers(self, selected, numLayers):
-        startTime2 = maya.cmds.timerX()
         if numLayers > 1:
             for i in range(1, numLayers):
                 sourceLayer = 'layer' + str(i + 1)
                 layers.mergeLayers(selected, sourceLayer, 'layer1', True)
 
-        elapsedTime = maya.cmds.timerX(startTime=startTime2)
-
     # For export, the layer colors are flattened to a single vertex color set,
     # but their "layer masks" are written to UV coordinates.
     # Each vertex must be assigned to one mask.
     def colorToUV(self, selected, uSourceColorSet, vSourceColorSet, targetUVSet):
-        startTime1 = maya.cmds.timerX()
-
         selectionList = OM.MSelectionList()
         selectionList.add(selected)
         nodeDagPath = OM.MDagPath()
@@ -1606,9 +1707,6 @@ class Export(object):
 
         MFnMesh.setUVs(uArray, vArray, targetUVSet)
         MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
-
-        elapsedTime = maya.cmds.timerX(startTime=startTime1)
-        # print ('Elapsed Time for '+uSourceColorSet+' and '+vSourceColorSet+': '+str(elapsedTime)+'\n')
 
     def overlayToUV(self, selected, layers, targetUVSetList):
         for idx, layer in enumerate(layers):
@@ -1788,7 +1886,9 @@ class Export(object):
             if var > 0:
                 tools.swapLayerSets([exportShape, ], 0)                
             for x in xrange(1, var+1):
-                variant = maya.cmds.duplicate(exportShape, name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
+                variant = maya.cmds.duplicate(
+                	exportShape,
+                	name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
                 tools.swapLayerSets([variant, ], x)
 
         exportShapeArray = self.getTransforms(
@@ -1812,16 +1912,23 @@ class Export(object):
         for exportShape in exportShapeArray:
             # Check for existing additional UV sets and delete them,
             # create default UVs to UV0
-            indices = maya.cmds.polyUVSet(exportShape, q=True, allUVSetsIndices=True)
+            indices = maya.cmds.polyUVSet(
+            	exportShape, q=True, allUVSetsIndices=True)
 
             for i in indices:
                 if i == 0:
                     name = maya.cmds.getAttr(
                         str(exportName) + '.uvSet[' + str(i) + '].uvSetName')
-                    maya.cmds.polyUVSet(exportShape, rename=True, uvSet=name, newUVSet='UV0')
-                    maya.cmds.polyUVSet(exportShape, currentUVSet=True, uvSet='UV0')
+                    maya.cmds.polyUVSet(
+                    	exportShape,
+                    	rename=True,
+                    	uvSet=name, newUVSet='UV0')
+                    maya.cmds.polyUVSet(
+                    	exportShape,
+                    	currentUVSet=True, uvSet='UV0')
                     maya.cmds.polyAutoProjection(
-                        exportShape, lm=0, pb=0, ibd=1, cm=0, l=3, sc=1, o=0, p=6, ps=0.2, ws=0)
+                        exportShape,
+                        lm=0, pb=0, ibd=1, cm=0, l=3, sc=1, o=0, p=6, ps=0.2, ws=0)
 
                 if i > 0:
                     name = maya.cmds.getAttr(
@@ -1854,13 +1961,19 @@ class Export(object):
             self.flattenLayers(exportShape, numLayers)
 
             # Delete unnecessary color sets (leave only layer1)
-            colSets = maya.cmds.polyColorSet(exportShape, query=True, allColorSets=True)
+            colSets = maya.cmds.polyColorSet(
+            	exportShape,
+            	query=True, allColorSets=True)
             for set in colSets:
                 if str(set) != 'layer1':
-                    maya.cmds.polyColorSet(exportShape, delete=True, colorSet=str(set))
+                    maya.cmds.polyColorSet(
+                    	exportShape,
+                    	delete=True, colorSet=str(set))
 
             # Set layer1 visible for userfriendliness
-            maya.cmds.polyColorSet(exportShape, currentColorSet=True, colorSet='layer1')
+            maya.cmds.polyColorSet(
+            	exportShape,
+            	currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
             
             # Smooth mesh as last step for export
@@ -1880,10 +1993,14 @@ class Export(object):
             offsetZ = 0
             offsetDist = exportOffsetValue
             for final in finalList:
-                maya.cmds.setAttr(str(final) + '.translate', 0, 0, 0, type='double3')
-                maya.cmds.makeIdentity(final, apply=True, t=1, r=1, s=1, n=0, pn=1)
                 maya.cmds.setAttr(
-                    str(final) + '.translate', offsetX, 0, offsetZ, type='double3')
+                	str(final) + '.translate',
+                	0, 0, 0, type='double3')
+                maya.cmds.makeIdentity(
+                	final, apply=True, t=1, r=1, s=1, n=0, pn=1)
+                maya.cmds.setAttr(
+                    str(final) + '.translate',
+                    offsetX, 0, offsetZ, type='double3')
                 offsetX += offsetDist
                 if offsetX == offsetDist * 5:
                     offsetX = 0
@@ -1893,7 +2010,8 @@ class Export(object):
         print('SX Tools: Total time ' + str(totalTime))
         maya.cmds.select('_staticExports', r=True)
         sx.selectionManager()
-        maya.cmds.editDisplayLayerMembers('exportsLayer', maya.cmds.ls(sl=True))
+        maya.cmds.editDisplayLayerMembers(
+        	'exportsLayer', maya.cmds.ls(sl=True))
         self.viewExported()
 
     # Writing FBX files to a user-defined folder
@@ -1954,7 +2072,8 @@ class Export(object):
 
         # Composite
         if buttonState1 == 1:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXPBShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXPBShaderSG')
             maya.cmds.polyOptions(
                 activeObjects=True,
                 colorMaterialChannel='ambientDiffuse',
@@ -1963,7 +2082,8 @@ class Export(object):
 
         # Albedo
         elif buttonState1 == 2:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[0]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -1973,7 +2093,8 @@ class Export(object):
 
         # Layer Masks
         elif buttonState1 == 3:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[0]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -1983,7 +2104,8 @@ class Export(object):
 
         # Occlusion
         elif buttonState2 == 1:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[1]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -1993,7 +2115,8 @@ class Export(object):
 
         # Specular
         elif buttonState2 == 2:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -2003,7 +2126,8 @@ class Export(object):
 
         # Transmission
         elif buttonState2 == 3:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[3]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -2013,7 +2137,8 @@ class Export(object):
 
         # Emission
         elif buttonState2 == 4:
-            maya.cmds.sets(settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            maya.cmds.sets(
+            	settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = uvChannels[4]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -2071,7 +2196,7 @@ class ToolActions(object):
     def assignToCreaseSet(self, setName):
         creaseSets = ('sxCrease0', 'sxCrease1', 'sxCrease2', 'sxCrease3', 'sxCrease4')
         if ((maya.cmds.filterExpand(settings.componentArray, sm=31) is not None) or
-                        (maya.cmds.filterExpand(settings.componentArray, sm=32) is not None)):
+        	(maya.cmds.filterExpand(settings.componentArray, sm=32) is not None)):
 
             for set in creaseSets:
                 if maya.cmds.sets(settings.componentArray, isMember=set):
@@ -2097,11 +2222,7 @@ class ToolActions(object):
                 name='sxGroundPlane',
                 w=settings.toolStates['bakeGroundScale'],
                 h=settings.toolStates['bakeGroundScale'],
-                sx=1,
-                sy=1,
-                ax=(0, 1, 0),
-                cuv=2,
-                ch=0)
+                sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0)
             maya.cmds.select(settings.bakeSet)
             sx.selectionManager()
 
@@ -2226,14 +2347,14 @@ class ToolActions(object):
                 vtxIds[k] = fvIt.vertexId()
                 testColor = fvIt.getColor('occlusion')
                 layerColorArray[k].r = (
-                    1 - sliderValue
-                ) * layerColorArrayLocal[k].r + sliderValue * layerColorArrayGlobal[k].r
+                	(1-sliderValue) * layerColorArrayLocal[k].r
+                	+ sliderValue * layerColorArrayGlobal[k].r)
                 layerColorArray[k].g = (
-                    1 - sliderValue
-                ) * layerColorArrayLocal[k].g + sliderValue * layerColorArrayGlobal[k].g
+                	(1-sliderValue) * layerColorArrayLocal[k].g
+                	+ sliderValue * layerColorArrayGlobal[k].g)
                 layerColorArray[k].b = (
-                    1 - sliderValue
-                ) * layerColorArrayLocal[k].b + sliderValue * layerColorArrayGlobal[k].b
+                	(1-sliderValue) * layerColorArrayLocal[k].b
+                	+ sliderValue * layerColorArrayGlobal[k].b)
                 k += 1
                 fvIt.next()
 
@@ -2276,11 +2397,7 @@ class ToolActions(object):
                 name='sxGroundPlane',
                 w=settings.toolStates['bakeGroundScale'],
                 h=settings.toolStates['bakeGroundScale'],
-                sx=1,
-                sy=1,
-                ax=(0, 1, 0),
-                cuv=2,
-                ch=0)
+                sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0)
             maya.cmds.select(settings.bakeSet)
             sx.selectionManager()
 
@@ -2290,17 +2407,10 @@ class ToolActions(object):
             if 'uvAO' not in uvList:
                 maya.cmds.polyAutoProjection(
                     bake,
-                    lm=0,
-                    pb=0,
-                    ibd=1,
-                    cm=1,
-                    l=2,
-                    sc=1,
-                    o=0,
-                    p=6,
+                    lm=0, pb=0, ibd=1, cm=1,
+                    l=2, sc=1, o=0, p=6,
                     uvSetName='uvAO',
-                    ps=0.2,
-                    ws=0)
+                    ps=0.2, ws=0)
 
         # bake everything together
         if shift is True:
@@ -2414,8 +2524,8 @@ class ToolActions(object):
                     maya.cmds.polyColorPerVertex(
                         component, r=color[0], g=color[1], b=color[2], a=color[3])
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+            settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
@@ -2477,8 +2587,8 @@ class ToolActions(object):
 
             MFnMesh.setVertexColors(vtxColors, vtxIds)
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+        	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
@@ -2487,39 +2597,39 @@ class ToolActions(object):
             targetLayers = settings.toolStates['paletteTarget'+str(i)]
             maya.cmds.palettePort('masterPalette', edit=True, scc=i-1)
             for layer in targetLayers:
-                state = layers.verifyLayerState(layer)
-                if ('(H)' in state) or ('(M)' in state) or ('(A)' in state):
-                    maya.cmds.polyColorSet(
-                        objects,
-                        currentColorSet=True,
-                        colorSet=layer)
-                    maya.cmds.polyColorPerVertex(
-                        objects,
-                        r=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[0],
-                        g=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[1],
-                        b=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[2])
-        sx.updateSXTools()
+                maya.cmds.polyColorSet(
+                    objects,
+                    currentColorSet=True,
+                    colorSet=layer)
+                maya.cmds.polyColorPerVertex(
+                    objects,
+                    r=maya.cmds.palettePort(
+                    'masterPalette', query=True, rgb=True)[0],
+                    g=maya.cmds.palettePort(
+                    'masterPalette', query=True, rgb=True)[1],
+                    b=maya.cmds.palettePort(
+                    'masterPalette', query=True, rgb=True)[2])
+        layers.refreshLayerList()
+        layers.refreshSelectedItem()
 
     def gradientFill(self, axis):
         if len(settings.componentArray) > 0:
             components = maya.cmds.ls(
-                maya.cmds.polyListComponentConversion(settings.componentArray, tvf=True),
-                fl=True)
+                maya.cmds.polyListComponentConversion(
+                	settings.componentArray, tvf=True), fl=True)
             # tempFaceArray is constructed because
             # polyEvaluate doesn't work on face vertices
             tempFaceArray = maya.cmds.ls(
-                maya.cmds.polyListComponentConversion(settings.componentArray, tf=True),
-                fl=True)
+                maya.cmds.polyListComponentConversion(
+                	settings.componentArray, tf=True), fl=True)
             maya.cmds.select(tempFaceArray)
             objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
         else:
             components = maya.cmds.ls(
-                maya.cmds.polyListComponentConversion(settings.shapeArray, tv=True),
-                fl=True)
-            objectBounds = maya.cmds.polyEvaluate(settings.shapeArray, b=True, ae=True)
+                maya.cmds.polyListComponentConversion(
+                	settings.shapeArray, tv=True), fl=True)
+            objectBounds = maya.cmds.polyEvaluate(
+            	settings.shapeArray, b=True, ae=True)
 
         objectBoundsXmin = objectBounds[0][0]
         objectBoundsXmax = objectBounds[0][1]
@@ -2536,17 +2646,24 @@ class ToolActions(object):
             compAlpha = [float] * len(components)
 
             for i in range(len(components)):
-                compPos[i] = maya.cmds.xform(components[i], query=True, worldSpace=True, translation=True)            
+                compPos[i] = maya.cmds.xform(
+                	components[i], query=True, worldSpace=True, translation=True)            
                 if axis == 1:
-                    ratioRaw[i] = (compPos[i][0]-objectBoundsXmin)/(objectBoundsXmax-objectBoundsXmin)
+                    ratioRaw[i] = ((compPos[i][0]-objectBoundsXmin)
+                    				/(objectBoundsXmax-objectBoundsXmin))
                 elif axis == 2:
-                    ratioRaw[i] = (compPos[i][1]-objectBoundsYmin)/(objectBoundsYmax-objectBoundsYmin)
+                    ratioRaw[i] = ((compPos[i][1]-objectBoundsYmin)
+                    				/(objectBoundsYmax-objectBoundsYmin))
                 elif axis == 3:
-                    ratioRaw[i] = (compPos[i][2]-objectBoundsZmin)/(objectBoundsZmax-objectBoundsZmin)                
+                    ratioRaw[i] = ((compPos[i][2]-objectBoundsZmin)
+                    				/(objectBoundsZmax-objectBoundsZmin))
                 ratio[i] = max(min(ratioRaw[i], 1), 0)
-                compColor[i] = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
-                compAlpha[i] = maya.cmds.colorAtPoint('SXAlphaRamp', o='A', u=(ratio[i]), v=(ratio[i]))[0]
-                maya.cmds.polyColorPerVertex(components[i], rgb=compColor[i], a=compAlpha[i])
+                compColor[i] = maya.cmds.colorAtPoint(
+                	'SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
+                compAlpha[i] = maya.cmds.colorAtPoint(
+                	'SXAlphaRamp', o='A', u=(ratio[i]), v=(ratio[i]))[0]
+                maya.cmds.polyColorPerVertex(
+                	components[i], rgb=compColor[i], a=compAlpha[i])
         else:
             for object in settings.objectArray:
                 layer = layers.getSelectedLayer()
@@ -2579,14 +2696,19 @@ class ToolActions(object):
                     vtxIds[k] = fvIt.vertexId()
                     fvPos = fvIt.position(space)
                     if axis == 1:
-                        ratioRaw = (fvPos[0]-objectBoundsXmin)/(objectBoundsXmax-objectBoundsXmin)
+                        ratioRaw = ((fvPos[0]-objectBoundsXmin)
+                        			/(objectBoundsXmax-objectBoundsXmin))
                     elif axis == 2:
-                        ratioRaw = (fvPos[1]-objectBoundsYmin)/(objectBoundsYmax-objectBoundsYmin)
+                        ratioRaw = ((fvPos[1]-objectBoundsYmin)
+                        			/(objectBoundsYmax-objectBoundsYmin))
                     elif axis == 3:
-                        ratioRaw = (fvPos[2]-objectBoundsZmin)/(objectBoundsZmax-objectBoundsZmin)
+                        ratioRaw = ((fvPos[2]-objectBoundsZmin)
+                        			/(objectBoundsZmax-objectBoundsZmin))
                     ratio = max(min(ratioRaw, 1), 0)
-                    outColor = maya.cmds.colorAtPoint('SXRamp', o='RGB', u=(ratio), v=(ratio))
-                    outAlpha = maya.cmds.colorAtPoint('SXAlphaRamp', o='A', u=(ratio), v=(ratio))
+                    outColor = maya.cmds.colorAtPoint(
+                    	'SXRamp', o='RGB', u=(ratio), v=(ratio))
+                    outAlpha = maya.cmds.colorAtPoint(
+                    	'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
                     layerColors[k].r = outColor[0]
                     layerColors[k].g = outColor[1]
                     layerColors[k].b = outColor[2]
@@ -2596,8 +2718,8 @@ class ToolActions(object):
 
                 MFnMesh.setFaceVertexColors(layerColors, faceIds, vtxIds, mod, colorRep)
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+        	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
@@ -2659,8 +2781,8 @@ class ToolActions(object):
                 representation=4,
                 cdo=True)
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+        	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
@@ -2803,8 +2925,8 @@ class ToolActions(object):
                 maya.cmds.setAttr(str(shape) + attrA, modeB)
                 maya.cmds.setAttr(str(shape) + attrB, modeA)
 
-                self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                        layers.getSelectedLayer())
+                self.getLayerPaletteOpacity(
+                	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
                 layers.refreshLayerList()
                 layers.refreshSelectedItem()
                 maya.cmds.shaderfx(sfxnode='SXShader', update=True)
@@ -2858,8 +2980,8 @@ class ToolActions(object):
         else:
             print('SXTools Error: Invalid layers!')
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+        	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
         maya.cmds.shaderfx(sfxnode='SXShader', update=True)
@@ -2917,7 +3039,7 @@ class ToolActions(object):
             maya.cmds.button(
                 label='Delete History',
                 command='maya.cmds.delete(sxtools.settings.objectArray, ch=True)\n'
-                                'sxtools.sx.updateSXTools()')
+                'sxtools.sx.updateSXTools()')
 
     # Called from a button the tool UI
     # that clears either the selected layer
@@ -2980,18 +3102,20 @@ class ToolActions(object):
                 if alphaMax == 1:
                     maya.cmds.shaderfx(
                         sfxnode='SXShader',
-                        makeConnection=(settings.nodeDict['transparencyComp'], 0, settings.nodeDict['SXShader'], 0))
+                        makeConnection=(
+                        	settings.nodeDict['transparencyComp'], 0, settings.nodeDict['SXShader'], 0))
                 maya.cmds.shaderfx(sfxnode='SXShader', update=True)
             elif (str(layer) == 'layer1') and (sliderAlpha == 1):
                 maya.cmds.setAttr(str(shape) + '.transparency', 0)
                 if alphaMax < 1:
                     maya.cmds.shaderfx(
                         sfxnode='SXShader',
-                        breakConnection=(settings.nodeDict['transparencyComp'], 0, settings.nodeDict['SXShader'], 0))
+                        breakConnection=(
+                        	settings.nodeDict['transparencyComp'], 0, settings.nodeDict['SXShader'], 0))
                 maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
-        self.getLayerPaletteOpacity(settings.shapeArray[len(settings.shapeArray)-1],
-                                                                layers.getSelectedLayer())
+        self.getLayerPaletteOpacity(
+        	settings.shapeArray[len(settings.shapeArray)-1], layers.getSelectedLayer())
 
     def getLayerMask(self):
         maskList = []
@@ -3090,7 +3214,8 @@ class ToolActions(object):
                     edit=True,
                     usepressure=False,
                     colorRGBValue=[
-                        settings.currentColor[0], settings.currentColor[1],
+                        settings.currentColor[0],
+                        settings.currentColor[1],
                         settings.currentColor[2]
                     ])
             elif numChannels == 4:
@@ -3099,7 +3224,8 @@ class ToolActions(object):
                     edit=True,
                     usepressure=False,
                     colorRGBAValue=[
-                        settings.currentColor[0], settings.currentColor[1],
+                        settings.currentColor[0],
+                        settings.currentColor[1],
                         settings.currentColor[2], 1
                     ])
 
@@ -3126,18 +3252,25 @@ class ToolActions(object):
                 maya.cmds.palettePort(
                     'recentPalette',
                     edit=True,
-                    rgb=(k, swapColorArray[k - 1][0], swapColorArray[k - 1][1],
-                                        swapColorArray[k - 1][2]))
+                    rgb=(k, swapColorArray[k - 1][0],
+                        swapColorArray[k - 1][1],
+                        swapColorArray[k - 1][2]))
 
-            maya.cmds.palettePort('recentPalette', edit=True, scc=0)
+            maya.cmds.palettePort(
+                'recentPalette',
+                edit=True, scc=0)
             maya.cmds.palettePort(
                 'recentPalette',
                 edit=True,
                 rgb=(0, addedColor[0], addedColor[1], addedColor[2]))
-            maya.cmds.palettePort('recentPalette', edit=True, redraw=True)
+            maya.cmds.palettePort(
+                'recentPalette',
+                edit=True, redraw=True)
         else:
             idx = swapColorArray.index(addedColor)
-            maya.cmds.palettePort('recentPalette', edit=True, scc=idx)
+            maya.cmds.palettePort(
+                'recentPalette',
+                edit=True, scc=idx)
 
         self.storePalette('recentPalette', settings.paletteDict, 'SXToolsRecentPalette')
 
@@ -3215,7 +3348,10 @@ class ToolActions(object):
 
         if set(targetList).issubset(refLayers) is False:
             print('SX Tools Error: Invalid layer target!')
-            maya.cmds.textField('masterTarget'+str(index), edit=True, text=''.join(settings.toolStates['paletteTarget'+str(index)]))
+            maya.cmds.textField(
+            	'masterTarget'+str(index),
+            	edit=True,
+            	text=''.join(settings.toolStates['paletteTarget'+str(index)]))
             return
         settings.toolStates['paletteTarget'+str(index)] = targetList
 
@@ -3284,21 +3420,26 @@ class ToolActions(object):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
         layers.getSelectedLayer()
 
-    def swapLayerSets(self, objects, targetSet):
+    def swapLayerSets(self, objects, targetSet, offset=False):
+        if offset is True:
+            targetSet -= 1
+        if (targetSet > layers.getLayerSet(objects[0])) or (targetSet < 0):
+            print('SX Tools Error: Selected layer set does not exist!')
+            return
+        refLayers = layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
+        oldColors = []
+        newColors = []
+
         for object in objects:
             attr = '.activeLayerSet'
-            currentMode = int(maya.cmds.getAttr(str(object) + attr))
-            # Create color sets
-            refLayers = layers.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
-            oldColors = []
-            newColors = []
+            currentMode = int(maya.cmds.getAttr(object + attr))
+            objLayers = maya.cmds.polyColorSet(object, query=True, allColorSets=True)
             for layer in refLayers:
-                oldColors.append(str(layer) + '_var' + str(currentMode))
-                newColors.append(str(layer) + '_var' + str(targetSet))
-            self.copyFaceVertexColors([object, ], refLayers, oldColors)
-            self.copyFaceVertexColors([object, ], newColors, refLayers)
-
-            maya.cmds.setAttr(object + attr, targetSet)
+                if (str(layer)+'_var'+str(currentMode)) in objLayers:
+                    maya.cmds.polyColorSet(object, delete=True, colorSet=(str(layer)+'_var'+str(currentMode)))
+                maya.cmds.polyColorSet(object, rename=True, colorSet=layer, newColorSet=(str(layer)+'_var'+str(currentMode)))
+                maya.cmds.polyColorSet(object, rename=True, colorSet=(str(layer)+'_var'+str(targetSet)), newColorSet=layer)
+            maya.cmds.setAttr(object + attr, targetSet) 
 
         maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
 
@@ -3318,30 +3459,30 @@ class ToolActions(object):
             MFnMesh = OM.MFnMesh(nodeDagPath)
 
             layerAColors = OM.MColorArray()
+            layerAColors = MFnMesh.getFaceVertexColors(colorSet='layer1')
 
-            for idx, source in enumerate(sourceLayers):
-                maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet=targetLayers[idx])
-                
+            faceIds = OM.MIntArray()
+            vtxIds = OM.MIntArray()
+
+            lenSel = len(layerAColors)
+
+            faceIds.setLength(lenSel)
+            vtxIds.setLength(lenSel)
+
+            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+            
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                vtxIds[k] = fvIt.vertexId()
+                k += 1
+                fvIt.next()
+
+            for source, target in zip(sourceLayers, targetLayers):
+                maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=target)
                 layerAColors = MFnMesh.getFaceVertexColors(colorSet=source)
-
-                faceIds = OM.MIntArray()
-                vtxIds = OM.MIntArray()
-
-                lenSel = len(layerAColors)
-
-                faceIds.setLength(lenSel)
-                vtxIds.setLength(lenSel)
-
-                fvIt = OM.MItMeshFaceVertex(nodeDagPath)
-
-                k = 0
-                while not fvIt.isDone():
-                    faceIds[k] = fvIt.faceId()
-                    vtxIds[k] = fvIt.vertexId()
-                    k += 1
-                    fvIt.next()
-
                 MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
+
 
 class LayerManagement(object):
     def __init__(self):
@@ -3566,52 +3707,39 @@ class LayerManagement(object):
                 representation='RGBA',
                 colorSet=str(layer))
             self.clearSelectedLayer(objects, layer)
-            # maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=str(layer))
 
         maya.cmds.polyColorSet(object, currentColorSet=True, colorSet='layer1')
         maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
 
     def getLayerSet(self, object):
-        values = []
-        var = 0
-
-        # Find current index
-        colorSets = maya.cmds.polyColorSet(object, query=True, allColorSets=True)
-        for colorSet in colorSets:
-            if '_var' in str(colorSet):
-                values.append(str(colorSet).split('_var')[1])
-
-        if len(values) > 0:
-            var = int(max(values))
-        
+        var = int(maya.cmds.getAttr(object + '.numLayerSets'))
         return var
 
     def addLayerSet(self, objects, varIdx):
+        for object in objects:
+            num = int(maya.cmds.getAttr(object + '.numLayerSets'))
+            if num != varIdx:
+                print('SX Tools Error: Objects selected with mismatching number of Layer Sets!')
+                return
+            
         if varIdx == 9:
             print('SX Tools: Maximum layer sets added!')
             return
 
         refLayers = self.sortLayers(settings.projectSettings['SXToolsRefLayers'].keys())
+        targetLayers = []
         var = varIdx
-        if var == 0:
-            for layer in refLayers:
-                layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, create=True,
+
+        var += 1
+        for layer in refLayers:
+            layerName = str(layer) + '_var' + str(var)
+            maya.cmds.polyColorSet(
+                objects, create=True,
                 colorSet=layerName)
-                tools.copyFaceVertexColors(objects, layer, layerName)
-            var += 1
-            for layer in refLayers:
-                layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, create=True,
-                colorSet=layerName)
-                tools.copyFaceVertexColors(objects, layer, layerName)
-        else:
-            var += 1
-            for layer in refLayers:
-                layerName = str(layer) + '_var' + str(var)
-                maya.cmds.polyColorSet(objects, create=True,
-                colorSet=layerName)
-                tools.copyFaceVertexColors(objects, layer, layerName)    
+            targetLayers.append(layerName)
+        tools.copyFaceVertexColors(objects, refLayers, targetLayers)
+        for object in objects:
+            maya.cmds.setAttr(object + '.numLayerSets', var)
 
         maya.cmds.polyColorSet(objects, currentColorSet=True, colorSet='layer1')
 
@@ -3633,14 +3761,18 @@ class LayerManagement(object):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def clearSelectedComponents(self, layer):
-        object = settings.shapeArray[len(settings.shapeArray)-1]
-        maya.cmds.polyColorSet(object, currentColorSet=True, colorSet=layer)
-
+        maya.cmds.polyColorSet(settings.objectArray, currentColorSet=True, colorSet=layer)
         color = settings.projectSettings['SXToolsRefLayers'][layer]
         maya.cmds.polyColorPerVertex(
-            r=color[0], g=color[1], b=color[2], a=color[3], representation=4, cdo=True)
+            r=color[0],
+            g=color[1],
+            b=color[2],
+            a=color[3],
+            representation=4,
+            cdo=True)
         attr = '.' + str(layer) + 'BlendMode'
-        maya.cmds.setAttr(str(object) + attr, 0)
+        for object in settings.shapeArray:
+            maya.cmds.setAttr(str(object) + attr, 0)
         if maya.cmds.objExists('SXShader'):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
@@ -3658,9 +3790,8 @@ class LayerManagement(object):
             maya.cmds.setAttr(
                 str(shape) + '.' + str(layer) + 'Visibility', not checkState)
         state = self.verifyLayerState(layer)
-        layerIndex = int(
-            maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)[
-                0])
+        layerIndex = int(maya.cmds.textScrollList(
+        	'layerList', query=True, selectIndexedItem=True)[0])
         maya.cmds.textScrollList(
             'layerList', edit=True, removeIndexedItem=layerIndex)
         maya.cmds.textScrollList(
@@ -4985,24 +5116,31 @@ class UI(object):
             command=(
                 'sxtools.layers.addLayerSet(sxtools.settings.objectArray, sxtools.layers.getLayerSet(sxtools.settings.objectArray[0]))\n'
                 'sxtools.sx.updateSXTools()'))
-        maya.cmds.text('layerSetLabel', label=('Current Layer Set: ' + str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) + '.activeLayerSet')))))
+        maya.cmds.text(
+            'layerSetLabel',
+            label=('Current Layer Set: '
+                    + str(int(maya.cmds.getAttr(str(settings.shapeArray[0])
+                    + '.activeLayerSet'))+1)
+                    + '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
         if layers.getLayerSet(settings.objectArray[0]) > 0:
-            maya.cmds.intSlider(
-                'swapLayerSetsSlider',
-                width=100,
-                annotation='Choose Layer Set',
+            maya.cmds.intField(
+                'swapLayerSetsInt',
                 parent='swapLayerSetsColumn',
                 min=0,
-                max=layers.getLayerSet(settings.objectArray[0]),
-                value=maya.cmds.getAttr(str(settings.shapeArray[0]) + '.activeLayerSet'),
+                max=10,
+                step=1,
+                value=(maya.cmds.getAttr(str(settings.shapeArray[0]) + '.activeLayerSet')+1),
                 changeCommand=(
-                'sxtools.tools.swapLayerSets(sxtools.settings.objectArray, maya.cmds.intSlider("swapLayerSetsSlider", query=True, value=True))\n'
-                'maya.cmds.text("layerSetLabel", edit=True, label=("Current Layer Set: " + str(int(maya.cmds.getAttr(str(sxtools.settings.shapeArray[0]) + ".activeLayerSet")))))'),
-                dragCommand=(
-                'sxtools.tools.swapLayerSets(sxtools.settings.objectArray, maya.cmds.intSlider("swapLayerSetsSlider", query=True, value=True))\n'
-                'maya.cmds.text("layerSetLabel", edit=True, label=("Current Layer Set: " + str(int(maya.cmds.getAttr(str(sxtools.settings.shapeArray[0]) + ".activeLayerSet")))))')
+                'sxtools.tools.swapLayerSets('
+                'sxtools.settings.objectArray,'
+                'maya.cmds.intField("swapLayerSetsInt", query=True, value=True), True)\n'
+                'maya.cmds.text("layerSetLabel",'
+                'edit=True,'
+                'label=("Current Layer Set: "'
+                '+str(int(maya.cmds.getAttr(str(sxtools.settings.shapeArray[0])'
+                '+".activeLayerSet"))+1))'
+                '+"/"+str(sxtools.layers.getLayerSet(sxtools.settings.shapeArray[len(sxtools.settings.shapeArray)-1])+1))')
             )
-
         maya.cmds.setParent('toolFrame')
 
 
