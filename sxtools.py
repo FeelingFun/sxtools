@@ -5933,48 +5933,58 @@ class UI(object):
             parent='swapLayerSetsFrame',
             rowSpacing=5,
             adjustableColumn=True)
-        maya.cmds.button(
-            label='Add New Layer Set',
-            parent='swapLayerSetsColumn',
-            height=30,
-            width=100,
-            command=(
-                'sxtools.layers.addLayerSet('
-                'sxtools.settings.objectArray,'
-                'sxtools.layers.getLayerSet('
-                'sxtools.settings.objectArray[0]))\n'
-                'sxtools.sx.updateSXTools()'))
-        maya.cmds.text(
-            'layerSetLabel',
-            label=(
-                'Current Layer Set: ' +
-                str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) +
-                    '.activeLayerSet'))+1) +
-                '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
-        if layers.getLayerSet(settings.objectArray[0]) > 0:
-            maya.cmds.intField(
-                'swapLayerSetsInt',
+        setNums = []
+        for object in settings.objectArray:
+            setNums.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
+        if all(num == setNums[0] for num in setNums):            
+            maya.cmds.button(
+                label='Add New Layer Set',
                 parent='swapLayerSetsColumn',
-                min=0,
-                max=10,
-                step=1,
-                value=(
-                    maya.cmds.getAttr(str(settings.shapeArray[0]) +
-                                      '.activeLayerSet')+1),
-                changeCommand=(
-                    'sxtools.tools.swapLayerSets('
+                height=30,
+                width=100,
+                command=(
+                    'sxtools.layers.addLayerSet('
                     'sxtools.settings.objectArray,'
-                    'maya.cmds.intField('
-                    '"swapLayerSetsInt", query=True, value=True), True)\n'
-                    'maya.cmds.text("layerSetLabel",'
-                    'edit=True,'
-                    'label=("Current Layer Set: "'
-                    '+str(int(maya.cmds.getAttr('
-                    'str(sxtools.settings.shapeArray[0])'
-                    '+".activeLayerSet"))+1))'
-                    '+"/"+str(sxtools.layers.getLayerSet('
-                    'sxtools.settings.shapeArray['
-                    'len(sxtools.settings.shapeArray)-1])+1))')
+                    'sxtools.layers.getLayerSet('
+                    'sxtools.settings.objectArray[0]))\n'
+                    'sxtools.sx.updateSXTools()'))
+            maya.cmds.text(
+                'layerSetLabel',
+                label=(
+                    'Current Layer Set: ' +
+                    str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) +
+                        '.activeLayerSet'))+1) +
+                    '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
+            if layers.getLayerSet(settings.objectArray[0]) > 0:
+                maya.cmds.intField(
+                    'swapLayerSetsInt',
+                    parent='swapLayerSetsColumn',
+                    min=0,
+                    max=10,
+                    step=1,
+                    value=(
+                        maya.cmds.getAttr(str(settings.shapeArray[0]) +
+                                          '.activeLayerSet')+1),
+                    changeCommand=(
+                        'sxtools.tools.swapLayerSets('
+                        'sxtools.settings.objectArray,'
+                        'maya.cmds.intField('
+                        '"swapLayerSetsInt", query=True, value=True), True)\n'
+                        'maya.cmds.text("layerSetLabel",'
+                        'edit=True,'
+                        'label=("Current Layer Set: "'
+                        '+str(int(maya.cmds.getAttr('
+                        'str(sxtools.settings.shapeArray[0])'
+                        '+".activeLayerSet"))+1))'
+                        '+"/"+str(sxtools.layers.getLayerSet('
+                        'sxtools.settings.shapeArray['
+                        'len(sxtools.settings.shapeArray)-1])+1))')
+                )
+        else:
+            maya.cmds.text(
+                'mismatchLayerSetLabel',
+                label=(
+                    '\nObjects with mismatching\nLayer Sets selected!')
             )
         maya.cmds.setParent('toolFrame')
 
