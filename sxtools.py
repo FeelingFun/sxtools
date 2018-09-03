@@ -62,6 +62,7 @@ from sfx import SFXNetwork
 from sfx import StingrayPBSNetwork
 import sfx.sfxnodes as sfxnodes
 import sfx.pbsnodes as pbsnodes
+import json
 
 dockID = 'SXTools'
 settings = None
@@ -307,9 +308,6 @@ class Settings(object):
                 output.write(
                     'SX Tools Project Settings: \r\n' +
                     str(self.project) + '\r\n')
-                output.write(
-                    'SX Tools Master Palette Dictionary: \r\n' +
-                    str(self.masterPaletteDict) + '\r\n')
                 output.close()
             print('SX Tools: Preferences saved')
         else:
@@ -321,7 +319,6 @@ class Settings(object):
             with open(filePath, 'r') as input:
                 prefData = input.readlines()
                 self.project = eval(prefData[1])
-                self.masterPaletteDict = eval(prefData[3])
                 input.close()
 
             print('SX Tools: Preferences loaded from ' + filePath)
@@ -329,6 +326,67 @@ class Settings(object):
             self.frames['setupCollapse'] = True
         else:
             print('SX Tools: No preferences found')
+
+    def setPalettesFile(self):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+        if shift is False:
+            filePath = maya.cmds.fileDialog2(
+                fileFilter='*.json',
+                cap='Select SX Tools Palettes File',
+                dialogStyle=2,
+                fm=0)
+            if filePath is not None:
+                maya.cmds.optionVar(
+                    stringValue=('SXToolsPalettesFile', filePath[0]))
+            else:
+                print('SX Tools: No Palette file selected')
+        else:
+            self.loadPalettes()
+
+    def savePalettes(self):
+        if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
+            filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
+            tempDict = {'palette':[]}
+            for key in self.masterPaletteDict.keys():
+                tempEntry = {}                
+                tempEntry['name'] = key
+                tempCols = []
+                colors = self.masterPaletteDict[key]
+                for rgb in colors:
+                    tempCols.append({'r': rgb[0], 'g': rgb[1], 'b': rgb[2], 'a': 0.0})
+                tempEntry['entries'] = tempCols
+                tempDict['palette'].append(tempEntry)
+
+            with open(filePath, 'w') as output:
+                json.dump(tempDict, output)
+                output.close()
+            print('SX Tools: Palettes saved')
+        else:
+            print('SX Tools Warning: Palettes file location not set!')
+
+    def loadPalettes(self):
+        if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
+            filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
+            with open(filePath, 'r') as input:
+                tempDict = {}
+                tempDict = json.load(input)
+                input.close()
+
+            self.masterPaletteDict.clear()
+            loadedPaletteArray = tempDict['palette']
+            for palette in loadedPaletteArray:
+                paletteArray = []
+                colorArray = [None, None, None]
+                for entry in palette['entries']:
+                    colorArray = [entry['r'], entry['g'], entry['b']]
+                    paletteArray.append(colorArray)
+                self.masterPaletteDict[palette['name']] = paletteArray
+                
+            
+            print('SX Tools: Palettes loaded from ' + filePath)
+        else:
+            print('SX Tools: No palettes found')
 
 
 class SceneSetup(object):
@@ -3866,7 +3924,7 @@ class ToolActions(object):
             if preset is not None:
                 self.deletePalette(settings.masterPaletteDict, preset)
                 maya.cmds.deleteUI(preset)
-                settings.savePreferences()
+                settings.savePalettes()
                 self.getMasterPaletteItem()
             else:
                 print('SX Tools Error: No preset to delete!')
@@ -3898,7 +3956,7 @@ class ToolActions(object):
                     'masterPalettes',
                     edit=True,
                     select=idx)
-                settings.savePreferences()
+                settings.savePalettes()
             else:
                 print('SX Tools Error: Invalid preset name!')
 
@@ -5647,6 +5705,30 @@ class UI(object):
             parent='masterPaletteFrame',
             rowSpacing=5,
             adjustableColumn=True)
+        
+        maya.cmds.button(
+            label='Select Palettes File',
+            parent='masterPaletteColumn',
+            statusBarMessage='Shift-click button to reload palettes from file',
+            command='sxtools.settings.setPalettesFile()\n'
+            'sxtools.sx.updateSXTools()')
+
+        if maya.cmds.optionVar(exists='SXToolsPalettesFile') and len(
+                str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0:
+            settings.loadPalettes()
+            maya.cmds.text(
+                label='Current palettes location:',
+                parent='masterPaletteColumn')
+            maya.cmds.text(
+                label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
+                parent='masterPaletteColumn')
+        else:
+            maya.cmds.text(
+                label='WARNING: Palettes file location not set!',
+                parent='masterPaletteColumn',
+                backgroundColor=(0.35, 0.1, 0),
+                ww=True)
+
         maya.cmds.optionMenu(
             'masterPalettes',
             parent='masterPaletteColumn',
