@@ -382,9 +382,6 @@ class Settings(object):
                     colorArray = [entry['r'], entry['g'], entry['b']]
                     paletteArray.append(colorArray)
                 self.masterPaletteDict[palette['name']] = paletteArray
-                
-            
-            print('SX Tools: Palettes loaded from ' + filePath)
         else:
             print('SX Tools: No palettes found')
 
@@ -4701,6 +4698,24 @@ class LayerManagement(object):
         else:
             return 0, None
 
+    def clearLayerSets(self):
+        refLayers = self.sortLayers(
+            settings.project['RefLayers'].keys())
+        for shape in settings.shapeArray:
+            colorSets = maya.cmds.polyColorSet(
+                shape,
+                query=True,
+                allColorSets=True)
+            for colorSet in colorSets:
+                if colorSet not in refLayers:
+                    maya.cmds.polyColorSet(
+                        shape,
+                        delete=True,
+                        colorSet=colorSet)
+            maya.cmds.setAttr(str(shape)+'.activeLayerSet', 0)
+            maya.cmds.setAttr(str(shape)+'.numLayerSets', 0)
+        sx.updateSXTools()
+
 
 class UI(object):
     def __init__(self):
@@ -5699,177 +5714,180 @@ class UI(object):
             collapseCommand=(
                 "sxtools.settings.frames['masterPaletteCollapse']=True"),
             expandCommand=(
-                "sxtools.settings.frames['masterPaletteCollapse']=False"))
-        maya.cmds.columnLayout(
-            'masterPaletteColumn',
-            parent='masterPaletteFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
-        
-        maya.cmds.button(
-            label='Select Palettes File',
-            parent='masterPaletteColumn',
-            statusBarMessage='Shift-click button to reload palettes from file',
-            command='sxtools.settings.setPalettesFile()\n'
-            'sxtools.sx.updateSXTools()')
+                "sxtools.settings.frames['masterPaletteCollapse']=False\n"
+                "sxtools.sx.updateSXTools()"))
 
-        if maya.cmds.optionVar(exists='SXToolsPalettesFile') and len(
-                str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0:
-            settings.loadPalettes()
-            maya.cmds.text(
-                label='Current palettes location:',
-                parent='masterPaletteColumn')
-            maya.cmds.text(
-                label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
-                parent='masterPaletteColumn')
-        else:
-            maya.cmds.text(
-                label='WARNING: Palettes file location not set!',
+        if settings.frames['masterPaletteCollapse'] is False:
+            maya.cmds.columnLayout(
+                'masterPaletteColumn',
+                parent='masterPaletteFrame',
+                rowSpacing=5,
+                adjustableColumn=True)
+            
+            maya.cmds.button(
+                label='Select Palettes File',
                 parent='masterPaletteColumn',
-                backgroundColor=(0.35, 0.1, 0),
-                ww=True)
+                statusBarMessage='Shift-click button to reload palettes from file',
+                command='sxtools.settings.setPalettesFile()\n'
+                'sxtools.sx.updateSXTools()')
 
-        maya.cmds.optionMenu(
-            'masterPalettes',
-            parent='masterPaletteColumn',
-            label='Presets:',
-            changeCommand='sxtools.tools.getMasterPaletteItem()')
-        tools.refreshMasterPaletteMenu()
-        maya.cmds.rowColumnLayout(
-            'masterPaletteRowColumns',
-            parent='masterPaletteColumn',
-            numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
-        maya.cmds.button(
-            'saveMasterPalette',
-            label='Save Palette',
-            width=100,
-            ann='Shift-click to delete palette',
-            command='sxtools.tools.saveMasterPalette()')
-        maya.cmds.textField(
-            'savePaletteName',
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='Preset Name')
-        maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
-        maya.cmds.palettePort(
-            'masterPalette',
-            dimensions=(5, 1),
-            width=120,
-            height=10,
-            actualTotal=5,
-            editable=True,
-            colorEditable=True,
-            changeCommand=(
-                "sxtools.tools.storePalette("
-                "'masterPalette',"
-                "sxtools.settings.paletteDict,"
-                "'SXToolsMasterPalette')\n"
-                "sxtools.settings.tools['palettePreset']=None"),
-            colorEdited=(
-                "sxtools.tools.storePalette("
-                "'masterPalette',"
-                "sxtools.settings.paletteDict,"
-                "'SXToolsMasterPalette')"))
-        maya.cmds.text(label='Color 1 Target(s): ')
-        maya.cmds.textField(
-            'masterTarget1',
-            parent='masterPaletteRowColumns',
-            text=', '.join(settings.tools['paletteTarget1']),
-            enterCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget1', query=True, text=True), 1)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            changeCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget1', query=True, text=True), 1)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='layer1')
-        maya.cmds.text(label='Color 2 Target(s): ')
-        maya.cmds.textField(
-            'masterTarget2',
-            parent='masterPaletteRowColumns',
-            text=', '.join(settings.tools['paletteTarget2']),
-            enterCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget2', query=True, text=True), 2)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            changeCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget2', query=True, text=True), 2)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='layer2')
-        maya.cmds.text(label='Color 3 Target(s): ')
-        maya.cmds.textField(
-            'masterTarget3',
-            parent='masterPaletteRowColumns',
-            text=', '.join(settings.tools['paletteTarget3']),
-            enterCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget3', query=True, text=True), 3)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            changeCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget3', query=True, text=True), 3)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='layer3')
-        maya.cmds.text(label='Color 4 Target(s): ')
-        maya.cmds.textField(
-            'masterTarget4',
-            parent='masterPaletteRowColumns',
-            text=', '.join(settings.tools['paletteTarget4']),
-            enterCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget4', query=True, text=True), 4)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            changeCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget4', query=True, text=True), 4)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='layer4')
-        maya.cmds.text(label='Color 5 Target(s): ')
-        maya.cmds.textField(
-            'masterTarget5',
-            parent='masterPaletteRowColumns',
-            text=', '.join(settings.tools['paletteTarget5']),
-            enterCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget5', query=True, text=True), 5)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            changeCommand=(
-                "sxtools.tools.checkTarget("
-                "maya.cmds.textField("
-                "'masterTarget5', query=True, text=True), 5)\n"
-                "maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='layer5')
-        maya.cmds.button(
-            label='Apply Master Palette',
-            parent='masterPaletteColumn',
-            height=30,
-            width=100,
-            command=(
-                'sxtools.tools.applyMasterPalette('
-                'sxtools.settings.objectArray)'))
-        maya.cmds.setParent('toolFrame')
+            if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
+               (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
+                settings.loadPalettes()
+                maya.cmds.text(
+                    label='Current palettes location:',
+                    parent='masterPaletteColumn')
+                maya.cmds.text(
+                    label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
+                    parent='masterPaletteColumn')
+            else:
+                maya.cmds.text(
+                    label='WARNING: Palettes file location not set!',
+                    parent='masterPaletteColumn',
+                    backgroundColor=(0.35, 0.1, 0),
+                    ww=True)
 
-        if ('palettePreset' in settings.tools) and (
-                settings.tools['palettePreset'] is None):
-            tools.getPalette(
+            maya.cmds.optionMenu(
+                'masterPalettes',
+                parent='masterPaletteColumn',
+                label='Presets:',
+                changeCommand='sxtools.tools.getMasterPaletteItem()')
+            tools.refreshMasterPaletteMenu()
+            maya.cmds.rowColumnLayout(
+                'masterPaletteRowColumns',
+                parent='masterPaletteColumn',
+                numberOfColumns=2,
+                columnWidth=((1, 100), (2, 140)),
+                columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+                rowSpacing=(1, 5))
+            maya.cmds.button(
+                'saveMasterPalette',
+                label='Save Palette',
+                width=100,
+                ann='Shift-click to delete palette',
+                command='sxtools.tools.saveMasterPalette()')
+            maya.cmds.textField(
+                'savePaletteName',
+                enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='Preset Name')
+            maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
+            maya.cmds.palettePort(
                 'masterPalette',
-                settings.paletteDict,
-                'SXToolsMasterPalette')
-        else:
-            tools.getMasterPaletteItem()
+                dimensions=(5, 1),
+                width=120,
+                height=10,
+                actualTotal=5,
+                editable=True,
+                colorEditable=True,
+                changeCommand=(
+                    "sxtools.tools.storePalette("
+                    "'masterPalette',"
+                    "sxtools.settings.paletteDict,"
+                    "'SXToolsMasterPalette')\n"
+                    "sxtools.settings.tools['palettePreset']=None"),
+                colorEdited=(
+                    "sxtools.tools.storePalette("
+                    "'masterPalette',"
+                    "sxtools.settings.paletteDict,"
+                    "'SXToolsMasterPalette')"))
+            maya.cmds.text(label='Color 1 Target(s): ')
+            maya.cmds.textField(
+                'masterTarget1',
+                parent='masterPaletteRowColumns',
+                text=', '.join(settings.tools['paletteTarget1']),
+                enterCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget1', query=True, text=True), 1)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                changeCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget1', query=True, text=True), 1)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='layer1')
+            maya.cmds.text(label='Color 2 Target(s): ')
+            maya.cmds.textField(
+                'masterTarget2',
+                parent='masterPaletteRowColumns',
+                text=', '.join(settings.tools['paletteTarget2']),
+                enterCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget2', query=True, text=True), 2)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                changeCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget2', query=True, text=True), 2)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='layer2')
+            maya.cmds.text(label='Color 3 Target(s): ')
+            maya.cmds.textField(
+                'masterTarget3',
+                parent='masterPaletteRowColumns',
+                text=', '.join(settings.tools['paletteTarget3']),
+                enterCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget3', query=True, text=True), 3)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                changeCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget3', query=True, text=True), 3)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='layer3')
+            maya.cmds.text(label='Color 4 Target(s): ')
+            maya.cmds.textField(
+                'masterTarget4',
+                parent='masterPaletteRowColumns',
+                text=', '.join(settings.tools['paletteTarget4']),
+                enterCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget4', query=True, text=True), 4)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                changeCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget4', query=True, text=True), 4)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='layer4')
+            maya.cmds.text(label='Color 5 Target(s): ')
+            maya.cmds.textField(
+                'masterTarget5',
+                parent='masterPaletteRowColumns',
+                text=', '.join(settings.tools['paletteTarget5']),
+                enterCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget5', query=True, text=True), 5)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                changeCommand=(
+                    "sxtools.tools.checkTarget("
+                    "maya.cmds.textField("
+                    "'masterTarget5', query=True, text=True), 5)\n"
+                    "maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='layer5')
+            maya.cmds.button(
+                label='Apply Master Palette',
+                parent='masterPaletteColumn',
+                height=30,
+                width=100,
+                command=(
+                    'sxtools.tools.applyMasterPalette('
+                    'sxtools.settings.objectArray)'))
+            maya.cmds.setParent('toolFrame')
+
+            if ('palettePreset' in settings.tools) and (
+                    settings.tools['palettePreset'] is None):
+                tools.getPalette(
+                    'masterPalette',
+                    settings.paletteDict,
+                    'SXToolsMasterPalette')
+            else:
+                tools.getMasterPaletteItem()
 
     def swapLayerToolUI(self):
         maya.cmds.frameLayout(
