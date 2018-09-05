@@ -114,12 +114,7 @@ class Settings(object):
             'bakeGroundScale': 100.0,
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
-            'blendSlider': 0.0,
-            'paletteTarget1': ['layer1', ],
-            'paletteTarget2': ['layer2', ],
-            'paletteTarget3': ['layer3', ],
-            'paletteTarget4': ['layer4', ],
-            'paletteTarget5': ['layer5', ]
+            'blendSlider': 0.0
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -197,6 +192,11 @@ class Settings(object):
             self.project['OverlaysExportChannels'] = (
                 ('UV4', 'UV5'), ('UV6', 'UV7'))
             self.project['ExportSuffix'] = True
+            self.project['paletteTarget1'] = ['layer1', ]
+            self.project['paletteTarget2'] = ['layer2', ]
+            self.project['paletteTarget3'] = ['layer3', ]
+            self.project['paletteTarget4'] = ['layer4', ]
+            self.project['paletteTarget5'] = ['layer5', ]
 
         self.savePreferences()
 
@@ -255,6 +255,11 @@ class Settings(object):
         self.project['RefNames'] = {}
         self.project['ExportSuffix'] = maya.cmds.checkBox(
             'suffixCheck', query=True, value=True)
+        self.project['paletteTarget1'] = ['layer1', ]
+        self.project['paletteTarget2'] = ['layer2', ]
+        self.project['paletteTarget3'] = ['layer3', ]
+        self.project['paletteTarget4'] = ['layer4', ]
+        self.project['paletteTarget5'] = ['layer5', ]
 
         refIndex = 0
         for k in range(0, self.project['LayerCount']):
@@ -3115,7 +3120,7 @@ class ToolActions(object):
 
     def applyMasterPalette(self, objects):
         for i in xrange(1, 6):
-            targetLayers = settings.tools['paletteTarget'+str(i)]
+            targetLayers = settings.project['paletteTarget'+str(i)]
             maya.cmds.palettePort('masterPalette', edit=True, scc=i-1)
             for layer in targetLayers:
                 maya.cmds.polyColorSet(
@@ -3988,9 +3993,10 @@ class ToolActions(object):
             maya.cmds.textField(
                 'masterTarget'+str(index),
                 edit=True,
-                text=''.join(settings.tools['paletteTarget'+str(index)]))
+                text=''.join(settings.project['paletteTarget'+str(index)]))
             return
-        settings.tools['paletteTarget'+str(index)] = targetList
+        settings.project['paletteTarget'+str(index)] = targetList
+        settings.savePreferences()
 
     def gradientToolManager(self, mode, group=1):
         modifiers = maya.cmds.getModifiers()
@@ -4335,12 +4341,9 @@ class LayerManagement(object):
         sx.selectionManager()
 
     # Resulting blended layer is set to Alpha blending mode
-    def mergeLayerDirection(self, up):
+    def mergeLayerDirection(self, shapes, up):
         sourceLayer = self.getSelectedLayer()
-        if len(settings.shapeArray) > 1:
-            print('SX Tools: Merge Layer requires a single object')
-            return
-        elif ((str(sourceLayer) == 'layer1') and
+        if ((str(sourceLayer) == 'layer1') and
               (up is True)):
             print('SX Tools Error: Cannot merge layer1')
             return
@@ -4364,18 +4367,22 @@ class LayerManagement(object):
         else:
             sourceLayer = settings.project['RefNames'][layerIndex+1]
             targetLayer = settings.project['RefNames'][layerIndex]
-        self.mergeLayers(
-            settings.shapeArray[len(settings.shapeArray)-1],
-            sourceLayer,
-            targetLayer, up)
-        self.patchLayers(
-            [settings.shapeArray[len(settings.shapeArray)-1]], )
+
+        for shape in shapes:
+            self.mergeLayers(
+	            shape,
+	            sourceLayer,
+	            targetLayer, up)
+            self.patchLayers([shape, ])
+
         if up is True:
             maya.cmds.polyColorSet(
+            	shapes,
                 currentColorSet=True,
                 colorSet=str(targetLayer))
         else:
             maya.cmds.polyColorSet(
+            	shapes,
                 currentColorSet=True,
                 colorSet=str(sourceLayer))
         self.refreshLayerList()
@@ -5249,13 +5256,17 @@ class UI(object):
             label='Merge Layer Up',
             parent='layerSelectRowColumns',
             width=100,
-            command=("sxtools.layers.mergeLayerDirection(True)"))
+            command=(
+                "sxtools.layers.mergeLayerDirection("
+                "sxtools.settings.shapeArray, True)"))
         maya.cmds.button(
             'mergeLayerDown',
             label='Merge Layer Down',
             parent='layerSelectRowColumns',
             width=100,
-            command=("sxtools.layers.mergeLayerDirection(False)"))
+            command=(
+                "sxtools.layers.mergeLayerDirection("
+                "sxtools.settings.shapeArray, False)"))
         maya.cmds.button(
             label='Select Layer Mask',
             width=100,
@@ -5794,7 +5805,7 @@ class UI(object):
             maya.cmds.textField(
                 'masterTarget1',
                 parent='masterPaletteRowColumns',
-                text=', '.join(settings.tools['paletteTarget1']),
+                text=', '.join(settings.project['paletteTarget1']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
                     "maya.cmds.textField("
@@ -5810,7 +5821,7 @@ class UI(object):
             maya.cmds.textField(
                 'masterTarget2',
                 parent='masterPaletteRowColumns',
-                text=', '.join(settings.tools['paletteTarget2']),
+                text=', '.join(settings.project['paletteTarget2']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
                     "maya.cmds.textField("
@@ -5826,7 +5837,7 @@ class UI(object):
             maya.cmds.textField(
                 'masterTarget3',
                 parent='masterPaletteRowColumns',
-                text=', '.join(settings.tools['paletteTarget3']),
+                text=', '.join(settings.project['paletteTarget3']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
                     "maya.cmds.textField("
@@ -5842,7 +5853,7 @@ class UI(object):
             maya.cmds.textField(
                 'masterTarget4',
                 parent='masterPaletteRowColumns',
-                text=', '.join(settings.tools['paletteTarget4']),
+                text=', '.join(settings.project['paletteTarget4']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
                     "maya.cmds.textField("
@@ -5858,7 +5869,7 @@ class UI(object):
             maya.cmds.textField(
                 'masterTarget5',
                 parent='masterPaletteRowColumns',
-                text=', '.join(settings.tools['paletteTarget5']),
+                text=', '.join(settings.project['paletteTarget5']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
                     "maya.cmds.textField("
