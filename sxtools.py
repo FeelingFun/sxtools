@@ -122,24 +122,24 @@ class Settings(object):
             u'occlusion', u'specular', u'transmission', u'emission'
         ]
         # name: ([0]index, [1](default values),
-        #        [2]export channels, [3]alphaOverlay,
+        #        [2]export channels, [3]alphaOverlayIndex,
         #        [4]overlay, [5]enabled matChannel,
         #        [6]display name)
         self.refLayerData = {
-            self.refArray[0]: [1, (0.5, 0.5, 0.5, 1), 'U3', False, False, False, 'layer1'],
-            self.refArray[1]: [2, (0, 0, 0, 0), None, False, False, False, 'layer2'],
-            self.refArray[2]: [3, (0, 0, 0, 0), None, False, False, False, 'layer3'],
-            self.refArray[3]: [4, (0, 0, 0, 0), None, False, False, False, 'layer4'],
-            self.refArray[4]: [5, (0, 0, 0, 0), None, False, False, False, 'layer5'],
-            self.refArray[5]: [6, (0, 0, 0, 0), None, False, False, False, 'layer6'],
-            self.refArray[6]: [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), False, False, False, 'data'],
-            self.refArray[7]: [8, (0, 0, 0, 0), 'U4', True, False, False, 'gradient1'],
-            self.refArray[8]: [9, (0, 0, 0, 0), 'V4', True, False, False, 'gradient2'],
-            self.refArray[9]: [10, (0, 0, 0, 0), ('UV5', 'UV6'), False, True, False, 'overlay'],
-            self.refArray[10]: [11, (1, 1, 1, 1), 'U1', False, False, True, 'occlusion'],
-            self.refArray[11]: [12, (0, 0, 0, 1), 'V1', False, False, True, 'specular'],
-            self.refArray[12]: [13, (0, 0, 0, 1), 'U2', False, False, True, 'transmission'],
-            self.refArray[13]: [14, (0, 0, 0, 1), 'V2', False, False, True, 'emission']
+            self.refArray[0]: [1, (0.5, 0.5, 0.5, 1), 'U3', 0, False, False, 'layer1'],
+            self.refArray[1]: [2, (0, 0, 0, 0), None, 0, False, False, 'layer2'],
+            self.refArray[2]: [3, (0, 0, 0, 0), None, 0, False, False, 'layer3'],
+            self.refArray[3]: [4, (0, 0, 0, 0), None, 0, False, False, 'layer4'],
+            self.refArray[4]: [5, (0, 0, 0, 0), None, 0, False, False, 'layer5'],
+            self.refArray[5]: [6, (0, 0, 0, 0), None, 0, False, False, 'layer6'],
+            self.refArray[6]: [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), 0, False, False, 'layer7'],
+            self.refArray[7]: [8, (0, 0, 0, 0), 'U4', 1, False, False, 'gradient1'],
+            self.refArray[8]: [9, (0, 0, 0, 0), 'V4', 2, False, False, 'gradient2'],
+            self.refArray[9]: [10, (0, 0, 0, 0), ('UV5', 'UV6'), 0, True, False, 'overlay'],
+            self.refArray[10]: [11, (1, 1, 1, 1), 'U1', 0, False, True, 'occlusion'],
+            self.refArray[11]: [12, (0, 0, 0, 1), 'V1', 0, False, True, 'specular'],
+            self.refArray[12]: [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
+            self.refArray[13]: [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
         }
 
     def setPreferences(self):
@@ -230,7 +230,7 @@ class Settings(object):
                     refIndex,
                     (0.5, 0.5, 0.5, 1),
                     maya.cmds.textField('maskExport', query=True, text=True),
-                    False,
+                    0,
                     False,
                     False,
                     maya.cmds.textField(
@@ -242,7 +242,7 @@ class Settings(object):
                     refIndex,
                     (0, 0, 0, 0),
                     None,
-                    False,
+                    0,
                     False,
                     False,
                     maya.cmds.textField(
@@ -261,7 +261,7 @@ class Settings(object):
                         refIndex,
                         (1, 1, 1, 1),
                         None,
-                        False,
+                        0,
                         False,
                         True,
                         settings.refLayerData[channel][6]]
@@ -270,7 +270,7 @@ class Settings(object):
                         refIndex,
                         (0, 0, 0, 1),
                         None,
-                        False,
+                        0,
                         False,
                         True,
                         settings.refLayerData[channel][6]]
@@ -310,38 +310,32 @@ class Settings(object):
             self.project['LayerData']['emission'][2] = None
 
         if maya.cmds.textField(
-                'alphaOverlay1', query=True, text=True) != '':
+                'alphaOverlay1', query=True, text=True) in settings.project['LayerData'].keys():
             self.project['LayerData'][maya.cmds.textField(
                 'alphaOverlay1', query=True, text=True)][2] = (
                 maya.cmds.textField(
                     'alphaOverlay1Export', query=True, text=True))
             self.project['LayerData'][maya.cmds.textField(
-                'alphaOverlay1', query=True, text=True)][3] = True
-        else:
-            self.project['LayerData'][maya.cmds.textField(
-                'alphaOverlay1', query=True, text=True)][3] = False
+                'alphaOverlay1', query=True, text=True)][3] = 1
+        # else:
+        #     self.project['LayerData'][maya.cmds.textField(
+        #        'alphaOverlay1', query=True, text=True)][3] = False
         if maya.cmds.textField(
-                'alphaOverlay2', query=True, text=True) != '':
+                'alphaOverlay2', query=True, text=True) in settings.project['LayerData'].keys():
             self.project['LayerData'][maya.cmds.textField(
                 'alphaOverlay2', query=True, text=True)][2] = (
                 maya.cmds.textField(
                     'alphaOverlay2Export', query=True, text=True))
             self.project['LayerData'][maya.cmds.textField(
-                'alphaOverlay2', query=True, text=True)][3] = True
-        else:
-            self.project['LayerData'][maya.cmds.textField(
-                'alphaOverlay2', query=True, text=True)][3] = False
+                'alphaOverlay2', query=True, text=True)][3] = 2
         if maya.cmds.textField(
-                'overlay', query=True, text=True) != '':
+                'overlay', query=True, text=True) in settings.project['LayerData'].keys():
             self.project['LayerData'][maya.cmds.textField(
                 'overlay', query=True, text=True)][2] = (
                 str(maya.cmds.textField(
                     'overlayExport', query=True, text=True)).split(','))
             self.project['LayerData'][maya.cmds.textField(
                 'overlay', query=True, text=True)][4] = True
-        else:
-            self.project['LayerData'][maya.cmds.textField(
-                'overlay', query=True, text=True)][4] = False
 
         self.project['ExportSuffix'] = maya.cmds.checkBox(
             'suffixCheck', query=True, value=True)
@@ -2321,7 +2315,7 @@ class Export(object):
                 materials.append(key)
                 materialUVArray.append(value[2])
             # UV channels for alpha overlays
-            elif value[3] is True:
+            elif value[3] != 0:
                 if value[2][0] == 'U':
                     alphaOverlayArray[0] = key
                     alphaOverlayUVArray[0] = value[2]
@@ -4892,8 +4886,9 @@ class UI(object):
             label='Select Settings File',
             parent='prefsColumn',
             statusBarMessage='Shift-click button to reload settings from file',
-            command='sxtools.settings.setPreferencesFile()\n'
-            'sxtools.sx.updateSXTools()')
+            command=(
+                'sxtools.settings.setPreferencesFile()\n'
+                'sxtools.sx.updateSXTools()'))
 
         if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
                 str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
@@ -4923,11 +4918,13 @@ class UI(object):
         maya.cmds.text(label='Color layers:')
         maya.cmds.intField(
             'layerCount',
-            value=10,
+            value=1,
             minValue=1,
             maxValue=10,
             step=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+            changeCommand=(
+                "sxtools.ui.refreshLayerDisplayNameList()\n"
+                "maya.cmds.setFocus('MayaWindow')"))
 
         maya.cmds.textField('maskExport', text='U3')
 
@@ -4963,7 +4960,7 @@ class UI(object):
         maya.cmds.textField('alphaOverlay2', text='layer9')
         maya.cmds.textField('alphaOverlay2Export', text='V4')
 
-        maya.cmds.text('overlayLabel', label='Overlay2 (RGBA):')
+        maya.cmds.text('overlayLabel', label='Overlay (RGBA):')
         maya.cmds.textField('overlay', text='layer10')
         maya.cmds.textField('overlayExport', text='UV5,UV6')
 
@@ -5024,12 +5021,16 @@ class UI(object):
         maya.cmds.text(label='')
         maya.cmds.text(label='')
 
-        for i in xrange(maya.cmds.intField('layerCount', query=True, value=True)):
-            layerDisplayName = 'layer'+str(i+1)
-            labelText = layerDisplayName + ' display name:'
-            fieldLabel = layerDisplayName + 'Display'
-            maya.cmds.text(label=labelText)
-            maya.cmds.textField(fieldLabel, text=layerDisplayName)
+        for i in xrange(10):
+            layerName = settings.refArray[i]
+            labelID = 'display'+str(i+1)
+            labelText = layerName + ' display name:'
+            fieldLabel = layerName + 'Display'
+            if (('LayerData' in settings.project) and 
+               (layerName in settings.project['LayerData'].keys())):
+                layerName = settings.project['LayerData'][layerName][6]
+            maya.cmds.text(labelID, label=labelText)
+            maya.cmds.textField(fieldLabel, text=layerName)
 
         maya.cmds.columnLayout(
             'refLayerColumn',
@@ -5128,13 +5129,69 @@ class UI(object):
                 edit=True,
                 text=(settings.project['LayerData']['emission'][2]))
             
-            for i in xrange(settings.project['LayerCount']):
-                layerName = 'layer' + str(i+1)
-                fieldLabel = layerName + 'Display'
+            alpha1 = None
+            alpha2 = None
+            alpha1Export = None
+            alpha2Export = None
+            overlay = None
+            overlayExport = None
+            
+            for key, value in settings.project['LayerData'].iteritems():
+                if value[3] == 1:
+                    alpha1 = key
+                    alpha1Export = value[2]
+                if value[3] == 2:
+                    alpha2 = key
+                    alpha2Export = value[2]
+                if value[4] == True:
+                    overlay = key
+                    overlayExport = ', '.join(value[2])
+            maya.cmds.textField(
+                'alphaOverlay1',
+                edit=True,
+                text=alpha1)
+            maya.cmds.textField(
+                'alphaOverlay2',
+                edit=True,
+                text=alpha2)
+            maya.cmds.textField(
+                'alphaOverlay1Export',
+                edit=True,
+                text=alpha1Export)
+            maya.cmds.textField(
+                'alphaOverlay2Export',
+                edit=True,
+                text=alpha2Export)
+            maya.cmds.textField(
+                'overlay',
+                edit=True,
+                text=overlay)
+            maya.cmds.textField(
+                'overlayExport',
+                edit=True,
+                text=overlayExport)
+
+    def refreshLayerDisplayNameList(self):
+        for i in xrange(10):
+            layerName = settings.refArray[i]
+            fieldLabel = layerName + 'Display'
+            if i < maya.cmds.intField('layerCount', query=True, value=True):
+                if (('LayerData' in settings.project) and 
+                   (layerName in settings.project['LayerData'].keys())):
+                    layerText = settings.project['LayerData'][layerName][6]
+                else:
+                    layerText = settings.refArray[i]
+                labelText = layerName + ' display name:'
                 maya.cmds.textField(
                     fieldLabel,
                     edit=True,
-                    text=settings.project['LayerData'][layerName][6])
+                    enable=True,
+                    text=layerText)
+            else:
+                maya.cmds.textField(
+                    fieldLabel,
+                    edit=True,
+                    enable=False)
 
     def exportObjectsUI(self):
         maya.cmds.frameLayout(
