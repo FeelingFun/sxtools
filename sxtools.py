@@ -1469,6 +1469,12 @@ class SceneSetup(object):
         uv3_node.posy = 1250
         uv3_node.value = 'UV3'
 
+        uv4_node = settings.material.add(sfxnodes.StringValue)
+        uv4_node.name = 'uv4String'
+        uv4_node.posx = -2250
+        uv4_node.posy = 1500
+        uv4_node.value = 'UV4'
+
         uvPath_node = settings.material.add(sfxnodes.PathDirectionList)
         uvPath_node.posx = -2000
         uvPath_node.posy = 500
@@ -1539,6 +1545,9 @@ class SceneSetup(object):
             uvPath_node.inputs.options)
         settings.material.connect(
             uv3_node.outputs.string,
+            uvPath_node.inputs.options)
+        settings.material.connect(
+            uv4_node.outputs.string,
             uvPath_node.inputs.options)
         settings.material.connect(
             uvPath_node.outputs.result,
@@ -2696,9 +2705,13 @@ class Export(object):
 
         # Alpha Overlay 1
         elif buttonState3 == 1:
+            overlay = None
+            for key, value in settings.project['LayerData'].iteritems():
+                if value[3] == 1:
+                    overlay = key
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = settings.project['LayerData']['emission'][2]
+            chanID = settings.project['LayerData'][overlay][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2709,9 +2722,13 @@ class Export(object):
 
         # Alpha Overlay 2
         elif buttonState3 == 2:
+            overlay = None
+            for key, value in settings.project['LayerData'].iteritems():
+                if value[3] == 2:
+                    overlay = key
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = settings.project['LayerData']['emission'][2]
+            chanID = settings.project['LayerData'][overlay][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2722,6 +2739,10 @@ class Export(object):
 
         # Overlay
         elif buttonState3 == 3:
+            overlay = None
+            for key, value in settings.project['LayerData'].iteritems():
+                if value[4] == True:
+                    overlay = key
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
             chanID = settings.project['LayerData']['emission'][2]
