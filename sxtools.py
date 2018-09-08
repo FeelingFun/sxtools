@@ -121,6 +121,26 @@ class Settings(object):
             u'layer6', u'layer7', u'layer8', u'layer9', u'layer10',
             u'occlusion', u'specular', u'transmission', u'emission'
         ]
+        # name: ([0]index, [1](default values),
+        #        [2]export channels, [3]alphaOverlay,
+        #        [4]overlay, [5]enabled matChannel,
+        #        [6]display name)
+        self.refLayerData = {
+            self.refArray[0]: [1, (0.5, 0.5, 0.5, 1), 'U3', False, False, False, 'layer1'],
+            self.refArray[1]: [2, (0, 0, 0, 0), None, False, False, False, 'layer2'],
+            self.refArray[2]: [3, (0, 0, 0, 0), None, False, False, False, 'layer3'],
+            self.refArray[3]: [4, (0, 0, 0, 0), None, False, False, False, 'layer4'],
+            self.refArray[4]: [5, (0, 0, 0, 0), None, False, False, False, 'layer5'],
+            self.refArray[5]: [6, (0, 0, 0, 0), None, False, False, False, 'layer6'],
+            self.refArray[6]: [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), False, False, False, 'data'],
+            self.refArray[7]: [8, (0, 0, 0, 0), 'U4', True, False, False, 'gradient1'],
+            self.refArray[8]: [9, (0, 0, 0, 0), 'V4', True, False, False, 'gradient2'],
+            self.refArray[9]: [10, (0, 0, 0, 0), ('UV5', 'UV6'), False, True, False, 'overlay'],
+            self.refArray[10]: [11, (1, 1, 1, 1), 'U1', False, False, True, 'occlusion'],
+            self.refArray[11]: [12, (0, 0, 0, 1), 'V1', False, False, True, 'specular'],
+            self.refArray[12]: [13, (0, 0, 0, 1), 'U2', False, False, True, 'transmission'],
+            self.refArray[13]: [14, (0, 0, 0, 1), 'V2', False, False, True, 'emission']
+        }
 
     def setPreferences(self):
         modifiers = maya.cmds.getModifiers()
@@ -132,71 +152,34 @@ class Settings(object):
             self.project['SmoothExport'] = 0
             self.project['ExportOffset'] = 5
             self.project['LayerCount'] = 10
+            self.project['MaskCount'] = 5
             self.project['ChannelCount'] = 4
-            self.project['Overlays'] = ('layer9', 'layer10')
-
-            self.project['RefLayers'] = {
-                u'layer1': (0.5, 0.5, 0.5, 1),
-                u'layer2': (0, 0, 0, 0),
-                u'layer3': (0, 0, 0, 0),
-                u'layer4': (0, 0, 0, 0),
-                u'layer5': (0, 0, 0, 0),
-                u'layer6': (0, 0, 0, 0),
-                u'layer7': (0, 0, 0, 0),
-                u'layer8': (0, 0, 0, 0),
-                u'layer9': (0, 0, 0, 0),
-                u'layer10': (0, 0, 0, 0),
-                u'occlusion': (1, 1, 1, 1),
-                u'specular': (0, 0, 0, 1),
-                u'transmission': (0, 0, 0, 1),
-                u'emission': (0, 0, 0, 1)
-            }
-
-            self.project['RefIndices'] = {
-                u'layer1': 1,
-                u'layer2': 2,
-                u'layer3': 3,
-                u'layer4': 4,
-                u'layer5': 5,
-                u'layer6': 6,
-                u'layer7': 7,
-                u'layer8': 8,
-                u'layer9': 9,
-                u'layer10': 10,
-                u'occlusion': 11,
-                u'specular': 12,
-                u'transmission': 13,
-                u'emission': 14
-            }
 
             self.project['RefNames'] = {
-                1: u'layer1',
-                2: u'layer2',
-                3: u'layer3',
-                4: u'layer4',
-                5: u'layer5',
-                6: u'layer6',
-                7: u'layer7',
-                8: u'layer8',
-                9: u'layer9',
-                10: u'layer10',
-                11: u'occlusion',
-                12: u'specular',
-                13: u'transmission',
-                14: u'emission'
+                1: self.refArray[0],
+                2: self.refArray[1],
+                3: self.refArray[2],
+                4: self.refArray[3],
+                5: self.refArray[4],
+                6: self.refArray[5],
+                7: self.refArray[6],
+                8: self.refArray[7],
+                9: self.refArray[8],
+                10: self.refArray[9],
+                11: self.refArray[10],
+                12: self.refArray[11],
+                13: self.refArray[12],
+                14: self.refArray[13]
             }
 
-            self.project['MatChannels'] = (1, 1, 1, 1)
-            self.project['ExportChannels'] = (
-                'U3', 'U1', 'V1', 'U2', 'V2')
-            self.project['OverlaysExportChannels'] = (
-                ('UV4', 'UV5'), ('UV6', 'UV7'))
+            self.project['LayerData'] = self.refLayerData
+
             self.project['ExportSuffix'] = True
-            self.project['paletteTarget1'] = ['layer1', ]
-            self.project['paletteTarget2'] = ['layer2', ]
-            self.project['paletteTarget3'] = ['layer3', ]
-            self.project['paletteTarget4'] = ['layer4', ]
-            self.project['paletteTarget5'] = ['layer5', ]
+            self.project['paletteTarget1'] = [self.refArray[0], ]
+            self.project['paletteTarget2'] = [self.refArray[1], ]
+            self.project['paletteTarget3'] = [self.refArray[2], ]
+            self.project['paletteTarget4'] = [self.refArray[3], ]
+            self.project['paletteTarget5'] = [self.refArray[4], ]
 
         self.savePreferences()
 
@@ -206,10 +189,10 @@ class Settings(object):
         elif shift is False:
             setup.createSXShader(
                 self.project['LayerCount'],
-                self.project['MatChannels'][0],
-                self.project['MatChannels'][1],
-                self.project['MatChannels'][2],
-                self.project['MatChannels'][3])
+                self.project['LayerData']['occlusion'][5],
+                self.project['LayerData']['specular'][5],
+                self.project['LayerData']['transmission'][5],
+                self.project['LayerData']['emission'][5])
         setup.createSXExportShader()
         setup.createSXPBShader()
 
@@ -222,7 +205,12 @@ class Settings(object):
 
         maya.cmds.select(clear=True)
 
+    # a separate update method is needed to read UI values
+    # to project prefs so that the user changing values
+    # does not instantly affect the existing prefs
     def updatePreferences(self):
+        self.project['LayerData'] = {}
+        self.project['RefNames'] = {}
         self.project['AlphaTolerance'] = maya.cmds.floatField(
             'exportTolerance', query=True, value=True)
         self.project['SmoothExport'] = maya.cmds.intField(
@@ -231,35 +219,6 @@ class Settings(object):
             'exportOffset', query=True, value=True)
         self.project['LayerCount'] = maya.cmds.intField(
             'layerCount', query=True, value=True)
-        self.project['MatChannels'] = (
-            int(maya.cmds.checkBox('occlusion', query=True, value=True)),
-            int(maya.cmds.checkBox('specular', query=True, value=True)),
-            int(maya.cmds.checkBox('transmission', query=True, value=True)),
-            int(maya.cmds.checkBox('emission', query=True, value=True)))
-        self.project['Overlays'] = (
-            maya.cmds.textField('overlay1', query=True, text=True),
-            maya.cmds.textField('overlay2', query=True, text=True))
-        self.project['ExportChannels'] = (
-            maya.cmds.textField('maskExport', query=True, text=True),
-            maya.cmds.textField('occlusionExport', query=True, text=True),
-            maya.cmds.textField('specularExport', query=True, text=True),
-            maya.cmds.textField('transmissionExport', query=True, text=True),
-            maya.cmds.textField('emissionExport', query=True, text=True))
-        self.project['OverlaysExportChannels'] = (
-            str(maya.cmds.textField(
-                'overlay1Export', query=True, text=True)).split(','),
-            str(maya.cmds.textField(
-                'overlay2Export', query=True, text=True)).split(','))
-        self.project['RefLayers'] = {}
-        self.project['RefIndices'] = {}
-        self.project['RefNames'] = {}
-        self.project['ExportSuffix'] = maya.cmds.checkBox(
-            'suffixCheck', query=True, value=True)
-        self.project['paletteTarget1'] = ['layer1', ]
-        self.project['paletteTarget2'] = ['layer2', ]
-        self.project['paletteTarget3'] = ['layer3', ]
-        self.project['paletteTarget4'] = ['layer4', ]
-        self.project['paletteTarget5'] = ['layer5', ]
 
         refIndex = 0
         for k in range(0, self.project['LayerCount']):
@@ -267,11 +226,30 @@ class Settings(object):
             layerName = 'layer' + str(k + 1)
 
             if k == 0:
-                self.project['RefLayers'][layerName] = (0.5, 0.5, 0.5, 1)
+                self.project['LayerData'][layerName] = [
+                    refIndex,
+                    (0.5, 0.5, 0.5, 1),
+                    maya.cmds.textField('maskExport', query=True, text=True),
+                    False,
+                    False,
+                    False,
+                    maya.cmds.textField(
+                        layerName + 'Display',
+                        query=True,
+                        text=True)]
             else:
-                self.project['RefLayers'][layerName] = (0, 0, 0, 0)
+                self.project['LayerData'][layerName] = [
+                    refIndex,
+                    (0, 0, 0, 0),
+                    None,
+                    False,
+                    False,
+                    False,
+                    maya.cmds.textField(
+                        layerName + 'Display',
+                        query=True,
+                        text=True)]
 
-            self.project['RefIndices'][layerName] = refIndex
             self.project['RefNames'][refIndex] = layerName
 
         channels = [u'occlusion', u'specular', u'transmission', u'emission']
@@ -279,12 +257,101 @@ class Settings(object):
             if maya.cmds.checkBox(channel, query=True, value=True):
                 refIndex += 1
                 if channel == 'occlusion':
-                    self.project['RefLayers'][channel] = (1, 1, 1, 1)
+                    self.project['LayerData'][channel] = [
+                        refIndex,
+                        (1, 1, 1, 1),
+                        None,
+                        False,
+                        False,
+                        True,
+                        settings.refLayerData[channel][6]]
                 else:
-                    self.project['RefLayers'][channel] = (0, 0, 0, 1)
+                    self.project['LayerData'][channel] = [
+                        refIndex,
+                        (0, 0, 0, 1),
+                        None,
+                        False,
+                        False,
+                        True,
+                        settings.refLayerData[channel][6]]
 
-                self.project['RefIndices'][channel] = refIndex
                 self.project['RefNames'][refIndex] = channel
+
+        if maya.cmds.checkBox('occlusion', query=True, value=True):
+            self.project['LayerData']['occlusion'][5] = True
+            self.project['LayerData']['occlusion'][2] = (
+                maya.cmds.textField(
+                    'occlusionExport', query=True, text=True))
+        else:
+            self.project['LayerData']['occlusion'][5] = False
+            self.project['LayerData']['occlusion'][2] = None
+        if maya.cmds.checkBox('specular', query=True, value=True):
+            self.project['LayerData']['specular'][5] = True
+            self.project['LayerData']['specular'][2] = (
+                maya.cmds.textField(
+                    'specularExport', query=True, text=True))
+        else:
+            self.project['LayerData']['specular'][5] = False
+            self.project['LayerData']['specular'][2] = None
+        if maya.cmds.checkBox('transmission', query=True, value=True):
+            self.project['LayerData']['transmission'][5] = True
+            self.project['LayerData']['transmission'][2] = (
+                maya.cmds.textField(
+                    'transmissionExport', query=True, text=True))
+        else:
+            self.project['LayerData']['transmission'][5] = False
+            self.project['LayerData']['transmission'][2] = None
+        if maya.cmds.checkBox('emission', query=True, value=True):
+            self.project['LayerData']['emission'][5] = True
+            self.project['LayerData']['emission'][2] = (
+                maya.cmds.textField('emissionExport', query=True, text=True))
+        else:
+            self.project['LayerData']['emission'][5] = False
+            self.project['LayerData']['emission'][2] = None
+
+        if maya.cmds.textField(
+                'alphaOverlay1', query=True, text=True) != '':
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay1', query=True, text=True)][2] = (
+                maya.cmds.textField(
+                    'alphaOverlay1Export', query=True, text=True))
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay1', query=True, text=True)][3] = True
+        else:
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay1', query=True, text=True)][3] = False
+        if maya.cmds.textField(
+                'alphaOverlay2', query=True, text=True) != '':
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay2', query=True, text=True)][2] = (
+                maya.cmds.textField(
+                    'alphaOverlay2Export', query=True, text=True))
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay2', query=True, text=True)][3] = True
+        else:
+            self.project['LayerData'][maya.cmds.textField(
+                'alphaOverlay2', query=True, text=True)][3] = False
+        if maya.cmds.textField(
+                'overlay', query=True, text=True) != '':
+            self.project['LayerData'][maya.cmds.textField(
+                'overlay', query=True, text=True)][2] = (
+                str(maya.cmds.textField(
+                    'overlayExport', query=True, text=True)).split(','))
+            self.project['LayerData'][maya.cmds.textField(
+                'overlay', query=True, text=True)][4] = True
+        else:
+            self.project['LayerData'][maya.cmds.textField(
+                'overlay', query=True, text=True)][4] = False
+
+        self.project['ExportSuffix'] = maya.cmds.checkBox(
+            'suffixCheck', query=True, value=True)
+        self.project['paletteTarget1'] = ['layer1', ]
+        self.project['paletteTarget2'] = ['layer2', ]
+        self.project['paletteTarget3'] = ['layer3', ]
+        self.project['paletteTarget4'] = ['layer4', ]
+        self.project['paletteTarget5'] = ['layer5', ]
+        self.project['MaskCount'] = maya.cmds.intField(
+            'numMasks', query=True, value=True)
 
         self.project[
             'ChannelCount'] = refIndex - self.project['LayerCount']
@@ -352,14 +419,15 @@ class Settings(object):
     def savePalettes(self):
         if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
-            tempDict = {'palette':[]}
+            tempDict = {'palette': []}
             for key in self.masterPaletteDict.keys():
-                tempEntry = {}                
+                tempEntry = {}
                 tempEntry['name'] = key
                 tempCols = []
                 colors = self.masterPaletteDict[key]
                 for rgb in colors:
-                    tempCols.append({'r': rgb[0], 'g': rgb[1], 'b': rgb[2], 'a': 0.0})
+                    tempCols.append(
+                        {'r': rgb[0], 'g': rgb[1], 'b': rgb[2], 'a': 0.0})
                 tempEntry['entries'] = tempCols
                 tempDict['palette'].append(tempEntry)
 
@@ -1297,8 +1365,7 @@ class SceneSetup(object):
         if maya.cmds.objExists('SXExportShaderSG'):
             maya.cmds.delete('SXExportShaderSG')
 
-        uvChannels = settings.project['ExportChannels']
-        maskID = uvChannels[0]
+        maskID = settings.project['LayerData']['layer1'][2]
         maskAxis = str(maskID[0])
         maskIndex = int(maskID[1])
         numLayers = float(settings.project['LayerCount'])
@@ -1635,15 +1702,7 @@ class SceneSetup(object):
 
         nodeIDs = []
         channels = ('occlusion', 'specular', 'transmission', 'emission')
-        matChannels = settings.project['MatChannels']
-        uvChannels = settings.project['ExportChannels']
-        matDict = {
-            'occlusion': uvChannels[1],
-            'specular': uvChannels[2],
-            'transmission': uvChannels[3],
-            'emission': uvChannels[4]
-        }
-        maskID = uvChannels[0]
+        maskID = settings.project['LayerData']['layer1'][2]
         maskAxis = str(maskID[0])
         maskIndex = int(maskID[1])
         uvDict = {}
@@ -1688,17 +1747,16 @@ class SceneSetup(object):
             sfxnode=pbmatName,
             getNodeIDByName='black')
 
-        k = 0
-        for channel in channels:
-            if matChannels[k] is True:
-                if int(matDict[channel][1]) == 1:
+        for idx, channel in enumerate(channels):
+            if settings.project['LayerData'][channel][5] is True:
+                if int(settings.project['LayerData'][channel][2][1]) == 1:
                     uv_node = pbmat.add(pbsnodes.Texcoord1)
-                elif int(matDict[channel][1]) == 2:
+                elif int(settings.project['LayerData'][channel][2][1]) == 2:
                     uv_node = pbmat.add(pbsnodes.Texcoord2)
-                elif int(matDict[channel][1]) == 3:
+                elif int(settings.project['LayerData'][channel][2][1]) == 3:
                     uv_node = pbmat.add(pbsnodes.Texcoord3)
                 uv_node.posx = -1000
-                uv_node.posy = k * 250
+                uv_node.posy = idx * 250
                 uv_node.name = channel
                 uvID = maya.cmds.shaderfx(
                     sfxnode=pbmatName,
@@ -1706,7 +1764,6 @@ class SceneSetup(object):
                 uvDict[channel] = uvID
             else:
                 uvDict[channel] = blackID
-            k += 1
 
         invert_node = pbmat.add(pbsnodes.Invert)
         invert_node.posx = -750
@@ -1760,10 +1817,10 @@ class SceneSetup(object):
         pbmat.connect(
             (uvDict['occlusion'], 0),
             (shaderID, 8))
-        if matDict['occlusion'][0] == 'U':
+        if settings.project['LayerData']['occlusion'][2][0] == 'U':
             shader_node.activesocket = 8
             shader_node.socketswizzlevalue = 'x'
-        elif matDict['occlusion'][0] == 'V':
+        elif settings.project['LayerData']['occlusion'][2][0] == 'V':
             shader_node.activesocket = 8
             shader_node.socketswizzlevalue = 'y'
 
@@ -1773,12 +1830,12 @@ class SceneSetup(object):
         pbmat.connect(
             (uvDict['specular'], 0),
             invert_node.inputs.value)
-        if matDict['specular'][0] == 'U':
+        if settings.project['LayerData']['specular'][2][0] == 'U':
             metPow_node.activesocket = 0
             metPow_node.socketswizzlevalue = 'x'
             invert_node.activesocket = 0
             invert_node.socketswizzlevalue = 'x'
-        elif matDict['specular'][0] == 'V':
+        elif settings.project['LayerData']['specular'][2][0] == 'V':
             metPow_node.activesocket = 0
             metPow_node.socketswizzlevalue = 'y'
             invert_node.activesocket = 0
@@ -1787,10 +1844,10 @@ class SceneSetup(object):
         pbmat.connect(
             (uvDict['emission'], 0),
             (shaderID, 7))
-        if matDict['emission'][0] == 'U':
+        if settings.project['LayerData']['emission'][2][0] == 'U':
             shader_node.activesocket = 7
             shader_node.socketswizzlevalue = 'xxx'
-        elif matDict['emission'][0] == 'V':
+        elif settings.project['LayerData']['emission'][2][0] == 'V':
             shader_node.activesocket = 7
             shader_node.socketswizzlevalue = 'yyy'
 
@@ -1932,7 +1989,7 @@ class SceneSetup(object):
 
     def setPrimVars(self):
         refLayers = layers.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
         refCount = settings.project['LayerCount']
 
         if refLayers == 'layer1':
@@ -2099,16 +2156,16 @@ class Export(object):
                 sourceLayer = 'layer' + str(i + 1)
                 layers.mergeLayers(selected, sourceLayer, 'layer1', True)
 
-    # For export, the layer colors are flattened to a single vertex color set,
-    # but their "layer masks" are written to UV coordinates.
-    # Each vertex must be assigned to one mask.
-    def colorToUV(self,
-                  selected,
-                  uSourceColorSet,
-                  vSourceColorSet,
-                  targetUVSet):
+    def dataToUV(self,
+                 shape,
+                 uSource,
+                 vSource,
+                 targetUVSet,
+                 mode):
+        numMasks = settings.project['MaskCount']
+        
         selectionList = OM.MSelectionList()
-        selectionList.add(selected)
+        selectionList.add(shape)
         nodeDagPath = OM.MDagPath()
         nodeDagPath = selectionList.getDagPath(0)
         MFnMesh = OM.MFnMesh(nodeDagPath)
@@ -2119,27 +2176,73 @@ class Export(object):
         uArray = OM.MFloatArray()
         vArray = OM.MFloatArray()
 
-        if uSourceColorSet != 'zero':
-            uColorArray = MFnMesh.getFaceVertexColors(colorSet=uSourceColorSet)
+        if uSource is not None:
+            uColorArray = MFnMesh.getFaceVertexColors(colorSet=uSource)
             lenColorArray = len(uColorArray)
-        if vSourceColorSet != 'zero':
-            vColorArray = MFnMesh.getFaceVertexColors(colorSet=vSourceColorSet)
-            lenColorArray = len(uColorArray)
+            uArray.setLength(lenColorArray)
+        if vSource is not None:
+            vColorArray = MFnMesh.getFaceVertexColors(colorSet=vSource)
+            lenColorArray = len(vColorArray)
+            vArray.setLength(lenColorArray)
+
         uvIdArray = MFnMesh.getAssignedUVs()
+        # for mode 1? uvIdArray = MFnMesh.getAssignedUVs(uvSet='UV1')
 
-        uArray.setLength(lenColorArray)
-        vArray.setLength(lenColorArray)
+        # mode 1 - layer masks
+        if mode == 1:
+            axis = str.lower(str(targetUVSet[0]))
+            # Iterate through all layers from top to bottom
+            # to assign each vertex to correct layer mask.
+            for i in range(1, numMasks + 1):
+                sourceColorSet = 'layer' + str(i)
+                uColorArray = MFnMesh.getFaceVertexColors(
+                    colorSet=sourceColorSet)
+                lenColorArray = len(uColorArray)
+                uArray.setLength(lenColorArray)
+                vArray.setLength(lenColorArray)
+                if i == 1:
+                    for k in range(lenColorArray):
+                        uArray[k] = 1
+                        vArray[k] = 1
+                else:
+                    for k in range(lenColorArray):
+                        # NOTE: Alpha inadvertedly gets written with
+                        # a low non-zero values when using brush tools.
+                        # The tolerance threshold helps fix that.
+                        if ((uColorArray[k].a >=
+                           settings.project['AlphaTolerance']) and
+                           (axis == 'u')):
+                            uArray[k] = float(i)
+                        elif ((uColorArray[k].a >=
+                              settings.project['AlphaTolerance']) and
+                              (axis == 'v')):
+                                vArray[k] = float(i)
+        # mode 2 - material channels
+        elif mode == 2:
+            for k in range(lenColorArray):
+                if uColorArray[k].a > 0:
+                    uArray[k] = uColorArray[k].r
+                elif vColorArray[k].r <= 0:
+                    uArray[k] = 0
 
-        for k in range(lenColorArray):
-            if uColorArray[k].a > 0:
-                uArray[k] = uColorArray[k].r
-            elif vColorArray[k].r <= 0:
-                uArray[k] = 0
+                if vColorArray[k].a > 0:
+                    vArray[k] = vColorArray[k].r
+                elif vColorArray[k].a <= 0:
+                    vArray[k] = 0
+        # mode 3 - alpha overlays
+        elif mode == 3:
+            uArray.setLength(lenColorArray)
+            vArray.setLength(lenColorArray)
+            for k in range(lenColorArray):
+                if uColorArray[k].a > 0:
+                    uArray[k] = uColorArray[k].a
+                elif vColorArray[k].r <= 0:
+                    uArray[k] = 0
 
-            if vColorArray[k].a > 0:
-                vArray[k] = vColorArray[k].r
-            elif vColorArray[k].a <= 0:
-                vArray[k] = 0
+                if vColorArray[k].a > 0:
+                    vArray[k] = vColorArray[k].a
+                elif vColorArray[k].a <= 0:
+                    vArray[k] = 0
 
         MFnMesh.setUVs(uArray, vArray, targetUVSet)
         MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
@@ -2191,94 +2294,6 @@ class Export(object):
                 uvIdArray[1],
                 uvSet=targetUVSetList[idx][1])
 
-    # The layer masks are written to UV3 using an offset value.
-    # This makes it simpler to separate each vertex
-    # to the correct layer in the game engine.
-
-    def layerToUV(self, selected, uvID, numLayers, offset):
-        axis = str.lower(str(uvID[0]))
-        targetUVSet = 'UV' + str(uvID[1])
-
-        # startTime1 = maya.cmds.timerX()
-
-        selectionList = OM.MSelectionList()
-        selectionList.add(selected)
-        nodeDagPath = OM.MDagPath()
-        nodeDagPath = selectionList.getDagPath(0)
-        MFnMesh = OM.MFnMesh(nodeDagPath)
-
-        layerArray = OM.MColorArray()
-        uArray = OM.MFloatArray()
-        vArray = OM.MFloatArray()
-        uvIdArray = MFnMesh.getAssignedUVs(uvSet='UV1')
-
-        # Iterate through all layers from top to bottom
-        # to assign each vertex to correct layer mask.
-        for i in range(1, numLayers + 1):
-            sourceColorSet = 'layer' + str(i)
-            if i == 1:
-                layerArray = MFnMesh.getFaceVertexColors(sourceColorSet)
-                lenLayerArray = len(layerArray)
-                uArray.setLength(lenLayerArray)
-                vArray.setLength(lenLayerArray)
-                for k in range(lenLayerArray):
-                    uArray[k] = 1
-                    vArray[k] = 1
-            else:
-                layerArray = MFnMesh.getFaceVertexColors(sourceColorSet)
-                for k in range(lenLayerArray):
-                    # NOTE: Alpha inadvertedly gets written with
-                    # a low non-zero values when using brush tools.
-                    # The tolerance threshold helps fix that.
-                    if ((layerArray[k].a >=
-                       settings.project['AlphaTolerance']) and
-                       (axis == 'u')):
-                        uArray[k] = float(i)
-                    elif ((layerArray[k].a >=
-                          settings.project['AlphaTolerance']) and
-                          (axis == 'v')):
-                            vArray[k] = float(i)
-
-        MFnMesh.setUVs(uArray, vArray, targetUVSet)
-        MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
-
-        # elapsedTime = maya.cmds.timerX(startTime=startTime1)
-        # print ('Elapsed Time for layer baking '+str(elapsedTime)+'\n')
-
-    def channelsToUV(self, exportShape):
-        shape = exportShape
-        matList = ('occlusion', 'specular', 'transmission', 'emission')
-        matArray = settings.project['MatChannels']
-        uvArray = list(settings.project['ExportChannels'])
-        # remove layermask export channel
-        uvArray.pop(0)
-        exportDict = {}
-
-        # filter disabled channels
-        k = 3
-        for i in reversed(matArray):
-            if int(i) == 0:
-                uvArray.pop(matArray.index(i))
-            elif int(i) == 1:
-                exportDict[uvArray[k]] = matList[k]
-            k -= 1
-
-        for k in range(0, 3):
-            a = 'U' + str(k + 1)
-            b = 'V' + str(k + 1)
-            if (a in exportDict):
-                uChan = exportDict[a]
-            else:
-                uChan = 'zero'
-            if (b in exportDict):
-                vChan = exportDict[b]
-            else:
-                vChan = 'zero'
-            uvSet = 'UV' + str(k + 1)
-
-            if not ((uChan == 'zero') and (vChan == 'zero')):
-                self.colorToUV(shape, uChan, vChan, uvSet)
-
     # The steps of the mesh export process:
     # 1) Duplicate objects under export folder
     # 2) Rename new objects to match originals but with a suffix
@@ -2289,14 +2304,65 @@ class Export(object):
         startTime0 = maya.cmds.timerX()
 
         sourceArray = []
-        refLayers = layers.sortLayers(
-            settings.project['RefLayers'].keys())
-        maskExport = settings.project['ExportChannels'][0]
+        alphaOverlayArray = [None, None]
+        alphaOverlayUVArray = [None, None]
+        overlay = []
+        overlayUVArray = []
+        materials = []
+        materialUVArray = []
+        exportBlocks = []
+
+        for key, value in settings.project['LayerData'].iteritems():
+            # UV channel for palette masks
+            if key == 'layer1':
+                maskExport = value[2]
+            # Material channels
+            elif value[5] is True:
+                materials.append(key)
+                materialUVArray.append(value[2])
+            # UV channels for alpha overlays
+            elif value[3] is True:
+                if value[2][0] == 'U':
+                    alphaOverlayArray[0] = key
+                    alphaOverlayUVArray[0] = value[2]
+                else:
+                    alphaOverlayArray[1] = key
+                    alphaOverlayUVArray[1] = value[2]
+            # UV channels for overlay
+            elif value[4] is True:
+                overlay.append(key)
+                overlayUVArray.append(value[2])
+        
+        if (alphaOverlayUVArray[0][1] != alphaOverlayUVArray[1][1]):
+            print('SX Tools Error: Two alpha overlays must be assigned'
+                  ' to the same UV Set')
+            return
+
+        # sort channels into pairs
+        for idx, material in enumerate(materials):
+            uSource = None
+            vSource = None
+            uvSet = None
+            
+            chanTemp = materialUVArray[idx]
+            if chanTemp[0] == 'U':
+                uSource = material
+                vSource = materials[materialUVArray.index('V'+str(chanTemp[1]))]
+            else:
+                vSource = material
+                uSource = materials[materialUVArray.index('U'+str(chanTemp[1]))]
+
+            uvSet = 'UV' + str(chanTemp[1])
+            if (uSource, vSource, uvSet) not in exportBlocks:
+                exportBlocks.append((uSource, vSource, uvSet))
+
         exportSmoothValue = settings.project['SmoothExport']
         exportOffsetValue = settings.project['ExportOffset']
-        overlayArray = settings.project['Overlays']
-        overlayUVArray = settings.project['OverlaysExportChannels']
-        numLayers = settings.project['LayerCount']-len(overlayArray)
+        numMasks = settings.project['MaskCount']
+        numLayers = (
+            settings.project['LayerCount'] -
+            len(overlay) -
+            len(alphaOverlayArray))
 
         # Clear existing static exports folder and create if necessary
         if maya.cmds.objExists('_staticExports'):
@@ -2393,23 +2459,41 @@ class Export(object):
                         delete=True,
                         uvSet=name)
 
-            # Create UV sets for color set data
+            # Create UV sets
             self.initUVs(exportShape, 'UV1')
             self.initUVs(exportShape, 'UV2')
             self.initUVs(exportShape, 'UV3')
+            self.initUVs(exportShape, 'UV4')
             if overlayUVArray is not None:
                 for uvSet in overlayUVArray:
                     for uv in uvSet:
                         self.initUVs(exportShape, uv)
 
-            # Bake material properties to UV channels
-            self.channelsToUV(exportShape)
-
             # Bake masks
-            self.layerToUV(exportShape, maskExport, numLayers, 1)
-            
+            maskUV = 'UV' + str(maskExport)[1]
+            self.dataToUV(exportShape, None, None, maskUV, 1)
+
+            # Bake material properties to UV channels
+            for block in exportBlocks:
+                self.dataToUV(
+                    exportShape,
+                    block[0],
+                    block[1],
+                    block[2], 2)
+
+            # Bake alpha overlays
+            if alphaOverlayArray != [None, None]:
+                if alphaOverlayUVArray[0][1] == alphaOverlayUVArray[1][1]:
+                    alphaOverlayUV = 'UV' + str(alphaOverlayUVArray[0][1])
+                self.dataToUV(
+                    exportShape,
+                    alphaOverlayArray[0],
+                    alphaOverlayArray[1],
+                    alphaOverlayUV, 3)
+
             # Bake overlays
-            self.overlayToUV(exportShape, overlayArray, overlayUVArray)
+            if overlay != [None]:
+                self.overlayToUV(exportShape, overlay, overlayUVArray)
             
             # Delete history
             maya.cmds.delete(exportShape, ch=True)
@@ -2525,8 +2609,8 @@ class Export(object):
             'exportShadingButtons1', query=True, select=True)
         buttonState2 = maya.cmds.radioButtonGrp(
             'exportShadingButtons2', query=True, select=True)
-        matChannels = settings.project['MatChannels']
-        uvChannels = settings.project['ExportChannels']
+        buttonState3 = maya.cmds.radioButtonGrp(
+            'exportShadingButtons3', query=True, select=True)
 
         # Composite
         if buttonState1 == 1:
@@ -2542,7 +2626,7 @@ class Export(object):
         elif buttonState1 == 2:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[0]
+            chanID = settings.project['LayerData']['layer1'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2555,7 +2639,7 @@ class Export(object):
         elif buttonState1 == 3:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[0]
+            chanID = settings.project['LayerData']['layer1'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2568,7 +2652,7 @@ class Export(object):
         elif buttonState2 == 1:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[1]
+            chanID = settings.project['LayerData']['occlusion'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2581,7 +2665,7 @@ class Export(object):
         elif buttonState2 == 2:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[2]
+            chanID = settings.project['LayerData']['specular'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2594,7 +2678,7 @@ class Export(object):
         elif buttonState2 == 3:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[3]
+            chanID = settings.project['LayerData']['transmission'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2607,7 +2691,46 @@ class Export(object):
         elif buttonState2 == 4:
             maya.cmds.sets(
                 settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = uvChannels[4]
+            chanID = settings.project['LayerData']['emission'][2]
+            chanAxis = str(chanID[0])
+            chanIndex = chanID[1]
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    settings.exportNodeDict['colorBool'],
+                    'value', False))
+
+        # Alpha Overlay 1
+        elif buttonState3 == 1:
+            maya.cmds.sets(
+                settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            chanID = settings.project['LayerData']['emission'][2]
+            chanAxis = str(chanID[0])
+            chanIndex = chanID[1]
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    settings.exportNodeDict['colorBool'],
+                    'value', False))
+
+        # Alpha Overlay 2
+        elif buttonState3 == 2:
+            maya.cmds.sets(
+                settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            chanID = settings.project['LayerData']['emission'][2]
+            chanAxis = str(chanID[0])
+            chanIndex = chanID[1]
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    settings.exportNodeDict['colorBool'],
+                    'value', False))
+
+        # Overlay
+        elif buttonState3 == 3:
+            maya.cmds.sets(
+                settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+            chanID = settings.project['LayerData']['emission'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
@@ -2697,7 +2820,7 @@ class ToolActions(object):
         settings.bakeSet = settings.shapeArray
         modifiers = maya.cmds.getModifiers()
 
-        if int(settings.project['MatChannels'][0]) == 1:
+        if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
 
         if settings.tools['bakeGroundPlane'] is True:
@@ -2891,7 +3014,7 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if int(settings.project['MatChannels'][0]) == 1:
+        if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
 
         if settings.tools['bakeGroundPlane'] is True:
@@ -3422,7 +3545,7 @@ class ToolActions(object):
 
     def swapLayers(self, shapes):
         refLayers = layers.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
 
         layerA = maya.cmds.textField('layerA', query=True, text=True)
         layerB = maya.cmds.textField('layerB', query=True, text=True)
@@ -3485,7 +3608,7 @@ class ToolActions(object):
 
     def copyLayer(self, objects):
         refLayers = layers.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
 
         layerA = maya.cmds.textField('layersrc', query=True, text=True)
         layerB = maya.cmds.textField('layertgt', query=True, text=True)
@@ -3604,7 +3727,7 @@ class ToolActions(object):
         shift = bool((modifiers & 1) > 0)
         if shift is True:
             layers.clearLayer(
-                layers.sortLayers(settings.project['RefLayers'].keys()),
+                layers.sortLayers(settings.project['LayerData'].keys()),
                 settings.shapeArray)
         elif shift is False:
             if len(settings.componentArray) > 0:
@@ -3980,7 +4103,7 @@ class ToolActions(object):
 
     def checkTarget(self, targets, index):
         refLayers = layers.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
 
         splitList = []
         targetList = []
@@ -4080,7 +4203,7 @@ class ToolActions(object):
         if (targetSet > layers.getLayerSet(objects[0])) or (targetSet < 0):
             print('SX Tools Error: Selected layer set does not exist!')
             return
-        refLayers = layers.sortLayers(settings.project['RefLayers'].keys())
+        refLayers = layers.sortLayers(settings.project['LayerData'].keys())
         oldColors = []
         newColors = []
 
@@ -4169,7 +4292,7 @@ class LayerManagement(object):
         else:
             target = sourceLayer
         refLayers = self.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
 
         selected = str(object)
         attr = '.' + str(self.getSelectedLayer()) + 'BlendMode'
@@ -4276,7 +4399,7 @@ class LayerManagement(object):
         noColorSetObject = []
 
         refLayers = self.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
 
         for object in objects:
             currentColorSets = maya.cmds.polyColorSet(
@@ -4344,7 +4467,7 @@ class LayerManagement(object):
     def mergeLayerDirection(self, shapes, up):
         sourceLayer = self.getSelectedLayer()
         if ((str(sourceLayer) == 'layer1') and
-              (up is True)):
+           (up is True)):
             print('SX Tools Error: Cannot merge layer1')
             return
         elif ((str(sourceLayer) == 'layer' +
@@ -4361,7 +4484,7 @@ class LayerManagement(object):
             print('SX Tools Error: Cannot merge material channels')
             return
 
-        layerIndex = settings.project['RefIndices'][sourceLayer]
+        layerIndex = settings.project['LayerData'][sourceLayer][0]
         if up is True:
             targetLayer = settings.project['RefNames'][layerIndex-1]
         else:
@@ -4370,19 +4493,19 @@ class LayerManagement(object):
 
         for shape in shapes:
             self.mergeLayers(
-	            shape,
-	            sourceLayer,
-	            targetLayer, up)
+                shape,
+                sourceLayer,
+                targetLayer, up)
             self.patchLayers([shape, ])
 
         if up is True:
             maya.cmds.polyColorSet(
-            	shapes,
+                shapes,
                 currentColorSet=True,
                 colorSet=str(targetLayer))
         else:
             maya.cmds.polyColorSet(
-            	shapes,
+                shapes,
                 currentColorSet=True,
                 colorSet=str(sourceLayer))
         self.refreshLayerList()
@@ -4406,7 +4529,7 @@ class LayerManagement(object):
 
         # Create color sets
         refLayers = self.sortLayers(
-                settings.project['RefLayers'].keys())
+                settings.project['LayerData'].keys())
         for layer in refLayers:
             maya.cmds.polyColorSet(
                 objects,
@@ -4437,7 +4560,7 @@ class LayerManagement(object):
             print('SX Tools: Maximum layer sets added!')
             return
 
-        refLayers = self.sortLayers(settings.project['RefLayers'].keys())
+        refLayers = self.sortLayers(settings.project['LayerData'].keys())
         targetLayers = []
         var = varIdx
 
@@ -4468,7 +4591,7 @@ class LayerManagement(object):
                 objects,
                 currentColorSet=True,
                 colorSet=layer)
-            color = settings.project['RefLayers'][layer]
+            color = settings.project['LayerData'][layer][1]
             if objList is None:
                 maya.cmds.polyColorPerVertex(
                     r=color[0],
@@ -4513,7 +4636,7 @@ class LayerManagement(object):
     # Called when the user hides or shows
     # all vertex color layers in the tool UI
     def toggleAllLayers(self):
-        layers = self.sortLayers(settings.project['RefLayers'].keys())
+        layers = self.sortLayers(settings.project['LayerData'].keys())
         for layer in layers:
             self.toggleLayer(layer)
 
@@ -4533,7 +4656,7 @@ class LayerManagement(object):
         if maya.cmds.textScrollList('layerList', exists=True):
             maya.cmds.textScrollList('layerList', edit=True, removeAll=True)
 
-        layers = self.sortLayers(settings.project['RefLayers'].keys())
+        layers = self.sortLayers(settings.project['LayerData'].keys())
         states = []
         for layer in layers:
             states.append(self.verifyLayerState(layer))
@@ -4571,7 +4694,7 @@ class LayerManagement(object):
                 settings.shapeArray[len(settings.shapeArray)-1],
                 query=True,
                 currentColorSet=True)[0])
-        if selectedColorSet not in settings.project['RefLayers'].keys():
+        if selectedColorSet not in settings.project['LayerData'].keys():
             maya.cmds.polyColorSet(
                 settings.shapeArray,
                 edit=True,
@@ -4581,8 +4704,8 @@ class LayerManagement(object):
         maya.cmds.textScrollList(
             'layerList',
             edit=True,
-            selectIndexedItem=settings.project['RefIndices'][
-                selectedColorSet])
+            selectIndexedItem=settings.project['LayerData'][
+                selectedColorSet][0])
 
     def sortLayers(self, layers):
         sortedLayers = []
@@ -4632,7 +4755,8 @@ class LayerManagement(object):
         else:
             adj = ''
 
-        itemString = layer + '\t' + hidden + mask + adj
+        layerName = settings.project['LayerData'][layer][6]
+        itemString = layerName + '\t' + hidden + mask + adj
         return itemString
 
     # Maps the selected list item in the layerlist UI
@@ -4676,7 +4800,7 @@ class LayerManagement(object):
     # Also verifies subdivision mode.
     def verifyObjectLayers(self, objects):
         refLayers = self.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
         nonStdObjs = []
         empty = False
 
@@ -4707,7 +4831,7 @@ class LayerManagement(object):
 
     def clearLayerSets(self):
         refLayers = self.sortLayers(
-            settings.project['RefLayers'].keys())
+            settings.project['LayerData'].keys())
         for shape in settings.shapeArray:
             colorSets = maya.cmds.polyColorSet(
                 shape,
@@ -4823,10 +4947,6 @@ class UI(object):
         maya.cmds.checkBox('specular', label='', value=True)
         maya.cmds.textField('specularExport', text='V1')
 
-        # maya.cmds.text('specularRGBLabel', label='Specular (RGB):')
-        # maya.cmds.checkBox('specularRGB', label='', value=True)
-        # maya.cmds.textField('specularRGBExport', text='V1, UV2')
-
         maya.cmds.text('transmissionLabel', label='Transmission:')
         maya.cmds.checkBox('transmission', label='', value=True)
         maya.cmds.textField('transmissionExport', text='U2')
@@ -4835,17 +4955,17 @@ class UI(object):
         maya.cmds.checkBox('emission', label='', value=True)
         maya.cmds.textField('emissionExport', text='V2')
 
-        # maya.cmds.text('emissionRGBLabel', label='Emission (RGB):')
-        # maya.cmds.checkBox('emissionRGB', label='', value=True)
-        # maya.cmds.textField('emissionRGBExport', text='UV3, UV4')
+        maya.cmds.text('alphaOverlay1Label', label='Overlay1 (A):')
+        maya.cmds.textField('alphaOverlay1', text='layer8')
+        maya.cmds.textField('alphaOverlay1Export', text='U4')
 
-        maya.cmds.text('overlay1Label', label='Overlay1 (RGBA):')
-        maya.cmds.textField('overlay1', text='layer9')
-        maya.cmds.textField('overlay1Export', text='UV4,UV5')
+        maya.cmds.text('alphaOverlay2Label', label='Overlay2 (A):')
+        maya.cmds.textField('alphaOverlay2', text='layer9')
+        maya.cmds.textField('alphaOverlay2Export', text='V4')
 
-        maya.cmds.text('overlay2Label', label='Overlay2 (RGBA):')
-        maya.cmds.textField('overlay2', text='layer10')
-        maya.cmds.textField('overlay2Export', text='UV6,UV7')
+        maya.cmds.text('overlayLabel', label='Overlay2 (RGBA):')
+        maya.cmds.textField('overlay', text='layer10')
+        maya.cmds.textField('overlayExport', text='UV5,UV6')
 
         maya.cmds.rowColumnLayout(
             'numLayerColumns',
@@ -4857,8 +4977,16 @@ class UI(object):
 
         maya.cmds.text(label='Export Process Options')
         maya.cmds.text(label=' ')
-        maya.cmds.text(label='Alpha-to-mask limit:')
 
+        maya.cmds.text(label='Number of masks:')
+        maya.cmds.intField(
+            'numMasks',
+            minValue=0,
+            maxValue=10,
+            value=5,
+            step=1,
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+        maya.cmds.text(label='Alpha-to-mask limit:')
         maya.cmds.floatField(
             'exportTolerance',
             value=1.0,
@@ -4892,6 +5020,16 @@ class UI(object):
             changeCommand=(
                 "sxtools.settings.project['ExportSuffix'] = ("
                 "maya.cmds.checkBox('suffixCheck', query=True, value=True))"))
+
+        maya.cmds.text(label='')
+        maya.cmds.text(label='')
+
+        for i in xrange(maya.cmds.intField('layerCount', query=True, value=True)):
+            layerDisplayName = 'layer'+str(i+1)
+            labelText = layerDisplayName + ' display name:'
+            fieldLabel = layerDisplayName + 'Display'
+            maya.cmds.text(label=labelText)
+            maya.cmds.textField(fieldLabel, text=layerDisplayName)
 
         maya.cmds.columnLayout(
             'refLayerColumn',
@@ -4946,45 +5084,57 @@ class UI(object):
                 edit=True,
                 value=settings.project['LayerCount'])
 
-        if 'MatChannels' in settings.project:
+        if 'ExportSuffix' in settings.project:
+            maya.cmds.checkBox(
+                'suffixCheck',
+                edit=True,
+                value=settings.project['ExportSuffix'])
+
+        if 'LayerData' in settings.project:
             maya.cmds.checkBox(
                 'occlusion',
                 edit=True,
-                value=int(settings.project['MatChannels'][0]))
+                value=bool(settings.project['LayerData']['occlusion'][5]))
             maya.cmds.checkBox(
                 'specular',
                 edit=True,
-                value=int(settings.project['MatChannels'][1]))
+                value=bool(settings.project['LayerData']['specular'][5]))
             maya.cmds.checkBox(
                 'transmission',
                 edit=True,
-                value=int(settings.project['MatChannels'][2]))
+                value=bool(settings.project['LayerData']['transmission'][5]))
             maya.cmds.checkBox(
                 'emission',
                 edit=True,
-                value=int(settings.project['MatChannels'][3]))
-
-        if 'ExportChannels' in settings.project:
+                value=bool(settings.project['LayerData']['emission'][5]))
             maya.cmds.textField(
                 'maskExport',
                 edit=True,
-                text=(settings.project['ExportChannels'][0]))
+                text=(settings.project['LayerData']['layer1'][2]))
             maya.cmds.textField(
                 'occlusionExport',
                 edit=True,
-                text=(settings.project['ExportChannels'][1]))
+                text=(settings.project['LayerData']['occlusion'][2]))
             maya.cmds.textField(
                 'specularExport',
                 edit=True,
-                text=(settings.project['ExportChannels'][2]))
+                text=(settings.project['LayerData']['specular'][2]))
             maya.cmds.textField(
                 'transmissionExport',
                 edit=True,
-                text=(settings.project['ExportChannels'][3]))
+                text=(settings.project['LayerData']['transmission'][2]))
             maya.cmds.textField(
                 'emissionExport',
                 edit=True,
-                text=(settings.project['ExportChannels'][4]))
+                text=(settings.project['LayerData']['emission'][2]))
+            
+            for i in xrange(settings.project['LayerCount']):
+                layerName = 'layer' + str(i+1)
+                fieldLabel = layerName + 'Display'
+                maya.cmds.textField(
+                    fieldLabel,
+                    edit=True,
+                    text=settings.project['LayerData'][layerName][6])
 
     def exportObjectsUI(self):
         maya.cmds.frameLayout(
@@ -5033,6 +5183,19 @@ class UI(object):
             onCommand2=("sxtools.export.viewExportedMaterial()"),
             onCommand3=("sxtools.export.viewExportedMaterial()"),
             onCommand4=("sxtools.export.viewExportedMaterial()"))
+
+        maya.cmds.radioButtonGrp(
+            'exportShadingButtons3',
+            parent='exportedColumn',
+            vertical=True,
+            shareCollection='exportShadingButtons1',
+            columnWidth3=(80, 80, 80),
+            columnAttach3=('left', 'left', 'left'),
+            labelArray3=['Alpha Overlay 1', 'Alpha Overlay 2', 'Overlay'],
+            numberOfRadioButtons=3,
+            onCommand1=("sxtools.export.viewExportedMaterial()"),
+            onCommand2=("sxtools.export.viewExportedMaterial()"),
+            onCommand3=("sxtools.export.viewExportedMaterial()"))
 
         maya.cmds.button(
             label='Choose Export Path',
@@ -5128,7 +5291,7 @@ class UI(object):
         maya.cmds.button(
             label='Color Set Editor',
             command="maya.mel.eval('colorSetEditor;')")
-        if 'RefLayers' in settings.project:
+        if 'LayerData' in settings.project:
             maya.cmds.button(
                 label='Add missing color sets',
                 command=(
@@ -5738,7 +5901,8 @@ class UI(object):
             maya.cmds.button(
                 label='Select Palettes File',
                 parent='masterPaletteColumn',
-                statusBarMessage='Shift-click button to reload palettes from file',
+                statusBarMessage=(
+                    'Shift-click button to reload palettes from file'),
                 command='sxtools.settings.setPalettesFile()\n'
                 'sxtools.sx.updateSXTools()')
 
@@ -6047,7 +6211,7 @@ class UI(object):
         setNums = []
         for object in settings.objectArray:
             setNums.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
-        if all(num == setNums[0] for num in setNums):            
+        if all(num == setNums[0] for num in setNums):
             maya.cmds.button(
                 label='Add New Layer Set',
                 parent='swapLayerSetsColumn',
@@ -6159,7 +6323,7 @@ class Core(object):
 
         maya.cmds.scriptJob(
             runOnce=True,
-            uiDeleted=[dockID, 'sxtools.sx.exitSXTools()'])
+            uiDeleted=[dockID, 'sxtools.sx.exitSXTools()\ndel sxtools'])
 
         # Set correct lighting and shading mode at start
         maya.mel.eval('DisplayShadedAndTextured;')
