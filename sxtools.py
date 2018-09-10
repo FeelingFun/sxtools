@@ -4939,7 +4939,7 @@ class UI(object):
         maya.cmds.text(label='Color layers:')
         maya.cmds.intField(
             'layerCount',
-            value=1,
+            value=10,
             minValue=1,
             maxValue=10,
             step=1,
@@ -5043,10 +5043,10 @@ class UI(object):
         maya.cmds.text(label='')
 
         for i in xrange(10):
-            layerName = settings.refArray[i]
+            layerName = settings.refLayerData[settings.refArray[i]][6]
             labelID = 'display'+str(i+1)
-            labelText = layerName + ' display name:'
-            fieldLabel = layerName + 'Display'
+            labelText = settings.refArray[i] + ' display name:'
+            fieldLabel = settings.refArray[i] + 'Display'
             if (('LayerData' in settings.project) and 
                (layerName in settings.project['LayerData'].keys())):
                 layerName = settings.project['LayerData'][layerName][6]
@@ -5201,7 +5201,7 @@ class UI(object):
                    (layerName in settings.project['LayerData'].keys())):
                     layerText = settings.project['LayerData'][layerName][6]
                 else:
-                    layerText = settings.refArray[i]
+                    layerText = settings.refLayerData[settings.refArray[i]][6]
                 labelText = layerName + ' display name:'
                 maya.cmds.textField(
                     fieldLabel,
