@@ -141,7 +141,7 @@ class Settings(object):
             self.refArray[12]: [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
             self.refArray[13]: [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
         }
-
+        
     def setPreferences(self):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
@@ -155,22 +155,7 @@ class Settings(object):
             self.project['MaskCount'] = 5
             self.project['ChannelCount'] = 4
 
-            self.project['RefNames'] = {
-                1: self.refArray[0],
-                2: self.refArray[1],
-                3: self.refArray[2],
-                4: self.refArray[3],
-                5: self.refArray[4],
-                6: self.refArray[5],
-                7: self.refArray[6],
-                8: self.refArray[7],
-                9: self.refArray[8],
-                10: self.refArray[9],
-                11: self.refArray[10],
-                12: self.refArray[11],
-                13: self.refArray[12],
-                14: self.refArray[13]
-            }
+            self.project['RefNames'] = self.refArray
 
             self.project['LayerData'] = self.refLayerData
 
@@ -180,8 +165,6 @@ class Settings(object):
             self.project['paletteTarget3'] = [self.refArray[2], ]
             self.project['paletteTarget4'] = [self.refArray[3], ]
             self.project['paletteTarget5'] = [self.refArray[4], ]
-
-        self.savePreferences()
 
         if shift is True:
             setup.createSXShader(
@@ -205,12 +188,11 @@ class Settings(object):
 
         maya.cmds.select(clear=True)
 
-    # a separate update method is needed to read UI values
-    # to project prefs so that the user changing values
-    # does not instantly affect the existing prefs
-    def updatePreferences(self):
+    # this method is used to create a new settings.project dict from the setup
+    # screen, alternate source for the same dict is to read a saved one
+    def createPreferences(self):
         self.project['LayerData'] = {}
-        self.project['RefNames'] = {}
+        self.project['RefNames'] = []
         self.project['AlphaTolerance'] = maya.cmds.floatField(
             'exportTolerance', query=True, value=True)
         self.project['SmoothExport'] = maya.cmds.intField(
@@ -250,7 +232,7 @@ class Settings(object):
                         query=True,
                         text=True)]
 
-            self.project['RefNames'][refIndex] = layerName
+            self.project['RefNames'].append(layerName)
 
         channels = [u'occlusion', u'specular', u'transmission', u'emission']
         for channel in channels:
@@ -275,7 +257,7 @@ class Settings(object):
                         True,
                         settings.refLayerData[channel][6]]
 
-                self.project['RefNames'][refIndex] = channel
+                self.project['RefNames'].append(channel)
 
         if maya.cmds.checkBox('occlusion', query=True, value=True):
             self.project['LayerData']['occlusion'][5] = True
@@ -350,12 +332,16 @@ class Settings(object):
         self.project[
             'ChannelCount'] = refIndex - self.project['LayerCount']
 
+        for i in xrange(self.project['LayerCount']):
+            fieldLabel = settings.refArray[i] + 'Display'
+            self.project['LayerData'][settings.refArray[i]][6] = maya.cmds.textField(fieldLabel, query=True, text=True)
+
     def setPreferencesFile(self):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
         if shift is False:
             filePath = maya.cmds.fileDialog2(
-                fileFilter='*.txt',
+                fileFilter='*.json',
                 cap='Select SX Tools Settings File',
                 dialogStyle=2,
                 fm=0)
@@ -371,27 +357,24 @@ class Settings(object):
         if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
             with open(filePath, 'w') as output:
-                output.write(
-                    'SX Tools Project Settings: \r\n' +
-                    str(self.project) + '\r\n')
+                json.dump(self.project, output)
                 output.close()
-            print('SX Tools: Preferences saved')
+            print('SX Tools: Settings saved')
         else:
-            print('SX Tools Warning: Preferences file location not set!')
+            print('SX Tools Warning: Settings file location not set!')
 
     def loadPreferences(self):
         if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
             with open(filePath, 'r') as input:
-                prefData = input.readlines()
-                self.project = eval(prefData[1])
+                self.project.clear()
+                self.project = json.load(input)
                 input.close()
-
             print('SX Tools: Preferences loaded from ' + filePath)
             self.setPreferences()
             self.frames['setupCollapse'] = True
         else:
-            print('SX Tools: No preferences found')
+            print('SX Tools: No settings file found')
 
     def setPalettesFile(self):
         modifiers = maya.cmds.getModifiers()
@@ -4499,7 +4482,7 @@ class LayerManagement(object):
             print('SX Tools Error: Cannot merge material channels')
             return
 
-        layerIndex = settings.project['LayerData'][sourceLayer][0]
+        layerIndex = settings.project['LayerData'][sourceLayer][0]-1
         if up is True:
             targetLayer = settings.project['RefNames'][layerIndex-1]
         else:
@@ -4779,7 +4762,7 @@ class LayerManagement(object):
     # and object colorsets
     def getSelectedLayer(self):
         if len(settings.objectArray) == 0:
-            return (settings.project['RefNames'][1])
+            return (settings.project['RefNames'][0])
 
         selectedIndex = maya.cmds.textScrollList(
             'layerList', query=True, selectIndexedItem=True)
@@ -4794,12 +4777,12 @@ class LayerManagement(object):
 
         # Blend modes are only valid for color layers,
         # not material channels
-        if 'layer' not in settings.project['RefNames'][selectedIndex]:
+        if 'layer' not in settings.project['RefNames'][selectedIndex-1]:
             maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
         else:
             selected = str(settings.shapeArray[len(settings.shapeArray)-1])
             attr = (
-                '.' + settings.project['RefNames'][selectedIndex] +
+                '.' + settings.project['RefNames'][selectedIndex-1] +
                 'BlendMode')
             mode = maya.cmds.getAttr(selected + attr) + 1
             maya.cmds.optionMenu(
@@ -4808,7 +4791,7 @@ class LayerManagement(object):
                 select=mode,
                 enable=True)
 
-        return (settings.project['RefNames'][selectedIndex])
+        return (settings.project['RefNames'][selectedIndex-1])
 
     # Color sets of any selected object are checked
     # to see if they match the reference set.
@@ -4946,6 +4929,11 @@ class UI(object):
             changeCommand=(
                 "sxtools.ui.refreshLayerDisplayNameList()\n"
                 "maya.cmds.setFocus('MayaWindow')"))
+        if 'LayerCount' in settings.project:
+            maya.cmds.intField(
+                'layerCount',
+                edit=True,
+                value=settings.project['LayerCount'])
 
         maya.cmds.textField('maskExport', text='U3')
 
@@ -4984,133 +4972,6 @@ class UI(object):
         maya.cmds.text('overlayLabel', label='Overlay (RGBA):')
         maya.cmds.textField('overlay', text='layer10')
         maya.cmds.textField('overlayExport', text='UV5,UV6')
-
-        maya.cmds.rowColumnLayout(
-            'numLayerColumns',
-            parent='setupFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 160), (2, 70)),
-            columnAttach=[(1, 'left', 0), (2, 'left', 0)],
-            rowSpacing=(1, 0))
-
-        maya.cmds.text(label='Export Process Options')
-        maya.cmds.text(label=' ')
-
-        maya.cmds.text(label='Number of masks:')
-        maya.cmds.intField(
-            'numMasks',
-            minValue=0,
-            maxValue=10,
-            value=5,
-            step=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
-        maya.cmds.text(label='Alpha-to-mask limit:')
-        maya.cmds.floatField(
-            'exportTolerance',
-            value=1.0,
-            minValue=0,
-            maxValue=1,
-            precision=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
-
-        maya.cmds.text(label='Smoothing iterations:')
-        maya.cmds.intField(
-            'exportSmooth',
-            value=0,
-            minValue=0,
-            maxValue=3,
-            step=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
-
-        maya.cmds.text(label='Export preview grid spacing:')
-        maya.cmds.intField(
-            'exportOffset',
-            value=5,
-            minValue=0,
-            step=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
-
-        maya.cmds.text(label='Use "_paletted" export suffix:')
-        maya.cmds.checkBox(
-            'suffixCheck',
-            label='',
-            value=True,
-            changeCommand=(
-                "sxtools.settings.project['ExportSuffix'] = ("
-                "maya.cmds.checkBox('suffixCheck', query=True, value=True))"))
-
-        maya.cmds.text(label='')
-        maya.cmds.text(label='')
-
-        for i in xrange(10):
-            layerName = settings.refLayerData[settings.refArray[i]][6]
-            labelID = 'display'+str(i+1)
-            labelText = settings.refArray[i] + ' display name:'
-            fieldLabel = settings.refArray[i] + 'Display'
-            if (('LayerData' in settings.project) and 
-               (layerName in settings.project['LayerData'].keys())):
-                layerName = settings.project['LayerData'][layerName][6]
-            maya.cmds.text(labelID, label=labelText)
-            maya.cmds.textField(fieldLabel, text=layerName)
-
-        maya.cmds.columnLayout(
-            'refLayerColumn',
-            parent='setupFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
-        maya.cmds.text(label=' ', parent='refLayerColumn')
-
-        if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
-                str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
-            maya.cmds.text(
-                label='(Shift-click below to apply built-in defaults)',
-                parent='refLayerColumn')
-            maya.cmds.button(
-                label='Apply Project Settings',
-                parent='refLayerColumn',
-                statusBarMessage=(
-                    'Shift-click button to use the built-in default settings'),
-                command=(
-                    "sxtools.settings.updatePreferences()\n"
-                    "sxtools.settings.setPreferences()\n"
-                    "sxtools.settings.frames['setupCollapse']=True\n"
-                    "sxtools.sx.updateSXTools()"))
-
-        self.refreshSetupProjectView()
-
-        maya.cmds.workspaceControl(
-            dockID, edit=True, resizeHeight=5, resizeWidth=250)
-
-    def refreshSetupProjectView(self):
-        if 'AlphaTolerance' in settings.project:
-            maya.cmds.floatField(
-                'exportTolerance',
-                edit=True,
-                value=settings.project['AlphaTolerance'])
-
-        if 'SmoothExport' in settings.project:
-            maya.cmds.intField(
-                'exportSmooth',
-                edit=True,
-                value=settings.project['SmoothExport'])
-
-        if 'ExportOffset' in settings.project:
-            maya.cmds.intField(
-                'exportOffset',
-                edit=True,
-                value=settings.project['ExportOffset'])
-
-        if 'LayerCount' in settings.project:
-            maya.cmds.intField(
-                'layerCount',
-                edit=True,
-                value=settings.project['LayerCount'])
-
-        if 'ExportSuffix' in settings.project:
-            maya.cmds.checkBox(
-                'suffixCheck',
-                edit=True,
-                value=settings.project['ExportSuffix'])
 
         if 'LayerData' in settings.project:
             maya.cmds.checkBox(
@@ -5191,6 +5052,128 @@ class UI(object):
                 'overlayExport',
                 edit=True,
                 text=overlayExport)
+
+        maya.cmds.rowColumnLayout(
+            'numLayerColumns',
+            parent='setupFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 160), (2, 70)),
+            columnAttach=[(1, 'left', 0), (2, 'left', 0)],
+            rowSpacing=(1, 0))
+
+        maya.cmds.text(label='Export Process Options')
+        maya.cmds.text(label=' ')
+
+        maya.cmds.text(label='Number of masks:')
+        maya.cmds.intField(
+            'numMasks',
+            minValue=0,
+            maxValue=10,
+            value=5,
+            step=1,
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+        if 'MaskCount' in settings.project:
+            maya.cmds.intField(
+                'numMasks',
+                edit=True,
+                value=settings.project['MaskCount'])
+        maya.cmds.text(label='Alpha-to-mask limit:')
+        maya.cmds.floatField(
+            'exportTolerance',
+            value=1.0,
+            minValue=0,
+            maxValue=1,
+            precision=1,
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+        if 'AlphaTolerance' in settings.project:
+            maya.cmds.floatField(
+                'exportTolerance',
+                edit=True,
+                value=settings.project['AlphaTolerance'])
+
+        maya.cmds.text(label='Smoothing iterations:')
+        maya.cmds.intField(
+            'exportSmooth',
+            value=0,
+            minValue=0,
+            maxValue=3,
+            step=1,
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+        if 'SmoothExport' in settings.project:
+            maya.cmds.intField(
+                'exportSmooth',
+                edit=True,
+                value=settings.project['SmoothExport'])
+
+        maya.cmds.text(label='Export preview grid spacing:')
+        maya.cmds.intField(
+            'exportOffset',
+            value=5,
+            minValue=0,
+            step=1,
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
+        if 'ExportOffset' in settings.project:
+            maya.cmds.intField(
+                'exportOffset',
+                edit=True,
+                value=settings.project['ExportOffset'])
+
+        maya.cmds.text(label='Use "_paletted" export suffix:')
+        maya.cmds.checkBox(
+            'suffixCheck',
+            label='',
+            value=True,
+            changeCommand=(
+                "sxtools.settings.project['ExportSuffix'] = ("
+                "maya.cmds.checkBox('suffixCheck', query=True, value=True))"))
+        if 'ExportSuffix' in settings.project:
+            maya.cmds.checkBox(
+                'suffixCheck',
+                edit=True,
+                value=settings.project['ExportSuffix'])
+
+        maya.cmds.text(label='')
+        maya.cmds.text(label='')
+
+        for i in xrange(10):
+            layerName = settings.refLayerData[settings.refArray[i]][6]
+            labelID = 'display'+str(i+1)
+            labelText = settings.refArray[i] + ' display name:'
+            fieldLabel = settings.refArray[i] + 'Display'
+            if (('LayerData' in settings.project) and 
+               (layerName in settings.project['LayerData'].keys())):
+                layerName = settings.project['LayerData'][layerName][6]
+            maya.cmds.text(labelID, label=labelText)
+            maya.cmds.textField(fieldLabel, text=layerName)
+
+        maya.cmds.columnLayout(
+            'refLayerColumn',
+            parent='setupFrame',
+            rowSpacing=5,
+            adjustableColumn=True)
+        maya.cmds.text(label=' ', parent='refLayerColumn')
+
+        if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
+                str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
+            maya.cmds.text(
+                label='(Shift-click below to apply built-in defaults)',
+                parent='refLayerColumn')
+            maya.cmds.button(
+                label='Apply Project Settings',
+                parent='refLayerColumn',
+                statusBarMessage=(
+                    'Shift-click button to use the built-in default settings'),
+                command=(
+                    "sxtools.settings.createPreferences()\n"
+                    "sxtools.settings.setPreferences()\n"
+                    "sxtools.settings.savePreferences()\n"
+                    "sxtools.settings.frames['setupCollapse']=True\n"
+                    "sxtools.sx.updateSXTools()"))
+
+        self.refreshLayerDisplayNameList()
+
+        maya.cmds.workspaceControl(
+            dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
     def refreshLayerDisplayNameList(self):
         for i in xrange(10):
@@ -6521,7 +6504,7 @@ class Core(object):
         # If nothing selected, or defaults not set, construct setup view
         if ((len(settings.shapeArray) == 0) or
            (maya.cmds.optionVar(exists='SXToolsPrefsFile') is False) or
-           (len(settings.project) == 0)):
+           ('LayerData' not in settings.project)):
             ui.setupProjectUI()
 
         # If exported objects selected, construct message
