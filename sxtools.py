@@ -1350,8 +1350,6 @@ class SceneSetup(object):
         if maya.cmds.objExists('SXExportShader'):
             shadingGroup = maya.cmds.listConnections(
                 'SXExportShader', type='shadingEngine')
-            # componentsWithExportMaterial = maya.cmds.sets(
-            #   shadingGroup, q=True)
             maya.cmds.delete('SXExportShader')
         if maya.cmds.objExists('SXExportShaderSG'):
             maya.cmds.delete('SXExportShaderSG')
@@ -1685,14 +1683,149 @@ class SceneSetup(object):
         # maya.cmds.connectAttr(
         #   'SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
-    """
-    if componentsWithMaterial is not None:
-    maya.cmds.sets(
-        componentsWithMaterial, e=True, forceElement='SXShaderSG')
-    if componentsWithExportMaterial is not None:
-    maya.cmds.sets(
-        componentsWithExportMaterial, e=True, forceElement='SXShaderSG')
-    """
+    def createSXExportOverlayShader(self):
+        if maya.cmds.objExists('SXExportOverlayShader'):
+            shadingGroup = maya.cmds.listConnections(
+                'SXExportOverlayShader', type='shadingEngine')
+            maya.cmds.delete('SXExportOverlayShader')
+        if maya.cmds.objExists('SXExportOverlayShaderSG'):
+            maya.cmds.delete('SXExportOverlayShaderSG')
+
+        UV1 = None
+        UV2 = None
+        for key, value in settings.project['LayerData'].iteritems():
+            if value[4] is True:
+                UV1 = value[2][0]
+                UV2 = value[2][1]
+        if UV1 is None:
+            print(
+                'SX Tools: No overlay layer specified,'
+                'skipping SXExportOverlayShader')
+            return
+
+        materialName = 'SXExportOverlayShader'
+        settings.material = SFXNetwork.create(materialName)
+        shaderID = maya.cmds.shaderfx(
+            sfxnode=materialName,
+            getNodeIDByName='TraditionalGameSurfaceShader')
+
+        black_node = settings.material.add(sfxnodes.Color)
+        black_node.name = 'black'
+        black_node.color = [0, 0, 0, 1]
+        black_node.posx = -250
+        black_node.posy = 250
+
+        uv1_node = settings.material.add(sfxnodes.StringValue)
+        uv1_node.name = 'uv1String'
+        uv1_node.posx = -2250
+        uv1_node.posy = -250
+        uv1_node.value = UV1
+
+        uv2_node = settings.material.add(sfxnodes.StringValue)
+        uv2_node.name = 'uv2String'
+        uv2_node.posx = -2250
+        uv2_node.posy = 250
+        uv2_node.value = UV2
+
+        uvset1_node = settings.material.add(sfxnodes.UVSet)
+        uvset1_node.posx = -2000
+        uvset1_node.posy = -250
+        uvset1_node.name = 'uvSet1'
+        uv1ID = maya.cmds.shaderfx(
+            sfxnode=materialName,
+            getNodeIDByName='uvSet1')
+
+        uvset2_node = settings.material.add(sfxnodes.UVSet)
+        uvset2_node.posx = -2000
+        uvset2_node.posy = 250
+        uvset2_node.name = 'uvSet2'
+        uv2ID = maya.cmds.shaderfx(
+            sfxnode=materialName,
+            getNodeIDByName='uvSet2')
+
+        vectComp1_node = settings.material.add(sfxnodes.VectorComponent)
+        vectComp1_node.posx = -1750
+        vectComp1_node.posy = -250
+        vectComp1_node.name = 'uvSplitter1'
+
+        vectComp2_node = settings.material.add(sfxnodes.VectorComponent)
+        vectComp2_node.posx = -1750
+        vectComp2_node.posy = 250
+        vectComp2_node.name = 'uvSplitter2'
+        
+        rgbConst_node = settings.material.add(sfxnodes.VectorConstruct)
+        rgbConst_node.posx = -1500
+        rgbConst_node.posy = 0
+        rgbConst_node.name = 'rgbCombiner'
+
+        # Create connections
+        settings.material.connect(
+            uv1_node.outputs.string,
+            (uv1ID, 1))
+        settings.material.connect(
+            uv2_node.outputs.string,
+            (uv2ID, 1))
+        settings.material.connect(
+            uvset1_node.outputs.uv,
+            vectComp1_node.inputs.vector)
+        settings.material.connect(
+            uvset2_node.outputs.uv,
+            vectComp2_node.inputs.vector)
+        settings.material.connect(
+            vectComp1_node.outputs.x,
+            rgbConst_node.inputs.x)
+        settings.material.connect(
+            vectComp1_node.outputs.y,
+            rgbConst_node.inputs.y)
+        settings.material.connect(
+            vectComp2_node.outputs.x,
+            rgbConst_node.inputs.z)
+
+        settings.material.connect(
+            rgbConst_node.outputs.float3,
+            (shaderID, 3))
+
+        settings.material.connect(
+            black_node.outputs.rgb,
+            (shaderID, 1))
+        settings.material.connect(
+            black_node.outputs.rgb,
+            (shaderID, 5))
+        settings.material.connect(
+            black_node.outputs.rgb,
+            (shaderID, 6))
+        settings.material.connect(
+            black_node.outputs.red,
+            (shaderID, 4))
+        settings.material.connect(
+            black_node.outputs.red,
+            (shaderID, 7))
+
+        # Initialize network to show attributes in Maya AE
+        maya.cmds.shaderfx(sfxnode=materialName, update=True)
+
+        maya.cmds.createNode('shadingEngine', n='SXExportOverlayShaderSG')
+        maya.cmds.setAttr('.ihi', 0)
+        maya.cmds.setAttr('.ro', True)  # originally 'yes'
+
+        maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo3')
+        maya.cmds.connectAttr(
+            'SXExportOverlayShader.oc',
+            'SXExportOverlayShaderSG.ss')
+        maya.cmds.connectAttr(
+            'SXExportOverlayShaderSG.msg',
+            'SXMaterials_materialInfo3.sg')
+        maya.cmds.relationship(
+            'link', ':lightLinker1',
+            'SXExportOverlayShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+            'shadowLink', ':lightLinker1',
+            'SXExportOverlayShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.connectAttr(
+            'SXExportOverlayShaderSG.pa',
+            ':renderPartition.st', na=True)
+        # maya.cmds.connectAttr(
+        #   'SXExportShader.msg', ':defaultShaderList1.s', na=True)
 
     def createSXPBShader(self):
         if maya.cmds.objExists('SXPBShader'):
@@ -1875,13 +2008,13 @@ class SceneSetup(object):
         maya.cmds.setAttr('.ihi', 0)
         maya.cmds.setAttr('.ro', True)  # originally 'yes'
 
-        maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo3')
+        maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo4')
         maya.cmds.connectAttr(
             'SXPBShader.oc',
             'SXPBShaderSG.ss')
         maya.cmds.connectAttr(
             'SXPBShaderSG.msg',
-            'SXMaterials_materialInfo3.sg')
+            'SXMaterials_materialInfo4.sg')
         maya.cmds.relationship(
             'link', ':lightLinker1',
             'SXPBShaderSG.message', ':defaultLightSet.message')
@@ -2409,13 +2542,16 @@ class Export(object):
                     exportShape,
                     name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
                 tools.swapLayerSets([variant, ], x)
-
-        # TODO: Place variants in their own folders
+                varParent = maya.cmds.listRelatives(exportShape, parent=True)[0]
+                if maya.cmds.objExists(varParent+'_var'+str(x)) is False:
+                    maya.cmds.group(empty=True, name=varParent+'_var'+str(x), parent='_staticExports')
+                varParent = varParent+'_var'+str(x)
+                maya.cmds.parent(variant, varParent)
 
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
-        
+
         # Suffix the export objects
         for exportShape in exportShapeArray:
             if maya.cmds.getAttr(str(exportShape) + '.transparency') == 1:
@@ -2738,22 +2874,10 @@ class Export(object):
 
         # Overlay
         elif buttonState3 == 3:
-            overlay = None
-            for key, value in settings.project['LayerData'].iteritems():
-                if value[4] == True:
-                    overlay = key
             maya.cmds.sets(
-                settings.shapeArray, e=True, forceElement='SXExportShaderSG')
-            chanID = settings.project['LayerData']['emission'][2]
-            chanAxis = str(chanID[0])
-            chanIndex = chanID[1]
-            maya.cmds.shaderfx(
-                sfxnode='SXExportShader',
-                edit_bool=(
-                    settings.exportNodeDict['colorBool'],
-                    'value', False))
+                settings.shapeArray, e=True, forceElement='SXExportOverlayShaderSG')
 
-        if buttonState1 != 1:
+        if (buttonState1 != 1) and (buttonState3 != 3):
             maya.cmds.shaderfx(
                 sfxnode='SXExportShader',
                 edit_int=(
