@@ -357,7 +357,7 @@ class Settings(object):
         if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
             with open(filePath, 'w') as output:
-                json.dump(self.project, output)
+                json.dump(self.project, output, indent=4)
                 output.close()
             print('SX Tools: Settings saved')
         else:
@@ -366,13 +366,20 @@ class Settings(object):
     def loadPreferences(self):
         if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
-            with open(filePath, 'r') as input:
-                self.project.clear()
-                self.project = json.load(input)
-                input.close()
-            print('SX Tools: Preferences loaded from ' + filePath)
-            self.setPreferences()
-            self.frames['setupCollapse'] = True
+            try:
+                with open(filePath, 'r') as input:
+                    self.project.clear()
+                    self.project = json.load(input)
+                    input.close()
+                print('SX Tools: Settings loaded from ' + filePath)
+                self.setPreferences()
+                self.frames['setupCollapse'] = True
+            except ValueError:
+                print('SX Tools Error: Invalid settings file.')
+                maya.cmds.optionVar(remove='SXToolsPrefsFile')
+            except IOError:
+                print('SX Tools Error: Settings file not found!')
+                maya.cmds.optionVar(remove='SXToolsPrefsFile')
         else:
             print('SX Tools: No settings file found')
 
@@ -409,7 +416,7 @@ class Settings(object):
                 tempDict['palette'].append(tempEntry)
 
             with open(filePath, 'w') as output:
-                json.dump(tempDict, output)
+                json.dump(tempDict, output, indent=4)
                 output.close()
             print('SX Tools: Palettes saved')
         else:
@@ -417,21 +424,28 @@ class Settings(object):
 
     def loadPalettes(self):
         if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
-            filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
-            with open(filePath, 'r') as input:
-                tempDict = {}
-                tempDict = json.load(input)
-                input.close()
+            try:
+                filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
+                with open(filePath, 'r') as input:
+                    tempDict = {}
+                    tempDict = json.load(input)
+                    input.close()
 
-            self.masterPaletteDict.clear()
-            loadedPaletteArray = tempDict['palette']
-            for palette in loadedPaletteArray:
-                paletteArray = []
-                colorArray = [None, None, None]
-                for entry in palette['entries']:
-                    colorArray = [entry['r'], entry['g'], entry['b']]
-                    paletteArray.append(colorArray)
-                self.masterPaletteDict[palette['name']] = paletteArray
+                self.masterPaletteDict.clear()
+                loadedPaletteArray = tempDict['palette']
+                for palette in loadedPaletteArray:
+                    paletteArray = []
+                    colorArray = [None, None, None]
+                    for entry in palette['entries']:
+                        colorArray = [entry['r'], entry['g'], entry['b']]
+                        paletteArray.append(colorArray)
+                    self.masterPaletteDict[palette['name']] = paletteArray
+            except ValueError:
+                print('SX Tools Error: Invalid palettes file!')
+                maya.cmds.optionVar(remove='SXToolsPalettesFile')
+            except IOError:
+                print('SX Tools Error: Palettes file not found!')
+                maya.cmds.optionVar(remove='SXToolsPalettesFile')
         else:
             print('SX Tools: No palettes found')
 
@@ -2396,6 +2410,8 @@ class Export(object):
                     name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
                 tools.swapLayerSets([variant, ], x)
 
+        # TODO: Place variants in their own folders
+
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
@@ -4202,8 +4218,6 @@ class ToolActions(object):
             print('SX Tools Error: Selected layer set does not exist!')
             return
         refLayers = layers.sortLayers(settings.project['LayerData'].keys())
-        oldColors = []
-        newColors = []
 
         for object in objects:
             attr = '.activeLayerSet'
@@ -4242,6 +4256,82 @@ class ToolActions(object):
         layers.refreshLayerList()
         layers.refreshSelectedItem()
         maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+
+    def removeLayerSet(self, objects):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+
+        if shift is True:
+            layers.clearLayerSets()
+        else:
+            objList = objects
+            refLayers = layers.sortLayers(settings.project['LayerData'].keys())
+            actives = []
+            numSets = []
+            active = None
+            num = None
+            target = None
+            previous = None
+            for object in objects:
+                actives.append(int(maya.cmds.getAttr(object + '.activeLayerSet')))
+                numSets.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
+            if ((all(active == actives[0] for active in actives) is False) or
+                (all(num == numSets[0] for num in numSets) is False)):
+                print('SX Tools Error: Selection with mismatching Layer Sets!')
+                return
+
+            active = actives[0]
+            num = numSets[0]
+            if (active == 0) and (num == 0):
+                print('SX Tools Error: Objects must have one Layer Set')
+                return
+
+            if (active == 0):
+                target = 1
+                previous = 0
+            else:
+                target = 0
+                previous = active
+
+            self.swapLayerSets(objects, target)
+
+            for layer in refLayers:
+                maya.cmds.polyColorSet(
+                    objects,
+                    delete=True,
+                    colorSet=(str(layer)+'_var'+str(previous)))
+
+            attr = '.numLayerSets'
+            for object in objects:
+                maya.cmds.setAttr(object + attr, (maya.cmds.getAttr(object + attr) - 1))
+
+            objLayers = maya.cmds.polyColorSet(
+                objects[0],
+                query=True,
+                allColorSets=True)
+
+            if previous == 0:
+                for object in objects:
+                    maya.cmds.setAttr(object + '.activeLayerSet', 0)
+                for layer in objLayers:
+                    if '_var' in layer:
+                        currentIndex = int(layer[-1])
+                        newSet = str(layer).split('_var')[0]+'_var'+str(currentIndex-1)
+                        maya.cmds.polyColorSet(
+                            objects,
+                            rename=True,
+                            colorSet=layer,
+                            newColorSet=newSet)
+            else:
+                for layer in objLayers:
+                    if ('_var' in layer) and (int(layer[-1]) > previous):
+                        currentIndex = int(layer[-1])
+                        newSet = str(layer).split('_var')[0]+'_var'+str(currentIndex-1)
+                        maya.cmds.polyColorSet(
+                            objects,
+                            rename=True,
+                            colorSet=layer,
+                            newColorSet=newSet)
 
     def copyFaceVertexColors(self, objects, sourceLayers, targetLayers):
         for object in objects:
@@ -6284,28 +6374,47 @@ class UI(object):
                     'sxtools.layers.getLayerSet('
                     'sxtools.settings.objectArray[0]))\n'
                     'sxtools.sx.updateSXTools()'))
-            maya.cmds.text(
-                'layerSetLabel',
-                label=(
-                    'Current Layer Set: ' +
-                    str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) +
-                        '.activeLayerSet'))+1) +
-                    '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
             if layers.getLayerSet(settings.objectArray[0]) > 0:
-                maya.cmds.intField(
-                    'swapLayerSetsInt',
+                maya.cmds.button(
+                    label='Delete Current Layer Set',
                     parent='swapLayerSetsColumn',
-                    min=0,
-                    max=10,
-                    step=1,
+                    height=30,
+                    width=100,
+                    ann=(
+                        'Shift-click to remove all '
+                        'other Layer Sets'),
+                    command=(
+                        'sxtools.tools.removeLayerSet('
+                        'sxtools.settings.objectArray)\n'
+                        'sxtools.sx.updateSXTools()'))
+                maya.cmds.text(
+                    'layerSetLabel',
+                    label=(
+                        'Current Layer Set: ' +
+                        str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) +
+                            '.activeLayerSet'))+1) +
+                        '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
+                maya.cmds.intSliderGrp(
+                    'layerSetSlider',
+                    field=True,
+                    label='Layer Set',
+                    adjustableColumn=1,
+                    columnWidth=((2, 40), (3, 120)),
+                    columnAttach=[(1, 'both', 5), (2, 'both', 5), (3, 'both', 0)],
+                    minValue=1,
+                    maxValue=(
+                        layers.getLayerSet(settings.shapeArray[0])+1),
+                    fieldMinValue=0,
+                    fieldMaxValue=(
+                        layers.getLayerSet(settings.shapeArray[0])+1),
                     value=(
                         maya.cmds.getAttr(str(settings.shapeArray[0]) +
                                           '.activeLayerSet')+1),
                     changeCommand=(
                         'sxtools.tools.swapLayerSets('
                         'sxtools.settings.objectArray,'
-                        'maya.cmds.intField('
-                        '"swapLayerSetsInt", query=True, value=True), True)\n'
+                        'maya.cmds.intSliderGrp('
+                        '"layerSetSlider", query=True, value=True), True)\n'
                         'maya.cmds.text("layerSetLabel",'
                         'edit=True,'
                         'label=("Current Layer Set: "'
@@ -6314,8 +6423,7 @@ class UI(object):
                         '+".activeLayerSet"))+1))'
                         '+"/"+str(sxtools.layers.getLayerSet('
                         'sxtools.settings.shapeArray['
-                        'len(sxtools.settings.shapeArray)-1])+1))')
-                )
+                        'len(sxtools.settings.shapeArray)-1])+1))'))
         else:
             maya.cmds.text(
                 'mismatchLayerSetLabel',
@@ -6342,8 +6450,6 @@ class Core(object):
 
         settings.loadPreferences()
 
-        print('SX Tools: Prefs loaded')
-
         maya.cmds.workspaceControl(
             dockID,
             label='SX Tools',
@@ -6354,12 +6460,9 @@ class Core(object):
             initialWidth=250 * displayScalingValue,
             minimumWidth=250 * displayScalingValue)
 
-        print('SX Tools: Canvas initialized')
-
         # Background jobs to reconstruct window if selection changes,
         # and to clean up upon closing
         if 'updateSXTools' not in maya.cmds.scriptJob(listJobs=True):
-            print('SX Tools: Creating Script Jobs')
             self.job1ID = maya.cmds.scriptJob(event=[
                 'SelectionChanged',
                 'sxtools.sx.updateSXTools()'])
