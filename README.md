@@ -46,11 +46,11 @@ Start SX Tools by clicking the shelf icon, dock the tool window according to you
 ## Project Setup
 In this screen, the number of albedo layers and material channels to be painted can be selected. Exporting to a game engine requires layer and material data to be processed into the extra UV channels of the object. The screen allows selecting which UV set and axis is used for each data channel.
 
-### Set Preferences Location
-Allows you to pick a file in which SX Tools saves its preferences. This is useful if you wish to share palettes between computers.
+### Select Settings File
+Allows you to pick a file in which SX Tools saves its preferences. If a file does not exist, just type a filename. This is useful if you wish to share project settings between computers. Shift-clicking on the select button will load settings from the existing file.
 
-### Load and Apply Preferences
-If you copy a prefs file from another computer, pick it with the Set Location function, and then apply the settings with this.
+### Number of masks
+Defines how many layers to export with one-bit color masks. The default is the five layers from the top.
 
 ### Alpha-to-mask limit
 Controls the threshold between a Mask layer and an Adjustment layer. More on that later.
@@ -60,6 +60,12 @@ Sets the number of times the exported mesh is subdivided.
 
 ### Export preview grid spacing
 Is the distance between all export objects when previewed. The objects are laid out in a grid.
+
+### Use export suffix
+A simple switch that allows exported meshes to either have the 'paletted' suffix or not. Can be useful if your game identifies meshes according to their suffixes.
+
+### layer 1-10 display name
+To help artists remember if specific layers are allocated for particular functions, the names SX Tools uses in its own layer list can be overridden.
 
 Albedo colors are flattened, but the coverage masks of each layer are exported. This allows palette management in the game engine.
 
@@ -173,6 +179,9 @@ Copies the contents and the blend mode of a layer to another layer.
 
 ### Assign to Crease Set
 The tool supports a workflow where creasing is limited to five values. This section provides quick creasing assignment buttons. 
+
+### Swap Layer Sets
+Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple re-paletted elements.
 
 ## Exporting
 Press the button to generate export objects. The tool will automatically lay them out in a grid, and allows for the exported data channels to be viewed in the viewport.
