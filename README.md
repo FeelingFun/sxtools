@@ -195,14 +195,17 @@ Export objects can be written out to a selected folder in fbx format. Optionally
 
 ## SX Tools Components
 
-The following nodes and attributes are created by the project setup phase:
-* preferences file in a user-selected location
+The following files, nodes, and attributes are created by the project setup phase:
+* preferences json file in a user-selected location
+* palettes json file in a user-selected location
 * sxCreaseSet0-4
 * sxVertexBakeSet (when occlusion is baked)
 * Maya OptionVars starting with ‘SXTools’
 * defaultSXDirectionalLight, defaultSXAmbientLight
 * ‘SXRamp’ and ‘SXAlphaRamp’ ramp nodes for Gradient Tool
-* ‘SXShader’ , ‘SXExportShader’ and ‘SXPBShader’ materials with their respective shading groups 
+* ‘SXShader’ , ‘SXExportShader’ and ‘SXPBShader’ materials with their respective shading groups
+* primVars in the shape node of very edited object
+* multiple color sets per every edited object
 
 To remove all optionVars created by SX Tools:
 `sxtools.resetSXTools()` in Maya's scripting window
