@@ -177,6 +177,7 @@ class Settings(object):
                 self.project['LayerData']['transmission'][5],
                 self.project['LayerData']['emission'][5])
         setup.createSXExportShader()
+        setup.createSXExportOverlayShader()
         setup.createSXPBShader()
 
         # Viewport and Maya prefs
