@@ -2,6 +2,7 @@
 
 ![Layered Example](/images/sxtools_multichannel.jpg)
 
+### Overview
 SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
@@ -12,6 +13,16 @@ The tool is not fully undo-safe and does not play well with construction history
 	Export to game engine
 
 Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply.
+
+### Terminology
+| Term | Summary |
+| --- | --- |
+| Layer | SX Tools uses color sets as layers, and composites them with a custom shader. |
+| Overlay (A) | A layer that is exported only as an alpha channel. Useful for palette swaps in the game engine. |
+| Overlay (RGBA) | A layer that is exported as four separate UV channels. Useful for adding subtle color variance and detail to paletted layers. |
+| Mask | An area of object surface covered by a layer. Each paletted surface component can only belong to a single mask. |
+| Layer Stack | A full set of layers on the object, which includes at least one layer, and possible material channels and/or overlays. |
+| Layer Set | A parallel layer stack. Up to 10 layer sets can be assigned to a single object. Useful for creating color variants without generating duplicate objects. |
 
 ## Quick Start
 1. Copy sxtools.py and sfx folder to Maya scripts folder
@@ -51,8 +62,17 @@ In this screen, the number of albedo layers and material channels to be painted 
 ### Select Settings File
 Allows you to pick a file in which SX Tools saves its preferences. If a file does not exist, just type a filename. This is useful if you wish to share project settings between computers. Shift-clicking on the select button will load settings from the existing file.
 
-### Number of masks
-Defines how many layers to export with one-bit color masks. The default is the five layers from the top.
+### Color layer count
+Defines how many RGBA color layers to work with. At least one is needed.
+
+### Mask Export
+Sets the UV channel where masks are exported.
+
+### Channels
+Choose which material channels to enable, and the UV channels to export them to.
+
+### Overlays
+Type the layers you wish to export as overlays. RGBA Overlay needs two full UV sets to export.
 
 ### Alpha-to-mask limit
 Controls the threshold between a Mask layer and an Adjustment layer. More on that later.
@@ -69,13 +89,14 @@ A simple switch that allows exported meshes to either have the 'paletted' suffix
 ### layer 1-10 display name
 To help artists remember if specific layers are allocated for particular functions, the names SX Tools uses in its own layer list can be overridden.
 
-Albedo colors are flattened, but the coverage masks of each layer are exported. This allows palette management in the game engine.
+
+Upon export, albedo colors are flattened, but the coverage masks of each layer are exported. This allows palette management in the game engine.
 
 Once you’ve made your selections, press **Apply Project Defaults** to get started.
-Shift-clicking the button starts with built-in default settings.
+Shift-clicking the button starts with built-in default settings. A settings file and its location must be set before proceeding.
 
 Creating project defaults may take a few seconds, as the tool generates custom shaders according to the channel and layer selections.
-The tool also by default disables color management, enables AA, smooth wireframes and transparency depth peeling.
+The tool also by default disables color management, enables AA, smooth wireframes, enables OpenSubdiv mesh preview, and transparency depth peeling.
 
 ## Assigning Layer Sets
 Import or create polygon mesh objects while SX Tools is running. A window will pop up that allows you to add the project-defined set of layers to the object (or objects). Selecting an object with the default set of layers will bring up the main tool window.
