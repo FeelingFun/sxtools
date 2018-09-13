@@ -46,6 +46,8 @@ Start SX Tools by clicking the shelf icon, dock the tool window according to you
 ## Project Setup
 In this screen, the number of albedo layers and material channels to be painted can be selected. Exporting to a game engine requires layer and material data to be processed into the extra UV channels of the object. The screen allows selecting which UV set and axis is used for each data channel.
 
+![Settings Panel](/images/settings.jpg)
+
 ### Select Settings File
 Allows you to pick a file in which SX Tools saves its preferences. If a file does not exist, just type a filename. This is useful if you wish to share project settings between computers. Shift-clicking on the select button will load settings from the existing file.
 
@@ -122,8 +124,8 @@ Allows the user to pick an existing layer color as both the **Apply Color** and 
 ### The layer opacity slider
 Always displays the maximum opacity value found in a layer. Layers may still have other values below the max. Dragging the slider directly manipulates the alpha values of the components in the layer. This means that if the slider is dragged to 0, any variance in the values is lost - dragging the slider back up will set all component alpha values to the same constant. Alpha variance is preserved when the slider is otherwise adjusted.
 
-### Merge Layer Up button
-Does exactly that. Blend modes are respected.
+### Merge Layer Up / Merge Layer Down buttons
+Do exactly that. Blend modes are respected.
 
 ### Select Layer Mask
 Allows for new colors to be applied only to the currently masked areas. The selection is made as Face Vertex component type.
