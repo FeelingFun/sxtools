@@ -141,7 +141,10 @@ class Settings(object):
             self.refArray[12]: [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
             self.refArray[13]: [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
         }
-        
+
+    def __del__(self):
+        print('SX Tools: Exiting settings')
+                        
     def setPreferences(self):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
@@ -454,6 +457,9 @@ class Settings(object):
 class SceneSetup(object):
     def __init__(self):
         return None
+
+    def __del__(self):
+        print('SX Tools: Exiting setup')
 
     def createSXShader(self,
                        numLayers,
@@ -2271,6 +2277,9 @@ class Export(object):
     def __init__(self):
         return None
 
+    def __del__(self):
+        print('SX Tools: Exiting export')
+
     def initUVs(self, selected, UVSetName):
         maya.cmds.polyUVSet(selected, create=True, uvSet=UVSetName)
         maya.cmds.polyUVSet(selected, currentUVSet=True, uvSet=UVSetName)
@@ -2929,6 +2938,9 @@ class Export(object):
 class ToolActions(object):
     def __init__(self):
         return None
+
+    def __del__(self):
+        print('SX Tools: Exiting tools')
 
     def assignToCreaseSet(self, setName):
         creaseSets = (
@@ -4499,6 +4511,9 @@ class LayerManagement(object):
     def __init__(self):
         return None
 
+    def __del__(self):
+        print('SX Tools: Exiting layers')
+
     def mergeLayers(self, object, sourceLayer, targetLayer, up):
         if up is True:
             target = targetLayer
@@ -5064,6 +5079,9 @@ class LayerManagement(object):
 class UI(object):
     def __init__(self):
         return None
+
+    def __del__(self):
+        print('SX Tools: Exiting UI')
 
     def openSXPaintTool(self):
         maya.mel.eval('PaintVertexColorTool;')
@@ -6562,6 +6580,9 @@ class Core(object):
     def __init__(self):
         return None
 
+    def __del__(self):
+        print('SX Tools: Exiting core')
+
     def startSXTools(self):
         global dockID
 
@@ -6612,7 +6633,7 @@ class Core(object):
 
         maya.cmds.scriptJob(
             runOnce=True,
-            uiDeleted=[dockID, 'sxtools.sx.exitSXTools()\ndel sxtools'])
+            uiDeleted=[dockID, 'sxtools.sx.exitSXTools()'])
 
         # Set correct lighting and shading mode at start
         maya.mel.eval('DisplayShadedAndTextured;')
