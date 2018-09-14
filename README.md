@@ -3,7 +3,9 @@
 ![Layered Example](/images/sxtools_multichannel.jpg)
 
 ### Overview
-SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and provide tool actions that simplify face and vertex coloring process. It also provides limited export functionality to bring rich vertex colors to game engines.
+SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and to provide tools that simplify face and vertex coloring process.
+
+The additional vertex data is exported via UV channels to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
 
@@ -13,6 +15,13 @@ The tool is not fully undo-safe and does not play well with construction history
 	Export to game engine
 
 Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply.
+
+## Goals & Purpose
+The toolbox is developed to allow 3D artists to create simple and stylized visuals that side-step the "low-poly, limited palette" retro look that is common to many indie titles. The development is focused on a workflow where almost the entire modeling work is to create a simple, elegant control cage that is subdivided as the final export step. All modeling effort and vertex painting work is performed on the control cage. This keeps the source art lightweight, easy to edit, and avoids the hassle involved with texturing. Instead of beveling edges, creasing is used whenever possible.
+
+In other common art pipelines a model is sculpted without concern to poly counts, then baked to normal maps that are applied to a re-topo mesh. However these meshes are still fairly complex to manage when skinning, rigging etc.
+
+For certain art styles, taking the control cages to the game engine to be tessellated may be a feasible approach, work on that still continues on many fronts.
 
 ### Terminology
 | Term | Summary |
