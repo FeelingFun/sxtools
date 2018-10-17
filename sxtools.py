@@ -81,6 +81,7 @@ class Settings(object):
         self.shapeArray = []
         self.componentArray = []
         self.patchArray = []
+        self.multiShapeArray = []
         self.bakeSet = []
         self.currentColor = (1, 1, 1)
         self.layerAlphaMax = 0
@@ -155,7 +156,7 @@ class Settings(object):
             self.project['SmoothExport'] = 0
             self.project['ExportOffset'] = 5
             self.project['LayerCount'] = 10
-            self.project['MaskCount'] = 5
+            self.project['MaskCount'] = 7
             self.project['ChannelCount'] = 4
 
             self.project['RefNames'] = self.refArray
@@ -3816,7 +3817,7 @@ class ToolActions(object):
             object = settings.shapeArray[len(settings.shapeArray)-1]
             mode = int(maya.cmds.getAttr(object + '.shadingMode') + 1)
 
-            objectLabel = 'Selected Objects: ' + str(len(settings.shapeArray))
+            objectLabel = 'Selected Objects: ' + str(len(settings.objectArray))
             maya.cmds.frameLayout('layerFrame', edit=True, label=objectLabel)
             maya.cmds.radioButtonGrp('shadingButtons', edit=True, select=mode)
             return mode
@@ -3826,10 +3827,17 @@ class ToolActions(object):
             maya.cmds.setAttr(str(shape) + '.shadingMode', mode)
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
+    # check for non-safe history
+    # and double shapes under one transform
     def checkHistory(self, objList):
+        del settings.multiShapeArray[:]
         history = False
+        multiShapes = False
+
         for obj in objList:
             histList = maya.cmds.listHistory(obj)
+            shapeList = maya.cmds.listRelatives(obj, shapes=True, fullPath=True)
+
             objName = str(obj).rstrip('0123456789')
             if '|' in objName:
                 objName = objName.rsplit('|', 1)[1]
@@ -3853,10 +3861,19 @@ class ToolActions(object):
             if len(histList) > 0:
                 history = True
 
+            if len(shapeList) > 1:
+                print('SX Tools: Multiple shape nodes in ' + str(obj))
+                multiShapes = True
+                for shape in shapeList:
+                    if '|' in shape:
+                        shapeShort = shape.rsplit('|', 1)[1]
+                    if objName not in shapeShort:
+                        settings.multiShapeArray.append(shape)
+
         if history is True:
             print('SX Tools: History found: ' + str(histList))
             maya.cmds.columnLayout(
-                'warningLayout',
+                'historyWarningLayout',
                 parent='canvas',
                 rowSpacing=5,
                 adjustableColumn=True)
@@ -3869,6 +3886,23 @@ class ToolActions(object):
                 command=(
                     'maya.cmds.delete(sxtools.settings.objectArray, ch=True)\n'
                     'sxtools.sx.updateSXTools()'))
+
+        if multiShapes is True:
+            maya.cmds.columnLayout(
+                'shapeWarningLayout',
+                parent='canvas',
+                rowSpacing=5,
+                adjustableColumn=True)
+            maya.cmds.text(
+                label='WARNING: Multiple shape nodes in one object!',
+                backgroundColor=(0.9, 0.55, 0),
+                ww=True)
+            maya.cmds.button(
+                label='Delete extra shapes',
+                command=(
+                    'maya.cmds.delete(sxtools.settings.multiShapeArray, shape=True)\n'
+                    'sxtools.sx.updateSXTools()'))
+
 
     # Called from a button the tool UI
     # that clears either the selected layer
@@ -5302,7 +5336,7 @@ class UI(object):
             'numMasks',
             minValue=0,
             maxValue=10,
-            value=5,
+            value=7,
             step=1,
             enterCommand=("maya.cmds.setFocus('MayaWindow')"))
         if 'MaskCount' in settings.project:
@@ -6686,10 +6720,10 @@ class Core(object):
             type='mesh',
             allDescendents=True,
             fullPath=True)
-        settings.objectArray = maya.cmds.listRelatives(
+        settings.objectArray = list(set(maya.cmds.ls(maya.cmds.listRelatives(
             settings.shapeArray,
             parent=True,
-            fullPath=True)
+            fullPath=True))))
         # settings.componentArray = (
         #    list(set(maya.cmds.ls(sl=True, o=False)) -
         #    set(maya.cmds.ls(sl=True, o=True))))
