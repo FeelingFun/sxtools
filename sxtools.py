@@ -397,6 +397,7 @@ class Settings(object):
                 cap='Select SX Tools Palettes File',
                 dialogStyle=2,
                 fm=0)
+            print filePath[0]
             if filePath is not None:
                 maya.cmds.optionVar(
                     stringValue=('SXToolsPalettesFile', filePath[0]))
@@ -450,7 +451,7 @@ class Settings(object):
                 maya.cmds.optionVar(remove='SXToolsPalettesFile')
             except IOError:
                 print('SX Tools Error: Palettes file not found!')
-                maya.cmds.optionVar(remove='SXToolsPalettesFile')
+                # maya.cmds.optionVar(remove='SXToolsPalettesFile')
         else:
             print('SX Tools: No palettes found')
 
@@ -3831,8 +3832,8 @@ class ToolActions(object):
     # and double shapes under one transform
     def checkHistory(self, objList):
         del settings.multiShapeArray[:]
-        history = False
-        multiShapes = False
+        ui.history = False
+        ui.multiShapes = False
 
         for obj in objList:
             histList = maya.cmds.listHistory(obj)
@@ -3859,49 +3860,17 @@ class ToolActions(object):
                     histList.remove(hist)
 
             if len(histList) > 0:
-                history = True
+                print('SX Tools: History found: ' + str(histList))
+                ui.history = True
 
             if len(shapeList) > 1:
                 print('SX Tools: Multiple shape nodes in ' + str(obj))
-                multiShapes = True
+                ui.multiShapes = True
                 for shape in shapeList:
                     if '|' in shape:
                         shapeShort = shape.rsplit('|', 1)[1]
                     if objName not in shapeShort:
                         settings.multiShapeArray.append(shape)
-
-        if history is True:
-            print('SX Tools: History found: ' + str(histList))
-            maya.cmds.columnLayout(
-                'historyWarningLayout',
-                parent='canvas',
-                rowSpacing=5,
-                adjustableColumn=True)
-            maya.cmds.text(
-                label='WARNING: Objects with construction history!',
-                backgroundColor=(0.35, 0.1, 0),
-                ww=True)
-            maya.cmds.button(
-                label='Delete History',
-                command=(
-                    'maya.cmds.delete(sxtools.settings.objectArray, ch=True)\n'
-                    'sxtools.sx.updateSXTools()'))
-
-        if multiShapes is True:
-            maya.cmds.columnLayout(
-                'shapeWarningLayout',
-                parent='canvas',
-                rowSpacing=5,
-                adjustableColumn=True)
-            maya.cmds.text(
-                label='WARNING: Multiple shape nodes in one object!',
-                backgroundColor=(0.9, 0.55, 0),
-                ww=True)
-            maya.cmds.button(
-                label='Delete extra shapes',
-                command=(
-                    'maya.cmds.delete(sxtools.settings.multiShapeArray, shape=True)\n'
-                    'sxtools.sx.updateSXTools()'))
 
 
     # Called from a button the tool UI
@@ -5112,10 +5081,44 @@ class LayerManagement(object):
 
 class UI(object):
     def __init__(self):
+        self.history = False
+        self.multiShapes = False
         return None
 
     def __del__(self):
         print('SX Tools: Exiting UI')
+
+    def historyUI(self):
+        maya.cmds.columnLayout(
+            'historyWarningLayout',
+            parent='canvas',
+            rowSpacing=5,
+            adjustableColumn=True)
+        maya.cmds.text(
+            label='WARNING: Objects with construction history!',
+            backgroundColor=(0.35, 0.1, 0),
+            ww=True)
+        maya.cmds.button(
+            label='Delete History',
+            command=(
+                'maya.cmds.delete(sxtools.settings.objectArray, ch=True)\n'
+                'sxtools.sx.updateSXTools()'))
+
+    def multiShapesUI(self):
+        maya.cmds.columnLayout(
+            'shapeWarningLayout',
+            parent='canvas',
+            rowSpacing=5,
+            adjustableColumn=True)
+        maya.cmds.text(
+            label='WARNING: Multiple shapes in one object!',
+            backgroundColor=(0.9, 0.55, 0),
+            ww=True)
+        maya.cmds.button(
+            label='Delete Extra Shapes',
+            command=(
+                'maya.cmds.delete(sxtools.settings.multiShapeArray, shape=True)\n'
+                'sxtools.sx.updateSXTools()'))
 
     def openSXPaintTool(self):
         maya.mel.eval('PaintVertexColorTool;')
@@ -5584,7 +5587,6 @@ class UI(object):
                     'sxtools.layers.patchLayers(sxtools.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
-        tools.checkHistory(settings.objectArray)
         maya.cmds.workspaceControl(
             dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
@@ -5626,7 +5628,6 @@ class UI(object):
                     'sxtools.layers.patchLayers(sxtools.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
-        tools.checkHistory(settings.objectArray)
         maya.cmds.workspaceControl(
             dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
@@ -6764,6 +6765,8 @@ class Core(object):
         if settings.componentArray is None:
             settings.componentArray = []
 
+        tools.checkHistory(settings.objectArray)
+
     # The main function of the tool,
     # updates the UI dynamically for different selection types.
     def refreshSXTools(self):
@@ -6809,6 +6812,12 @@ class Core(object):
                 settings.objectArray)
             maya.cmds.setAttr('exportsLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 1)
+            
+            if ui.history is True:
+                ui.historyUI()
+
+            if (ui.multiShapes is True) and (ui.history is False):
+                ui.multiShapesUI()
 
             ui.layerViewUI()
 
@@ -6861,7 +6870,6 @@ class Core(object):
                     "sxtools.export.processObjects("
                     "sxtools.settings.selectionArray)"))
             maya.cmds.setParent('canvas')
-            tools.checkHistory(settings.objectArray)
 
             # Make sure selected things are using the correct material
             maya.cmds.sets(
