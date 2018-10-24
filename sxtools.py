@@ -6248,7 +6248,8 @@ class UI(object):
             collapsable=True,
             collapse=settings.frames['masterPaletteCollapse'],
             collapseCommand=(
-                "sxtools.settings.frames['masterPaletteCollapse']=True"),
+                "sxtools.settings.frames['masterPaletteCollapse']=True\n"
+                "sxtools.sx.updateSXTools()"),
             expandCommand=(
                 "sxtools.settings.frames['masterPaletteCollapse']=False\n"
                 "sxtools.sx.updateSXTools()"))
@@ -6263,7 +6264,8 @@ class UI(object):
                 collapsable=True,
                 collapse=settings.frames['paletteCategoryCollapse'],
                 collapseCommand=(
-                    "sxtools.settings.frames['paletteCategoryCollapse']=True"),
+                    "sxtools.settings.frames['paletteCategoryCollapse']=True\n"
+                    "sxtools.sx.updateSXTools()"),
                 expandCommand=(
                     "sxtools.settings.frames['paletteCategoryCollapse']=False\n"
                     "sxtools.sx.updateSXTools()"))
