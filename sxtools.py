@@ -89,7 +89,7 @@ class Settings(object):
         self.nodeDict = {}
         self.exportNodeDict = {}
         self.paletteDict = {}
-        self.masterPaletteDict = {}
+        self.masterPaletteArray = []
         self.project = {}
         self.localOcclusionDict = {}
         self.globalOcclusionDict = {}
@@ -98,6 +98,9 @@ class Settings(object):
             'toolCollapse': False,
             'occlusionCollapse': True,
             'masterPaletteCollapse': True,
+            'paletteCategoryCollapse': False,
+            'newPaletteCollapse': True,
+            'paletteSettingsCollapse': True,
             'creaseCollapse': True,
             'noiseCollapse': True,
             'applyColorCollapse': True,
@@ -115,7 +118,8 @@ class Settings(object):
             'bakeGroundScale': 100.0,
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
-            'blendSlider': 0.0
+            'blendSlider': 0.0,
+            'categoryPreset': None
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -409,17 +413,8 @@ class Settings(object):
     def savePalettes(self):
         if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
             filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
-            tempDict = {'palette': []}
-            for key in self.masterPaletteDict.keys():
-                tempEntry = {}
-                tempEntry['name'] = key
-                tempCols = []
-                colors = self.masterPaletteDict[key]
-                for rgb in colors:
-                    tempCols.append(
-                        {'r': rgb[0], 'g': rgb[1], 'b': rgb[2], 'a': 0.0})
-                tempEntry['entries'] = tempCols
-                tempDict['palette'].append(tempEntry)
+            tempDict = {}
+            tempDict['Palettes'] = self.masterPaletteArray
 
             with open(filePath, 'w') as output:
                 json.dump(tempDict, output, indent=4)
@@ -437,15 +432,8 @@ class Settings(object):
                     tempDict = json.load(input)
                     input.close()
 
-                self.masterPaletteDict.clear()
-                loadedPaletteArray = tempDict['palette']
-                for palette in loadedPaletteArray:
-                    paletteArray = []
-                    colorArray = [None, None, None]
-                    for entry in palette['entries']:
-                        colorArray = [entry['r'], entry['g'], entry['b']]
-                        paletteArray.append(colorArray)
-                    self.masterPaletteDict[palette['name']] = paletteArray
+                del self.masterPaletteArray[:]
+                self.masterPaletteArray = tempDict['Palettes']
             except ValueError:
                 print('SX Tools Error: Invalid palettes file!')
                 maya.cmds.optionVar(remove='SXToolsPalettesFile')
@@ -4061,11 +4049,9 @@ class ToolActions(object):
                     edit=True,
                     enable=True)
 
-    def setPaintColor(self):
-        settings.currentColor = maya.cmds.palettePort(
-            'layerPalette', query=True, rgb=True)
+    def setPaintColor(self, color):
         maya.cmds.colorSliderGrp(
-            'sxApplyColor', edit=True, rgbValue=settings.currentColor)
+            'sxApplyColor', edit=True, rgbValue=color)
         if maya.cmds.artAttrPaintVertexCtx(
                 'artAttrColorPerVertexContext', exists=True):
             numChannels = maya.cmds.artAttrPaintVertexCtx(
@@ -4078,9 +4064,9 @@ class ToolActions(object):
                     edit=True,
                     usepressure=False,
                     colorRGBValue=[
-                        settings.currentColor[0],
-                        settings.currentColor[1],
-                        settings.currentColor[2]
+                        color[0],
+                        color[1],
+                        color[2]
                     ])
             elif numChannels == 4:
                 maya.cmds.artAttrPaintVertexCtx(
@@ -4088,9 +4074,9 @@ class ToolActions(object):
                     edit=True,
                     usepressure=False,
                     colorRGBAValue=[
-                        settings.currentColor[0],
-                        settings.currentColor[1],
-                        settings.currentColor[2], 1
+                        color[0],
+                        color[1],
+                        color[2], 1
                     ])
 
     def setApplyColor(self):
@@ -4147,7 +4133,7 @@ class ToolActions(object):
             settings.paletteDict,
             'SXToolsRecentPalette')
 
-    def storePalette(self, paletteUI, targetDict, preset):
+    def storePalette(self, paletteUI, category, preset):
         currentCell = maya.cmds.palettePort(
             paletteUI,
             query=True,
@@ -4168,92 +4154,133 @@ class ToolActions(object):
                     query=True,
                     rgb=True))
 
-        targetDict[preset] = paletteArray
+        if category == settings.paletteDict:
+            category[preset] = paletteArray
+        else:
+            for i, cat in enumerate(settings.masterPaletteArray):
+                if cat.keys()[0] == category:
+                    settings.masterPaletteArray[i][category][preset] = paletteArray
 
         maya.cmds.palettePort(
             paletteUI,
             edit=True,
             scc=currentCell)
 
-    def getPalette(self, paletteUI, targetDict, preset):
-        if preset in targetDict:
-            presetColors = targetDict[preset]
+    def getPalette(self, paletteUI, category, preset):
+        if (category == settings.paletteDict):
+            if (preset in category):
+                presetColors = category[preset]
+            else:
+                return
+        else:
+            for i, cat in enumerate(settings.masterPaletteArray):
+                if cat.keys()[0] == category:
+                    presetColors = settings.masterPaletteArray[i][category][preset]
 
-            for idx, color in enumerate(presetColors):
-                maya.cmds.palettePort(
-                    paletteUI,
-                    edit=True,
-                    rgb=(idx, color[0], color[1], color[2]))
-            maya.cmds.palettePort(paletteUI, edit=True, redraw=True)
+        for idx, color in enumerate(presetColors):
+            maya.cmds.palettePort(
+                paletteUI,
+                edit=True,
+                rgb=(idx, color[0], color[1], color[2]))
+        maya.cmds.palettePort(paletteUI, edit=True, redraw=True)
 
-    def deletePalette(self, targetDict, preset):
-        del targetDict[preset]
-        if settings.tools['palettePreset'] == preset:
-            settings.tools['palettePreset'] = None
+    def deleteCategory(self, category):
+        for i, cat in enumerate(settings.masterPaletteArray):
+            if cat.keys()[0] == category:
+                settings.masterPaletteArray.pop(i)
+        settings.tools['categoryPreset'] = None
 
-    def saveMasterPalette(self):
+    def deletePalette(self, category, preset):
+        for i, cat in enumerate(settings.masterPaletteArray):
+            if cat.keys()[0] == category:
+                settings.masterPaletteArray[i][category].pop(preset)
+
+    def saveMasterCategory(self):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
         if shift is True:
-            preset = maya.cmds.optionMenu(
-                'masterPalettes',
+            category = maya.cmds.optionMenu(
+                'masterCategories',
                 query=True,
-                value=True)
-            if preset is not None:
-                self.deletePalette(settings.masterPaletteDict, preset)
-                maya.cmds.deleteUI(preset)
+                value=True)            
+            if category is not None:
+                self.deleteCategory(category)
+                maya.cmds.deleteUI(category)
+                maya.cmds.deleteUI(category+'Option')
                 settings.savePalettes()
-                self.getMasterPaletteItem()
             else:
-                print('SX Tools Error: No preset to delete!')
+                print('SX Tools Error: No category to delete!')
 
         elif shift is False:
             itemList = maya.cmds.optionMenu(
-                'masterPalettes',
+                'masterCategories',
                 query=True,
                 ils=True)
-            preset = maya.cmds.textField(
-                'savePaletteName', query=True, text=True).replace(' ', '_')
-            if ((len(preset) > 0) and
-               ((itemList is None) or (preset not in itemList))):
-                settings.tools['palettePreset'] = preset
-                self.storePalette(
-                    'masterPalette',
-                    settings.masterPaletteDict,
-                    preset)
+            category = maya.cmds.textField(
+                'saveCategoryName', query=True, text=True).replace(' ', '_')
+            if ((len(category) > 0) and
+               ((itemList is None) or (category not in itemList))):
+                categoryDict = {}
+                categoryDict[category] = {}
+                settings.masterPaletteArray.append(categoryDict)
                 maya.cmds.menuItem(
-                    preset,
-                    label=preset,
-                    parent='masterPalettes')
+                    category,
+                    label=category,
+                    parent='masterCategories')
                 itemList = maya.cmds.optionMenu(
-                    'masterPalettes',
+                    'masterCategories',
                     query=True,
                     ils=True)
-                idx = itemList.index(preset) + 1
+                idx = itemList.index(category) + 1
+                settings.tools['categoryPreset'] = idx
                 maya.cmds.optionMenu(
-                    'masterPalettes',
+                    'masterCategories',
                     edit=True,
                     select=idx)
                 settings.savePalettes()
+                sx.updateSXTools()
             else:
                 print('SX Tools Error: Invalid preset name!')
 
-    def getMasterPaletteItem(self):
-        if len(settings.masterPaletteDict) > 0:
-            preset = maya.cmds.optionMenu(
-                'masterPalettes',
-                query=True,
-                value=True)
-            self.getPalette(
-                'masterPalette',
-                settings.masterPaletteDict,
-                preset)
-            settings.tools['palettePreset'] = preset
+    def paletteButtonManager(self, category, preset):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+
+        if shift is True:
+            self.deletePalette(category, preset)
+            maya.cmds.deleteUI(category+preset)
+            settings.savePalettes()
+        elif shift is False:
+            self.setMasterPalette(category, preset)
+            self.applyMasterPalette(settings.objectArray)
+
+    def saveMasterPalette(self):
+        category = maya.cmds.optionMenu(
+            'masterCategories',
+            query=True,
+            value=True)            
+        preset = maya.cmds.textField(
+            'savePaletteName', query=True, text=True).replace(' ', '_')
+
+        if len(preset) > 0:
             self.storePalette(
                 'masterPalette',
-                settings.paletteDict,
-                'SXToolsMasterPalette')
+                category,
+                preset)
+            settings.savePalettes()
+        else:
+            print('SX Tools Error: Invalid preset name!')
+
+    def setMasterPalette(self, category, preset):
+        self.getPalette(
+            'masterPalette',
+            category,
+            preset)
+        self.storePalette(
+            'masterPalette',
+            settings.paletteDict,
+            'SXToolsMasterPalette')
 
     def checkTarget(self, targets, index):
         refLayers = layers.sortLayers(
@@ -4315,30 +4342,6 @@ class ToolActions(object):
             index = str(index).split('L')[-1]
             maya.cmds.removeMultiInstance(
                 rampName + '.colorEntryList[' + index + ']')
-
-    def refreshMasterPaletteMenu(self):
-        paletteNameArray = settings.masterPaletteDict.keys()
-        if paletteNameArray != 0:
-            for paletteName in paletteNameArray:
-                maya.cmds.menuItem(
-                    paletteName,
-                    label=paletteName,
-                    parent='masterPalettes')
-
-            if ('palettePreset' in settings.tools) and (
-                    settings.tools['palettePreset'] is not None):
-                itemList = maya.cmds.optionMenu(
-                    'masterPalettes',
-                    query=True,
-                    ils=True)
-                idx = itemList.index(settings.tools['palettePreset']) + 1
-                maya.cmds.optionMenu('masterPalettes', edit=True, select=idx)
-
-    def refreshRampMenu(self):
-        presetNameArray = maya.cmds.nodePreset(list='SXRamp')
-        if presetNameArray != 0:
-            for presetName in presetNameArray:
-                maya.cmds.menuItem(label=presetName, parent='rampPresets')
 
     def setLayerBlendMode(self):
         mode = maya.cmds.optionMenu(
@@ -5167,7 +5170,7 @@ class UI(object):
         if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
                 str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
             maya.cmds.text(label='Current settings location:')
-            maya.cmds.text(label=maya.cmds.optionVar(query='SXToolsPrefsFile'))
+            maya.cmds.text(label=maya.cmds.optionVar(query='SXToolsPrefsFile'), ww=True)
         else:
             maya.cmds.text(
                 label='WARNING: Settings file location not set!',
@@ -5542,7 +5545,7 @@ class UI(object):
         elif 'SXToolsExportPath' in settings.project:
             exportPathText = (
                 'Export Path: ' + settings.project['SXToolsExportPath'])
-            maya.cmds.text(label=exportPathText)
+            maya.cmds.text(label=exportPathText, ww=True)
             maya.cmds.button(
                 label='Export Objects in _staticExports',
                 width=120,
@@ -5720,7 +5723,11 @@ class UI(object):
             actualTotal=8,
             editable=True,
             colorEditable=False,
-            changeCommand='sxtools.tools.setPaintColor()')
+            changeCommand=(
+                'sxtools.settings.currentColor = maya.cmds.palettePort('
+                '\"layerPalette\", query=True, rgb=True)\n'
+                'sxtools.tools.setPaintColor(sxtools.settings.currentColor)'))
+
         maya.cmds.text(
             'layerOpacityLabel',
             label=str(layers.getSelectedLayer()) + ' opacity:')
@@ -5876,6 +5883,12 @@ class UI(object):
             settings.paletteDict,
             'SXToolsRecentPalette')
 
+    def refreshRampMenu(self):
+        presetNameArray = maya.cmds.nodePreset(list='SXRamp')
+        if presetNameArray != 0:
+            for presetName in presetNameArray:
+                maya.cmds.menuItem(label=presetName, parent='rampPresets')
+
     def gradientToolUI(self):
         # ramp nodes for gradient tool
         if maya.cmds.objExists('SXRamp') is False:
@@ -5911,7 +5924,7 @@ class UI(object):
             parent='gradientColumn',
             label='Presets:',
             changeCommand="sxtools.tools.gradientToolManager('load')")
-        tools.refreshRampMenu()
+        self.refreshRampMenu()
         maya.cmds.rowColumnLayout(
             'gradientRowColumns',
             parent='gradientColumn',
@@ -6205,13 +6218,33 @@ class UI(object):
 
         maya.cmds.setParent('toolFrame')
 
+    def refreshCategoryMenu(self):
+        categoryNameArray = []
+        if len(settings.masterPaletteArray) > 0:
+            for category in settings.masterPaletteArray:
+                categoryNameArray.append(category.keys()[0])
+        if categoryNameArray is not None:
+            for categoryName in categoryNameArray:
+                maya.cmds.menuItem(
+                    categoryName+'Option',
+                    label=categoryName,
+                    parent='masterCategories')
+        if settings.tools['categoryPreset'] is not None:
+            maya.cmds.optionMenu(
+                'masterCategories',
+                edit=True,
+                select = settings.tools['categoryPreset'])
+
     def masterPaletteToolUI(self):
+        if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
+           (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
+            settings.loadPalettes()
         maya.cmds.frameLayout(
             'masterPaletteFrame',
             parent='toolFrame',
             label='Apply Master Palette',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=5,
             collapsable=True,
             collapse=settings.frames['masterPaletteCollapse'],
             collapseCommand=(
@@ -6221,59 +6254,142 @@ class UI(object):
                 "sxtools.sx.updateSXTools()"))
 
         if settings.frames['masterPaletteCollapse'] is False:
-            maya.cmds.columnLayout(
-                'masterPaletteColumn',
+            maya.cmds.frameLayout(
+                'paletteCategoryFrame',
                 parent='masterPaletteFrame',
-                rowSpacing=5,
-                adjustableColumn=True)
-            
-            maya.cmds.button(
-                label='Select Palettes File',
-                parent='masterPaletteColumn',
-                statusBarMessage=(
-                    'Shift-click button to reload palettes from file'),
-                command='sxtools.settings.setPalettesFile()\n'
-                'sxtools.sx.updateSXTools()')
+                label='Palette List',
+                marginWidth=2,
+                marginHeight=0,
+                collapsable=True,
+                collapse=settings.frames['paletteCategoryCollapse'],
+                collapseCommand=(
+                    "sxtools.settings.frames['paletteCategoryCollapse']=True"),
+                expandCommand=(
+                    "sxtools.settings.frames['paletteCategoryCollapse']=False\n"
+                    "sxtools.sx.updateSXTools()"))
+            if len(settings.masterPaletteArray) > 0:
+                for categoryDict in settings.masterPaletteArray:
+                    if categoryDict.keys()[0]+'Collapse' not in settings.frames:
+                        settings.frames[categoryDict.keys()[0]+'Collapse']=True
+                    maya.cmds.frameLayout(
+                        categoryDict.keys()[0],
+                        parent='paletteCategoryFrame',
+                        label=categoryDict.keys()[0],
+                        marginWidth=0,
+                        marginHeight=0,
+                        enableBackground=True,
+                        backgroundColor=[0.32, 0.32, 0.32],
+                        collapsable=True,
+                        collapse=settings.frames[categoryDict.keys()[0]+'Collapse'],
+                        collapseCommand=(
+                            'sxtools.settings.frames["'+categoryDict.keys()[0]+'"+"Collapse"]=True'),
+                        expandCommand=(
+                            'sxtools.settings.frames["'+categoryDict.keys()[0]+'"+"Collapse"]=False'))
+                    if len(categoryDict[categoryDict.keys()[0]]) > 0:
+                        for i, (name, colors) in enumerate(categoryDict[categoryDict.keys()[0]].iteritems()):
+                            stripeColor = []
+                            if i % 2 == 0:
+                                stripeColor = [0.22, 0.22, 0.22]
+                            else:
+                                stripeColor = [0.24, 0.24, 0.24]
+                            maya.cmds.rowColumnLayout(
+                                categoryDict.keys()[0]+name,
+                                parent=categoryDict.keys()[0],
+                                numberOfColumns=3,
+                                enableBackground=True,
+                                backgroundColor=stripeColor,
+                                columnWidth=((1, 90), (2, 90), (3, 40)),
+                                columnAttach=[(1, 'both', 0), (2, 'right', 5), (3, 'right', 0)],
+                                rowSpacing=(1, 0))
+                            maya.cmds.text(
+                                label=name,
+                                align='right',
+                                font='smallPlainLabelFont')
+                            maya.cmds.palettePort(
+                                categoryDict.keys()[0]+name+'Palette',
+                                dimensions=(5, 1),
+                                width=80,
+                                height=20,
+                                actualTotal=5,
+                                editable=True,
+                                colorEditable=False,
+                                changeCommand=(
+                                    'sxtools.settings.currentColor = maya.cmds.palettePort('
+                                    +'\"'+categoryDict.keys()[0]+name+'Palette'+'\", query=True, rgb=True)\n'
+                                    'sxtools.tools.setMasterPalette('
+                                    +'\"'+categoryDict.keys()[0]
+                                    +'\", \"'+name+'\")\n'
+                                    'sxtools.tools.setPaintColor(sxtools.settings.currentColor)'))
+                            tools.getPalette(
+                                categoryDict.keys()[0]+name+'Palette',
+                                categoryDict.keys()[0],
+                                name)
+                            maya.cmds.button(
+                                categoryDict.keys()[0]+name+'Button',
+                                label='Apply',
+                                height=20,
+                                ann='Shift-click to delete palette',
+                                command=(
+                                    'sxtools.tools.paletteButtonManager('
+                                    +'\"'+categoryDict.keys()[0]
+                                    +'\", \"'+name+'\")'))
 
-            if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
-               (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
-                settings.loadPalettes()
-                maya.cmds.text(
-                    label='Current palettes location:',
-                    parent='masterPaletteColumn')
-                maya.cmds.text(
-                    label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
-                    parent='masterPaletteColumn')
-            else:
-                maya.cmds.text(
-                    label='WARNING: Palettes file location not set!',
-                    parent='masterPaletteColumn',
-                    backgroundColor=(0.35, 0.1, 0),
-                    ww=True)
+            maya.cmds.frameLayout(
+                'createPaletteFrame',
+                parent='masterPaletteFrame',
+                label='Edit Palettes',
+                marginWidth=5,
+                marginHeight=5,
+                collapsable=True,
+                collapse=settings.frames['newPaletteCollapse'],
+                collapseCommand=(
+                    "sxtools.settings.frames['newPaletteCollapse']=True"),
+                expandCommand=(
+                    "sxtools.settings.frames['newPaletteCollapse']=False\n"
+                    "sxtools.sx.updateSXTools()"))
 
-            maya.cmds.optionMenu(
-                'masterPalettes',
-                parent='masterPaletteColumn',
-                label='Presets:',
-                changeCommand='sxtools.tools.getMasterPaletteItem()')
-            tools.refreshMasterPaletteMenu()
             maya.cmds.rowColumnLayout(
                 'masterPaletteRowColumns',
-                parent='masterPaletteColumn',
+                parent='createPaletteFrame',
                 numberOfColumns=2,
                 columnWidth=((1, 100), (2, 140)),
-                columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+                columnAttach=[(1, 'right', 0), (2, 'both', 5)],
                 rowSpacing=(1, 5))
+
+            maya.cmds.text(label='Category:')
+
+            maya.cmds.optionMenu(
+                'masterCategories',
+                parent='masterPaletteRowColumns',
+                changeCommand=(
+                    'sxtools.settings.tools["categoryPreset"]='
+                    'maya.cmds.optionMenu("masterCategories", query=True, select=True)'))
+
+            self.refreshCategoryMenu()
+
+            maya.cmds.button(
+                'savePaletteCategory',
+                label='Save Category',
+                width=100,
+                ann='Shift-click to delete a category and contained palettes',
+                command=(
+                    'sxtools.tools.saveMasterCategory()'))
+            maya.cmds.textField(
+                'saveCategoryName',
+                enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+                placeholderText='Category Name')
             maya.cmds.button(
                 'saveMasterPalette',
                 label='Save Palette',
+                ann='The palette is saved under selected category',
                 width=100,
-                ann='Shift-click to delete palette',
-                command='sxtools.tools.saveMasterPalette()')
+                command=(
+                    'sxtools.tools.saveMasterPalette()\n'
+                    'sxtools.sx.updateSXTools()'))
             maya.cmds.textField(
                 'savePaletteName',
                 enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='Preset Name')
+                placeholderText='Palette Name')
             maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
             maya.cmds.palettePort(
                 'masterPalette',
@@ -6287,17 +6403,70 @@ class UI(object):
                     "sxtools.tools.storePalette("
                     "'masterPalette',"
                     "sxtools.settings.paletteDict,"
-                    "'SXToolsMasterPalette')\n"
-                    "sxtools.settings.tools['palettePreset']=None"),
+                    "'SXToolsMasterPalette')"),
                 colorEdited=(
                     "sxtools.tools.storePalette("
                     "'masterPalette',"
                     "sxtools.settings.paletteDict,"
                     "'SXToolsMasterPalette')"))
+
+            tools.getPalette(
+                'masterPalette',
+                settings.paletteDict,
+                'SXToolsMasterPalette')
+
+            maya.cmds.frameLayout(
+                'paletteSettingsFrame',
+                parent='masterPaletteFrame',
+                label='Master Palette Settings',
+                marginWidth=5,
+                marginHeight=5,
+                collapsable=True,
+                collapse=settings.frames['paletteSettingsCollapse'],
+                collapseCommand=(
+                    "sxtools.settings.frames['paletteSettingsCollapse']=True"),
+                expandCommand=(
+                    "sxtools.settings.frames['paletteSettingsCollapse']=False"))
+
+            if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
+               (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
+                # settings.loadPalettes()
+                maya.cmds.text(
+                    label='Current palettes location:',
+                    parent='paletteSettingsFrame')
+                maya.cmds.text(
+                    label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
+                    parent='paletteSettingsFrame',
+                    ww=True)
+            else:
+                maya.cmds.text(
+                    label='WARNING: Palettes file location not set!',
+                    parent='paletteSettingsFrame',
+                    height=20,
+                    backgroundColor=(0.35, 0.1, 0),
+                    ww=True)
+            
+            maya.cmds.button(
+                label='Select Palettes File',
+                parent='paletteSettingsFrame',
+                statusBarMessage=(
+                    'Shift-click button to reload palettes from file'),
+                command=(
+                    'sxtools.settings.setPalettesFile()\n'
+                    'sxtools.sx.updateSXTools()'))
+
+            maya.cmds.rowColumnLayout(
+                'targetRowColumns',
+                parent='paletteSettingsFrame',
+                numberOfColumns=2,
+                columnWidth=((1, 100), (2, 140)),
+                columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+                rowSpacing=(1, 5))
+
             maya.cmds.text(label='Color 1 Target(s): ')
             maya.cmds.textField(
                 'masterTarget1',
-                parent='masterPaletteRowColumns',
+                parent='targetRowColumns',
                 text=', '.join(settings.project['paletteTarget1']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
@@ -6313,7 +6482,7 @@ class UI(object):
             maya.cmds.text(label='Color 2 Target(s): ')
             maya.cmds.textField(
                 'masterTarget2',
-                parent='masterPaletteRowColumns',
+                parent='targetRowColumns',
                 text=', '.join(settings.project['paletteTarget2']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
@@ -6329,7 +6498,7 @@ class UI(object):
             maya.cmds.text(label='Color 3 Target(s): ')
             maya.cmds.textField(
                 'masterTarget3',
-                parent='masterPaletteRowColumns',
+                parent='targetRowColumns',
                 text=', '.join(settings.project['paletteTarget3']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
@@ -6345,7 +6514,7 @@ class UI(object):
             maya.cmds.text(label='Color 4 Target(s): ')
             maya.cmds.textField(
                 'masterTarget4',
-                parent='masterPaletteRowColumns',
+                parent='targetRowColumns',
                 text=', '.join(settings.project['paletteTarget4']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
@@ -6361,7 +6530,7 @@ class UI(object):
             maya.cmds.text(label='Color 5 Target(s): ')
             maya.cmds.textField(
                 'masterTarget5',
-                parent='masterPaletteRowColumns',
+                parent='targetRowColumns',
                 text=', '.join(settings.project['paletteTarget5']),
                 enterCommand=(
                     "sxtools.tools.checkTarget("
@@ -6374,24 +6543,7 @@ class UI(object):
                     "'masterTarget5', query=True, text=True), 5)\n"
                     "maya.cmds.setFocus('MayaWindow')"),
                 placeholderText='layer5')
-            maya.cmds.button(
-                label='Apply Master Palette',
-                parent='masterPaletteColumn',
-                height=30,
-                width=100,
-                command=(
-                    'sxtools.tools.applyMasterPalette('
-                    'sxtools.settings.objectArray)'))
             maya.cmds.setParent('toolFrame')
-
-            if ('palettePreset' in settings.tools) and (
-                    settings.tools['palettePreset'] is None):
-                tools.getPalette(
-                    'masterPalette',
-                    settings.paletteDict,
-                    'SXToolsMasterPalette')
-            else:
-                tools.getMasterPaletteItem()
 
     def swapLayerToolUI(self):
         maya.cmds.frameLayout(
