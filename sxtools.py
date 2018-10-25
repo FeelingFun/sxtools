@@ -94,6 +94,7 @@ class Settings(object):
         self.localOcclusionDict = {}
         self.globalOcclusionDict = {}
         self.frames = {
+            'prefsCollapse': True,
             'setupCollapse': False,
             'toolCollapse': False,
             'occlusionCollapse': True,
@@ -157,6 +158,7 @@ class Settings(object):
 
         # default values, if the user decides to reset the tool
         if shift is True:
+            self.project['dockPosition'] = 1,
             self.project['AlphaTolerance'] = 1.0
             self.project['SmoothExport'] = 0
             self.project['ExportOffset'] = 5
@@ -5098,6 +5100,39 @@ class UI(object):
             marginHeight=5)
 
         maya.cmds.frameLayout(
+            'prefsFrame',
+            parent='canvas',
+            width=250,
+            label='Tool Preferences',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=settings.frames['prefsCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['prefsCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['prefsCollapse']=False"))
+
+        if 'dockPosition' in settings.project:
+            dockPos = settings.project['dockPosition']
+        else:
+            dockPos = 1
+
+        maya.cmds.radioButtonGrp(
+            'dockPrefsButtons',
+            parent='prefsFrame',
+            vertical=True,
+            labelArray2=['Dock Left', 'Dock Right'],
+            select=dockPos,
+            numberOfRadioButtons=2,
+            onCommand1=(
+                "sxtools.settings.project['dockPosition'] = 1\n"
+                "cmds.workspaceControl('SXTools', edit=True, dockToControl=('Outliner', 'right'))"),
+            onCommand2=(
+                "sxtools.settings.project['dockPosition'] = 2\n"
+                "cmds.workspaceControl('SXTools', edit=True, dockToControl=('AttributeEditor', 'left'))"))
+
+        maya.cmds.frameLayout(
             'setupFrame',
             parent='canvas',
             width=250,
@@ -5436,11 +5471,7 @@ class UI(object):
             parent='canvas',
             width=250,
             marginWidth=10,
-            marginHeight=5)
-        maya.cmds.columnLayout(
-            'exportedColumn',
-            rowSpacing=5,
-            adjustableColumn=True)
+            marginHeight=2)
         maya.cmds.button(
             label='Select and show all export meshes',
             command='sxtools.export.viewExported()')
@@ -5453,7 +5484,7 @@ class UI(object):
         maya.cmds.text(label='Preview export object data:')
         maya.cmds.radioButtonGrp(
             'exportShadingButtons1',
-            parent='exportedColumn',
+            parent='exportObjFrame',
             vertical=True,
             columnWidth3=(80, 80, 80),
             columnAttach3=('left', 'left', 'left'),
@@ -5465,7 +5496,7 @@ class UI(object):
             onCommand3=("sxtools.export.viewExportedMaterial()"))
         maya.cmds.radioButtonGrp(
             'exportShadingButtons2',
-            parent='exportedColumn',
+            parent='exportObjFrame',
             vertical=True,
             shareCollection='exportShadingButtons1',
             columnWidth4=(80, 80, 80, 80),
@@ -5479,7 +5510,7 @@ class UI(object):
 
         maya.cmds.radioButtonGrp(
             'exportShadingButtons3',
-            parent='exportedColumn',
+            parent='exportObjFrame',
             vertical=True,
             shareCollection='exportShadingButtons1',
             columnWidth3=(80, 80, 80),
@@ -5530,10 +5561,6 @@ class UI(object):
             width=250,
             marginWidth=10,
             marginHeight=5)
-        maya.cmds.columnLayout(
-            'patchColumn',
-            adjustableColumn=True,
-            rowSpacing=5)
         maya.cmds.text(
             label=("Click on empty to view project defaults.\n"), align='left')
 
@@ -5563,10 +5590,6 @@ class UI(object):
             width=250,
             marginWidth=10,
             marginHeight=5)
-        maya.cmds.columnLayout(
-            'patchColumn',
-            adjustableColumn=True,
-            rowSpacing=5)
         maya.cmds.text(
             label=(
                 "To fix color layers:\n"
@@ -6728,17 +6751,18 @@ class Core(object):
             displayScalingValue = 1.0
 
         settings.loadPreferences()
-
+        
         maya.cmds.workspaceControl(
             dockID,
             label='SX Tools',
             uiScript='sxtools.sx.updateSXTools()',
             retain=False,
-            floating=True,
+            floating=False,
+            dockToControl=('Outliner', 'right'),
             initialHeight=5,
             initialWidth=250 * displayScalingValue,
             minimumWidth=250 * displayScalingValue,
-            wp='fixed')
+            widthProperty='fixed')
 
         # Background jobs to reconstruct window if selection changes,
         # and to clean up upon closing
