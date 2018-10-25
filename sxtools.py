@@ -107,7 +107,8 @@ class Settings(object):
             'swapLayerCollapse': True,
             'gradientCollapse': True,
             'copyLayerCollapse': True,
-            'swapLayerSetsCollapse': True
+            'swapLayerSetsCollapse': True,
+            'exportFlagsCollapse': True
         }
         self.tools = {
             'recentPaletteIndex': 1,
@@ -2125,126 +2126,78 @@ class SceneSetup(object):
         if refLayers == 'layer1':
             refLayers = 'layer1',
 
-        attrList = maya.cmds.listAttr(settings.shapeArray, ud=True)
-        if attrList is None:
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='activeLayerSet',
-                at='double', min=0, max=9, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='numLayerSets',
-                at='double', min=0, max=9, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='transparency',
-                at='double', min=0, max=1, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='shadingMode',
-                at='double', min=0, max=2, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='occlusionVisibility',
-                at='double', min=0, max=1, dv=1)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='specularVisibility',
-                at='double', min=0, max=1, dv=1)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='transmissionVisibility',
-                at='double', min=0, max=1, dv=1)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='emissionVisibility',
-                at='double', min=0, max=1, dv=1)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='occlusionBlendMode',
-                at='double', min=0, max=2, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='specularBlendMode',
-                at='double', min=0, max=2, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='transmissionBlendMode',
-                at='double', min=0, max=2, dv=0)
-            maya.cmds.addAttr(
-                settings.shapeArray,
-                ln='emissionBlendMode',
-                at='double', min=0, max=2, dv=0)
-            for k in range(0, settings.project['LayerCount']):
-                visName = str(refLayers[k]) + 'Visibility'
-                blendName = str(refLayers[k]) + 'BlendMode'
+        for obj in settings.objectArray:
+            flagList = maya.cmds.listAttr(obj, ud=True)
+            if flagList is None:
+                flagList = []
+            if ('staticVertexColors' not in flagList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
-                    ln=visName,
-                    at='double', min=0, max=1, dv=1)
-                maya.cmds.addAttr(
-                    settings.shapeArray,
-                    ln=blendName,
-                    at='double', min=0, max=2, dv=0)
-        else:
+                    obj,
+                    ln='staticVertexColors',
+                    at='bool', dv=False)
+
+        for shape in settings.shapeArray:            
+            attrList = maya.cmds.listAttr(shape, ud=True)
+            if attrList is None:
+                attrList = []
             if ('activeLayerSet' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='activeLayerSet',
                     at='double', min=0, max=10, dv=0)
             if ('numLayerSets' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='numLayerSets',
                     at='double', min=0, max=9, dv=0)
             if ('transparency' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='transparency',
                     at='double', min=0, max=1, dv=0)
             if ('shadingMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='shadingMode',
                     at='double', min=0, max=2, dv=0)
             if ('occlusionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='occlusionVisibility',
                     at='double', min=0, max=1, dv=1)
             if ('specularVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='specularVisibility',
                     at='double', min=0, max=1, dv=1)
             if ('transmissionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='transmissionVisibility',
                     at='double', min=0, max=1, dv=1)
             if ('emissionVisibility' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='emissionVisibility',
                     at='double', min=0, max=1, dv=1)
             if ('occlusionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='occlusionBlendMode',
                     at='double', min=0, max=2, dv=0)
             if ('specularBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='specularBlendMode',
                     at='double', min=0, max=2, dv=0)
             if ('transmissionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='transmissionBlendMode',
                     at='double', min=0, max=2, dv=0)
             if ('emissionBlendMode' not in attrList):
                 maya.cmds.addAttr(
-                    settings.shapeArray,
+                    shape,
                     ln='emissionBlendMode',
                     at='double', min=0, max=2, dv=0)
 
@@ -2253,12 +2206,12 @@ class SceneSetup(object):
                 visName = str(refLayers[k]) + 'Visibility'
                 if (blendName not in attrList):
                     maya.cmds.addAttr(
-                        settings.shapeArray,
+                        shape,
                         ln=blendName,
                         at='double', min=0, max=2, dv=0)
                 if (visName not in attrList):
                     maya.cmds.addAttr(
-                        settings.shapeArray,
+                        shape,
                         ln=visName,
                         at='double', min=0, max=1, dv=1)
 
@@ -4512,6 +4465,10 @@ class ToolActions(object):
                 layerAColors = MFnMesh.getFaceVertexColors(colorSet=source)
                 MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
 
+    def setExportFlags(self, objects, bool):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.staticVertexColors', bool)
+
 
 class LayerManagement(object):
     def __init__(self):
@@ -5095,6 +5052,7 @@ class UI(object):
         maya.cmds.columnLayout(
             'historyWarningLayout',
             parent='canvas',
+            width=250,
             rowSpacing=5,
             adjustableColumn=True)
         maya.cmds.text(
@@ -5111,6 +5069,7 @@ class UI(object):
         maya.cmds.columnLayout(
             'shapeWarningLayout',
             parent='canvas',
+            width=250,
             rowSpacing=5,
             adjustableColumn=True)
         maya.cmds.text(
@@ -5327,7 +5286,7 @@ class UI(object):
                 text=overlayExport)
 
         maya.cmds.rowColumnLayout(
-            'numLayerColumns',
+            'numlayerFrames',
             parent='setupFrame',
             numberOfColumns=2,
             columnWidth=((1, 160), (2, 70)),
@@ -5420,20 +5379,20 @@ class UI(object):
             maya.cmds.textField(fieldLabel, text=layerName)
 
         maya.cmds.columnLayout(
-            'refLayerColumn',
+            'reflayerFrame',
             parent='setupFrame',
             rowSpacing=5,
             adjustableColumn=True)
-        maya.cmds.text(label=' ', parent='refLayerColumn')
+        maya.cmds.text(label=' ', parent='reflayerFrame')
 
         if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
                 str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
             maya.cmds.text(
                 label='(Shift-click below to apply built-in defaults)',
-                parent='refLayerColumn')
+                parent='reflayerFrame')
             maya.cmds.button(
                 label='Apply Project Settings',
-                parent='refLayerColumn',
+                parent='reflayerFrame',
                 statusBarMessage=(
                     'Shift-click button to use the built-in default settings'),
                 command=(
@@ -5640,15 +5599,10 @@ class UI(object):
             parent='canvas',
             width=250,
             marginWidth=5,
-            marginHeight=5)
-        maya.cmds.columnLayout(
-            'layerColumn',
-            parent='layerFrame',
-            adjustableColumn=True,
-            rowSpacing=5)
+            marginHeight=2)
         maya.cmds.radioButtonGrp(
             'shadingButtons',
-            parent='layerColumn',
+            parent='layerFrame',
             columnWidth3=(80, 80, 80),
             columnAttach3=('left', 'left', 'left'),
             labelArray3=['Final', 'Debug', 'Alpha'],
@@ -5679,7 +5633,7 @@ class UI(object):
 
         maya.cmds.optionMenu(
             'layerBlendModes',
-            parent='layerColumn',
+            parent='layerFrame',
             label='Layer Blend Mode:',
             changeCommand='sxtools.tools.setLayerBlendMode()')
         maya.cmds.menuItem(
@@ -5697,6 +5651,7 @@ class UI(object):
 
         maya.cmds.textScrollList(
             'layerList',
+            height=200,
             allowMultiSelection=False,
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
@@ -5707,7 +5662,7 @@ class UI(object):
         layers.refreshSelectedItem()
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
-            parent='layerColumn',
+            parent='layerFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'left', 0), (2, 'both', 5)],
@@ -5745,7 +5700,7 @@ class UI(object):
             layers.getSelectedLayer())
         maya.cmds.rowColumnLayout(
             'layerSelectRowColumns',
-            parent='layerColumn',
+            parent='layerFrame',
             numberOfColumns=2,
             columnWidth=((1, 120), (2, 120)),
             columnSpacing=([1, 0], [2, 5]),
@@ -5810,21 +5765,16 @@ class UI(object):
             parent="toolFrame",
             label="Apply Color",
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['applyColorCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['applyColorCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['applyColorCollapse']=False"))
-        maya.cmds.columnLayout(
-            "applyColorColumn",
-            parent="applyColorFrame",
-            rowSpacing=5,
-            adjustableColumn=True)
         maya.cmds.rowColumnLayout(
             "applyColorRowColumns",
-            parent="applyColorColumn",
+            parent="applyColorFrame",
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, "left", 0), (2, "both", 5)],
@@ -5842,7 +5792,7 @@ class UI(object):
             changeCommand='sxtools.tools.setApplyColor()')
         maya.cmds.colorSliderGrp(
             'sxApplyColor',
-            parent='applyColorColumn',
+            parent='applyColorFrame',
             label='Color:',
             rgb=settings.currentColor,
             columnWidth3=(80, 20, 60),
@@ -5853,7 +5803,7 @@ class UI(object):
                 "maya.cmds.colorSliderGrp("
                 "'sxApplyColor', query=True, rgbValue=True))")
         )
-        maya.cmds.setParent('applyColorColumn')
+        maya.cmds.setParent('applyColorFrame')
         maya.cmds.checkBox(
             'overwriteAlpha',
             label='Overwrite Alpha',
@@ -5865,7 +5815,7 @@ class UI(object):
                 )
         maya.cmds.button(
             label='Apply Color',
-            parent='applyColorColumn',
+            parent='applyColorFrame',
             height=30,
             width=100,
             command=(
@@ -5906,7 +5856,7 @@ class UI(object):
             parent="toolFrame",
             label="Gradient Fill",
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['gradientCollapse'],
             collapseCommand=(
@@ -5914,20 +5864,15 @@ class UI(object):
             expandCommand=(
                 "sxtools.settings.frames['gradientCollapse']=False"),
             borderVisible=False)
-        maya.cmds.columnLayout(
-            "gradientColumn",
-            parent="gradientFrame",
-            rowSpacing=0,
-            adjustableColumn=True)
         maya.cmds.optionMenu(
             'rampPresets',
-            parent='gradientColumn',
+            parent='gradientFrame',
             label='Presets:',
             changeCommand="sxtools.tools.gradientToolManager('load')")
         self.refreshRampMenu()
         maya.cmds.rowColumnLayout(
             'gradientRowColumns',
-            parent='gradientColumn',
+            parent='gradientFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'left', 0), (2, 'both', 5)],
@@ -5948,7 +5893,7 @@ class UI(object):
             placeholderText='Preset Name')
         maya.cmds.attrColorSliderGrp(
             'sxRampColor',
-            parent='gradientColumn',
+            parent='gradientFrame',
             label='Selected Color:',
             showButton=False,
             columnWidth4=(80, 20, 60, 0),
@@ -5956,21 +5901,21 @@ class UI(object):
             columnAlign4=('left', 'left', 'left', 'left'))
         maya.cmds.attrEnumOptionMenuGrp(
             'sxRampMode',
-            parent='gradientColumn',
+            parent='gradientFrame',
             label='Interpolation:',
             columnWidth2=(80, 100),
             columnAttach2=('left', 'left'),
             columnAlign2=('left', 'left'))
         maya.cmds.rampColorPort(
             'sxRampControl',
-            parent="gradientColumn",
+            parent="gradientFrame",
             node='SXRamp',
             height=90,
             selectedColorControl='sxRampColor',
             selectedInterpControl='sxRampMode')
         maya.cmds.attrColorSliderGrp(
             'sxRampAlpha',
-            parent='gradientColumn',
+            parent='gradientFrame',
             label='Selected Alpha:',
             showButton=False,
             columnWidth4=(80, 20, 60, 0),
@@ -5978,28 +5923,28 @@ class UI(object):
             columnAlign4=('left', 'left', 'left', 'left'))
         maya.cmds.attrEnumOptionMenuGrp(
             'sxAlphaRampMode',
-            parent='gradientColumn',
+            parent='gradientFrame',
             label='Interpolation:',
             columnWidth2=(80, 100),
             columnAttach2=('left', 'left'),
             columnAlign2=('left', 'left'))
         maya.cmds.rampColorPort(
             'sxRampAlphaControl',
-            parent='gradientColumn',
+            parent='gradientFrame',
             node='SXAlphaRamp',
             height=90,
             selectedColorControl='sxRampAlpha',
             selectedInterpControl='sxAlphaRampMode')
         maya.cmds.radioButtonGrp(
             'gradientDirection',
-            parent='gradientColumn',
+            parent='gradientFrame',
             columnWidth3=(80, 80, 80),
             columnAttach3=('left', 'left', 'left'),
             labelArray3=['X', 'Y', 'Z'],
             numberOfRadioButtons=3)
         maya.cmds.radioButtonGrp(
             'gradientMode',
-            parent='gradientColumn',
+            parent='gradientFrame',
             columnWidth2=(120, 120),
             shareCollection='gradientDirection',
             columnAttach2=('left', 'left'),
@@ -6007,7 +5952,7 @@ class UI(object):
             numberOfRadioButtons=2)
         maya.cmds.button(
             label='Apply Gradient',
-            parent='gradientColumn',
+            parent='gradientFrame',
             height=30,
             width=100,
             command=(
@@ -6037,7 +5982,7 @@ class UI(object):
             parent='toolFrame',
             label='Color Noise',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['noiseCollapse'],
             collapseCommand=(
@@ -6045,18 +5990,13 @@ class UI(object):
             expandCommand=(
                 "sxtools.settings.frames['noiseCollapse']=False"),
             borderVisible=False)
-        maya.cmds.columnLayout(
-            'noiseColumn',
-            parent='noiseFrame',
-            rowSpacing=0,
-            adjustableColumn=True)
         maya.cmds.rowColumnLayout(
             'noiseRowColumns',
-            parent='noiseColumn',
+            parent='noiseFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
+            rowSpacing=(1, 2))
         maya.cmds.text('monoLabel', label='Monochromatic:')
         maya.cmds.checkBox(
             'mono',
@@ -6079,7 +6019,7 @@ class UI(object):
             ))
         maya.cmds.button(
             label='Apply Noise',
-            parent='noiseColumn',
+            parent='noiseFrame',
             height=30,
             width=100,
             command="sxtools.tools.colorNoise(sxtools.settings.objectArray)\n"
@@ -6096,28 +6036,23 @@ class UI(object):
             parent='toolFrame',
             label='Bake Occlusion',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['occlusionCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['occlusionCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['occlusionCollapse']=False"))
-        maya.cmds.columnLayout(
-            'occlusionColumn',
-            parent='occlusionFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
         maya.cmds.text(
             label=(
-                "\nOcclusion groundplane is placed\n"
-                "at the minY of the bounding box of\n"
+                "Occlusion groundplane is placed"
+                "at the minY of the bounding box of"
                 "each object being baked.\n"
-                "Offset pushes the plane down.\n"),
-            align="left")
+                "Offset pushes the plane down."),
+            align="left", ww=True)
         maya.cmds.rowColumnLayout(
             'occlusionRowColumns',
-            parent='occlusionColumn',
+            parent='occlusionFrame',
             numberOfColumns=4,
             columnWidth=(
                 (1, 80),
@@ -6163,7 +6098,7 @@ class UI(object):
 
         maya.cmds.rowColumnLayout(
             'occlusionRowColumns2',
-            parent='occlusionColumn',
+            parent='occlusionFrame',
             numberOfColumns=2,
             columnWidth=((1, 130), (2, 110)),
             columnAttach=[(1, 'left', 0), (2, 'left', 0)],
@@ -6191,14 +6126,14 @@ class UI(object):
         if 'Mayatomr' in plugList:
             maya.cmds.button(
                 label='Bake Occlusion (Mental Ray)',
-                parent='occlusionColumn',
+                parent='occlusionFrame',
                 height=30,
                 width=100,
                 command='sxtools.tools.bakeBlendOcclusion()')
         if 'mtoa' in plugList:
             maya.cmds.rowColumnLayout(
                 'occlusionRowColumns3',
-                parent='occlusionColumn',
+                parent='occlusionFrame',
                 numberOfColumns=2,
                 columnWidth=((1, 130), (2, 110)),
                 columnAttach=[(1, 'left', 0), (2, 'left', 0)],
@@ -6210,7 +6145,7 @@ class UI(object):
                 placeholderText='C:/')
             maya.cmds.button(
                 label='Bake Occlusion (Arnold)',
-                parent='occlusionColumn',
+                parent='occlusionFrame',
                 height=30,
                 width=100,
                 ann='Shift-click to bake all objects together',
@@ -6553,25 +6488,20 @@ class UI(object):
             parent='toolFrame',
             label='Swap Layers',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=5,
             collapsable=True,
             collapse=settings.frames['swapLayerCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['swapLayerCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['swapLayerCollapse']=False"))
-        maya.cmds.columnLayout(
-            'swapLayerColumn',
-            parent='swapLayerFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
         maya.cmds.rowColumnLayout(
             'swapLayerRowColumns',
-            parent='swapLayerColumn',
+            parent='swapLayerFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
+            rowSpacing=(1, 0))
         maya.cmds.text('layerALabel', label='Layer A:')
         maya.cmds.textField(
             'layerA',
@@ -6585,7 +6515,7 @@ class UI(object):
         maya.cmds.setParent('swapLayerFrame')
         maya.cmds.button(
             label='Swap Layers',
-            parent='swapLayerColumn',
+            parent='swapLayerFrame',
             height=30,
             width=100,
             command=('sxtools.tools.swapLayers(sxtools.settings.shapeArray)'))
@@ -6597,25 +6527,20 @@ class UI(object):
             parent='toolFrame',
             label='Copy Layer',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=5,
             collapsable=True,
             collapse=settings.frames['copyLayerCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['copyLayerCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['copyLayerCollapse']=False"))
-        maya.cmds.columnLayout(
-            'copyLayerColumn',
-            parent='copyLayerFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
         maya.cmds.rowColumnLayout(
             'copyLayerRowColumns',
-            parent='copyLayerColumn',
+            parent='copyLayerFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
+            rowSpacing=(1, 0))
         maya.cmds.text('source layer', label='Source Layer:')
         maya.cmds.textField(
             'layersrc',
@@ -6629,7 +6554,7 @@ class UI(object):
         maya.cmds.setParent('copyLayerFrame')
         maya.cmds.button(
             label='Copy Layer',
-            parent='copyLayerColumn',
+            parent='copyLayerFrame',
             height=30,
             width=100,
             command=('sxtools.tools.copyLayer(sxtools.settings.objectArray)'))
@@ -6641,21 +6566,16 @@ class UI(object):
             parent='toolFrame',
             label='Assign to Crease Set',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['creaseCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['creaseCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['creaseCollapse']=False"))
-        maya.cmds.columnLayout(
-            'creaseColumn',
-            parent='creaseFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
         maya.cmds.radioButtonGrp(
             'creaseSets',
-            parent='creaseColumn',
+            parent='creaseFrame',
             columnWidth4=(50, 50, 50, 50),
             columnAttach4=('left', 'left', 'left', 'left'),
             labelArray4=['[0.5]', '[1.0]', '[2.0]', '[Hard]'],
@@ -6667,7 +6587,7 @@ class UI(object):
         maya.cmds.setParent('creaseFrame')
         maya.cmds.button(
             label='Uncrease Selection',
-            parent='creaseColumn',
+            parent='creaseFrame',
             height=30,
             width=100,
             command=("sxtools.tools.assignToCreaseSet('sxCrease0')"))
@@ -6679,25 +6599,20 @@ class UI(object):
             parent='toolFrame',
             label='Swap Layer Sets',
             marginWidth=5,
-            marginHeight=0,
+            marginHeight=2,
             collapsable=True,
             collapse=settings.frames['swapLayerSetsCollapse'],
             collapseCommand=(
                 "sxtools.settings.frames['swapLayerSetsCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['swapLayerSetsCollapse']=False"))
-        maya.cmds.columnLayout(
-            'swapLayerSetsColumn',
-            parent='swapLayerSetsFrame',
-            rowSpacing=5,
-            adjustableColumn=True)
         setNums = []
         for object in settings.objectArray:
             setNums.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
         if all(num == setNums[0] for num in setNums):
             maya.cmds.button(
                 label='Add New Layer Set',
-                parent='swapLayerSetsColumn',
+                parent='swapLayerSetsFrame',
                 height=30,
                 width=100,
                 command=(
@@ -6709,7 +6624,7 @@ class UI(object):
             if layers.getLayerSet(settings.objectArray[0]) > 0:
                 maya.cmds.button(
                     label='Delete Current Layer Set',
-                    parent='swapLayerSetsColumn',
+                    parent='swapLayerSetsFrame',
                     height=30,
                     width=100,
                     ann=(
@@ -6764,6 +6679,35 @@ class UI(object):
             )
         maya.cmds.setParent('toolFrame')
 
+    def exportFlagsUI(self):
+        maya.cmds.frameLayout(
+            'exportFlagsFrame',
+            parent='toolFrame',
+            label='Export Flags',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=settings.frames['exportFlagsCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['exportFlagsCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['exportFlagsCollapse']=False"))
+        maya.cmds.text(
+            label='Custom per-object attributes to be exported to game engine.',
+            align='left',
+            ww=True)
+
+        maya.cmds.checkBox(
+            'staticPaletteCheckbox',
+            label='Static Vertex Colors',
+            value=maya.cmds.getAttr(settings.objectArray[0] + '.staticVertexColors'),
+            onCommand=(
+                'sxtools.tools.setExportFlags(sxtools.settings.objectArray, True)'),
+            offCommand=(
+                'sxtools.tools.setExportFlags(sxtools.settings.objectArray, False)'))
+        maya.cmds.setParent('exportFlagsFrame')
+        maya.cmds.setParent('toolFrame')
+
 
 class Core(object):
     def __init__(self):
@@ -6793,7 +6737,8 @@ class Core(object):
             floating=True,
             initialHeight=5,
             initialWidth=250 * displayScalingValue,
-            minimumWidth=250 * displayScalingValue)
+            minimumWidth=250 * displayScalingValue,
+            wp='fixed')
 
         # Background jobs to reconstruct window if selection changes,
         # and to clean up upon closing
@@ -6935,7 +6880,7 @@ class Core(object):
         maya.cmds.scrollLayout(
             'canvas',
             minChildWidth=250,
-            childResizable=True,
+            childResizable=False,
             parent=dockID,
             horizontalScrollBarThickness=16,
             verticalScrollBarThickness=16,
@@ -6980,8 +6925,8 @@ class Core(object):
                 parent='canvas',
                 label='Tools',
                 width=250,
-                marginWidth=5,
-                marginHeight=5,
+                marginWidth=2,
+                marginHeight=2,
                 collapsable=True,
                 collapse=settings.frames['toolCollapse'],
                 collapseCommand=(
@@ -7009,6 +6954,7 @@ class Core(object):
             ui.copyLayerToolUI()
             ui.assignCreaseToolUI()
             ui.swapLayerSetsUI()
+            ui.exportFlagsUI()
 
             maya.cmds.columnLayout(
                 'processColumn',
