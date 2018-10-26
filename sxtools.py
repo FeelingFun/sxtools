@@ -121,7 +121,8 @@ class Settings(object):
             'bakeGroundOffset': 1.0,
             'bakeTogether': False,
             'blendSlider': 0.0,
-            'categoryPreset': None
+            'categoryPreset': None,
+            'gradientDirection': 1
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -133,20 +134,34 @@ class Settings(object):
         #        [4]overlay, [5]enabled matChannel,
         #        [6]display name)
         self.refLayerData = {
-            self.refArray[0]: [1, (0.5, 0.5, 0.5, 1), 'U3', 0, False, False, 'layer1'],
-            self.refArray[1]: [2, (0, 0, 0, 0), None, 0, False, False, 'layer2'],
-            self.refArray[2]: [3, (0, 0, 0, 0), None, 0, False, False, 'layer3'],
-            self.refArray[3]: [4, (0, 0, 0, 0), None, 0, False, False, 'layer4'],
-            self.refArray[4]: [5, (0, 0, 0, 0), None, 0, False, False, 'layer5'],
-            self.refArray[5]: [6, (0, 0, 0, 0), None, 0, False, False, 'layer6'],
-            self.refArray[6]: [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), 0, False, False, 'layer7'],
-            self.refArray[7]: [8, (0, 0, 0, 0), 'U4', 1, False, False, 'gradient1'],
-            self.refArray[8]: [9, (0, 0, 0, 0), 'V4', 2, False, False, 'gradient2'],
-            self.refArray[9]: [10, (0, 0, 0, 0), ('UV5', 'UV6'), 0, True, False, 'overlay'],
-            self.refArray[10]: [11, (1, 1, 1, 1), 'U1', 0, False, True, 'occlusion'],
-            self.refArray[11]: [12, (0, 0, 0, 1), 'V1', 0, False, True, 'specular'],
-            self.refArray[12]: [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
-            self.refArray[13]: [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
+            self.refArray[0]:
+                [1, (0.5, 0.5, 0.5, 1), 'U3', 0, False, False, 'layer1'],
+            self.refArray[1]:
+                [2, (0, 0, 0, 0), None, 0, False, False, 'layer2'],
+            self.refArray[2]:
+                [3, (0, 0, 0, 0), None, 0, False, False, 'layer3'],
+            self.refArray[3]:
+                [4, (0, 0, 0, 0), None, 0, False, False, 'layer4'],
+            self.refArray[4]:
+                [5, (0, 0, 0, 0), None, 0, False, False, 'layer5'],
+            self.refArray[5]:
+                [6, (0, 0, 0, 0), None, 0, False, False, 'layer6'],
+            self.refArray[6]:
+                [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), 0, False, False, 'layer7'],
+            self.refArray[7]:
+                [8, (0, 0, 0, 0), 'U4', 1, False, False, 'gradient1'],
+            self.refArray[8]:
+                [9, (0, 0, 0, 0), 'V4', 2, False, False, 'gradient2'],
+            self.refArray[9]:
+                [10, (0, 0, 0, 0), ('UV5', 'UV6'), 0, True, False, 'overlay'],
+            self.refArray[10]:
+                [11, (1, 1, 1, 1), 'U1', 0, False, True, 'occlusion'],
+            self.refArray[11]:
+                [12, (0, 0, 0, 1), 'V1', 0, False, True, 'specular'],
+            self.refArray[12]:
+                [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
+            self.refArray[13]:
+                [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
         }
 
     def __del__(self):
@@ -303,8 +318,8 @@ class Settings(object):
             self.project['LayerData']['emission'][5] = False
             self.project['LayerData']['emission'][2] = None
 
-        if maya.cmds.textField(
-                'alphaOverlay1', query=True, text=True) in settings.project['LayerData'].keys():
+        if (maya.cmds.textField('alphaOverlay1', query=True, text=True) in
+           settings.project['LayerData'].keys()):
             self.project['LayerData'][maya.cmds.textField(
                 'alphaOverlay1', query=True, text=True)][2] = (
                 maya.cmds.textField(
@@ -314,16 +329,16 @@ class Settings(object):
         # else:
         #     self.project['LayerData'][maya.cmds.textField(
         #        'alphaOverlay1', query=True, text=True)][3] = False
-        if maya.cmds.textField(
-                'alphaOverlay2', query=True, text=True) in settings.project['LayerData'].keys():
+        if (maya.cmds.textField('alphaOverlay2', query=True, text=True) in
+           settings.project['LayerData'].keys()):
             self.project['LayerData'][maya.cmds.textField(
                 'alphaOverlay2', query=True, text=True)][2] = (
                 maya.cmds.textField(
                     'alphaOverlay2Export', query=True, text=True))
             self.project['LayerData'][maya.cmds.textField(
                 'alphaOverlay2', query=True, text=True)][3] = 2
-        if maya.cmds.textField(
-                'overlay', query=True, text=True) in settings.project['LayerData'].keys():
+        if (maya.cmds.textField('overlay', query=True, text=True) in
+           settings.project['LayerData'].keys()):
             self.project['LayerData'][maya.cmds.textField(
                 'overlay', query=True, text=True)][2] = (
                 str(maya.cmds.textField(
@@ -346,7 +361,9 @@ class Settings(object):
 
         for i in xrange(self.project['LayerCount']):
             fieldLabel = settings.refArray[i] + 'Display'
-            self.project['LayerData'][settings.refArray[i]][6] = maya.cmds.textField(fieldLabel, query=True, text=True)
+            self.project['LayerData'][
+                settings.refArray[i]][6] = maya.cmds.textField(
+                fieldLabel, query=True, text=True)
 
     def setPreferencesFile(self):
         modifiers = maya.cmds.getModifiers()
@@ -2138,7 +2155,7 @@ class SceneSetup(object):
                     ln='staticVertexColors',
                     at='bool', dv=False)
 
-        for shape in settings.shapeArray:            
+        for shape in settings.shapeArray:
             attrList = maya.cmds.listAttr(shape, ud=True)
             if attrList is None:
                 attrList = []
@@ -2435,10 +2452,12 @@ class Export(object):
             chanTemp = materialUVArray[idx]
             if chanTemp[0] == 'U':
                 uSource = material
-                vSource = materials[materialUVArray.index('V'+str(chanTemp[1]))]
+                vSource = materials[
+                    materialUVArray.index('V'+str(chanTemp[1]))]
             else:
                 vSource = material
-                uSource = materials[materialUVArray.index('U'+str(chanTemp[1]))]
+                uSource = materials[
+                    materialUVArray.index('U'+str(chanTemp[1]))]
 
             uvSet = 'UV' + str(chanTemp[1])
             if (uSource, vSource, uvSet) not in exportBlocks:
@@ -2497,9 +2516,13 @@ class Export(object):
                     exportShape,
                     name=str(exportShape).split('|')[-1]+'_var'+str(x))[0]
                 tools.swapLayerSets([variant, ], x)
-                varParent = maya.cmds.listRelatives(exportShape, parent=True)[0]
+                varParent = maya.cmds.listRelatives(
+                    exportShape, parent=True)[0]
                 if maya.cmds.objExists(varParent+'_var'+str(x)) is False:
-                    maya.cmds.group(empty=True, name=varParent+'_var'+str(x), parent='_staticExports')
+                    maya.cmds.group(
+                        empty=True,
+                        name=varParent+'_var'+str(x),
+                        parent='_staticExports')
                 varParent = varParent+'_var'+str(x)
                 maya.cmds.parent(variant, varParent)
 
@@ -2830,7 +2853,8 @@ class Export(object):
         # Overlay
         elif buttonState3 == 3:
             maya.cmds.sets(
-                settings.shapeArray, e=True, forceElement='SXExportOverlayShaderSG')
+                settings.shapeArray,
+                e=True, forceElement='SXExportOverlayShaderSG')
 
         if (buttonState1 != 1) and (buttonState3 != 3):
             maya.cmds.shaderfx(
@@ -3780,7 +3804,8 @@ class ToolActions(object):
 
         for obj in objList:
             histList = maya.cmds.listHistory(obj)
-            shapeList = maya.cmds.listRelatives(obj, shapes=True, fullPath=True)
+            shapeList = maya.cmds.listRelatives(
+                obj, shapes=True, fullPath=True)
 
             objName = str(obj).rstrip('0123456789')
             if '|' in objName:
@@ -3814,7 +3839,6 @@ class ToolActions(object):
                         shapeShort = shape.rsplit('|', 1)[1]
                     if objName not in shapeShort:
                         settings.multiShapeArray.append(shape)
-
 
     # Called from a button the tool UI
     # that clears either the selected layer
@@ -4114,7 +4138,8 @@ class ToolActions(object):
         else:
             for i, cat in enumerate(settings.masterPaletteArray):
                 if cat.keys()[0] == category:
-                    settings.masterPaletteArray[i][category][preset] = paletteArray
+                    settings.masterPaletteArray[i][
+                        category][preset] = paletteArray
 
         maya.cmds.palettePort(
             paletteUI,
@@ -4130,7 +4155,8 @@ class ToolActions(object):
         else:
             for i, cat in enumerate(settings.masterPaletteArray):
                 if cat.keys()[0] == category:
-                    presetColors = settings.masterPaletteArray[i][category][preset]
+                    presetColors = settings.masterPaletteArray[i][
+                        category][preset]
 
         for idx, color in enumerate(presetColors):
             maya.cmds.palettePort(
@@ -4158,7 +4184,7 @@ class ToolActions(object):
             category = maya.cmds.optionMenu(
                 'masterCategories',
                 query=True,
-                value=True)            
+                value=True)
             if category is not None:
                 self.deleteCategory(category)
                 maya.cmds.deleteUI(category)
@@ -4214,7 +4240,7 @@ class ToolActions(object):
         category = maya.cmds.optionMenu(
             'masterCategories',
             query=True,
-            value=True)            
+            value=True)
         preset = maya.cmds.textField(
             'savePaletteName', query=True, text=True).replace(' ', '_')
 
@@ -4257,7 +4283,7 @@ class ToolActions(object):
         settings.project['paletteTarget'+str(index)] = targetList
         settings.savePreferences()
 
-    def gradientToolManager(self, mode, group=1):
+    def gradientToolManager(self, mode):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
@@ -4279,15 +4305,11 @@ class ToolActions(object):
                 maya.cmds.nodePreset(save=('SXRamp', name))
             elif len(name) == 0:
                 print('SXTools: Invalid preset name!')
-        elif group == 1:
-            if mode == 2:
-                settings.project['SXToolsGradientDirection'] = 5
-                self.calculateCurvature(settings.objectArray)
-            elif mode == 1:
-                settings.project['SXToolsGradientDirection'] = 4
-                self.remapRamp(settings.objectArray)
+        elif mode == 5:
+            self.calculateCurvature(settings.objectArray)
+        elif mode == 4:
+            self.remapRamp(settings.objectArray)
         else:
-            settings.project['SXToolsGradientDirection'] = mode
             self.gradientFill(mode)
 
     def clearRamp(self, rampName):
@@ -4371,10 +4393,12 @@ class ToolActions(object):
             target = None
             previous = None
             for object in objects:
-                actives.append(int(maya.cmds.getAttr(object + '.activeLayerSet')))
-                numSets.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
+                actives.append(
+                    int(maya.cmds.getAttr(object + '.activeLayerSet')))
+                numSets.append(
+                    int(maya.cmds.getAttr(object + '.numLayerSets')))
             if ((all(active == actives[0] for active in actives) is False) or
-                (all(num == numSets[0] for num in numSets) is False)):
+               (all(num == numSets[0] for num in numSets) is False)):
                 print('SX Tools Error: Selection with mismatching Layer Sets!')
                 return
 
@@ -4401,7 +4425,8 @@ class ToolActions(object):
 
             attr = '.numLayerSets'
             for object in objects:
-                maya.cmds.setAttr(object + attr, (maya.cmds.getAttr(object + attr) - 1))
+                maya.cmds.setAttr(
+                    object + attr, (maya.cmds.getAttr(object + attr) - 1))
 
             objLayers = maya.cmds.polyColorSet(
                 objects[0],
@@ -4414,7 +4439,8 @@ class ToolActions(object):
                 for layer in objLayers:
                     if '_var' in layer:
                         currentIndex = int(layer[-1])
-                        newSet = str(layer).split('_var')[0]+'_var'+str(currentIndex-1)
+                        newSet = str(layer).split(
+                            '_var')[0]+'_var'+str(currentIndex-1)
                         maya.cmds.polyColorSet(
                             objects,
                             rename=True,
@@ -4424,7 +4450,8 @@ class ToolActions(object):
                 for layer in objLayers:
                     if ('_var' in layer) and (int(layer[-1]) > previous):
                         currentIndex = int(layer[-1])
-                        newSet = str(layer).split('_var')[0]+'_var'+str(currentIndex-1)
+                        newSet = str(layer).split(
+                            '_var')[0]+'_var'+str(currentIndex-1)
                         maya.cmds.polyColorSet(
                             objects,
                             rename=True,
@@ -4868,14 +4895,20 @@ class LayerManagement(object):
                 "len(sxtools.settings.shapeArray)-1],"
                 "sxtools.layers.getSelectedLayer())\n"
                 "maya.cmds.text("
+                "'layerBlendModeLabel',"
+                "edit=True,"
+                "label=str(sxtools.layers.getSelectedLayer())"
+                "+' Blend Mode:')\n"
+                "maya.cmds.text("
                 "'layerOpacityLabel',"
                 "edit=True,"
-                "label=str(sxtools.layers.getSelectedLayer())+' opacity:')\n"
+                "label=str(sxtools.layers.getSelectedLayer())"
+                "+' Opacity:')\n"
                 "maya.cmds.text("
                 "'layerColorLabel',"
                 "edit=True,"
-                "label=str(sxtools.layers.getSelectedLayer())+' colors:')"
-            ),
+                "label=str(sxtools.layers.getSelectedLayer())"
+                "+' Colors:')"),
             doubleClickCommand=(
                 "sxtools.layers.toggleLayer("
                 "sxtools.layers.getSelectedLayer())\n"
@@ -4899,6 +4932,16 @@ class LayerManagement(object):
             edit=True,
             selectIndexedItem=settings.project['LayerData'][
                 selectedColorSet][0])
+
+        maya.cmds.text(
+            'layerBlendModeLabel',
+            edit=True, label=str(layers.getSelectedLayer()) + ' Blend Mode:')
+        maya.cmds.text(
+            'layerColorLabel',
+            edit=True, label=str(layers.getSelectedLayer()) + ' Colors:')
+        maya.cmds.text(
+            'layerOpacityLabel',
+            edit=True, label=str(layers.getSelectedLayer()) + ' Opacity:')
 
     def sortLayers(self, layers):
         sortedLayers = []
@@ -5081,7 +5124,8 @@ class UI(object):
         maya.cmds.button(
             label='Delete Extra Shapes',
             command=(
-                'maya.cmds.delete(sxtools.settings.multiShapeArray, shape=True)\n'
+                'maya.cmds.delete('
+                'sxtools.settings.multiShapeArray, shape=True)\n'
                 'sxtools.sx.updateSXTools()'))
 
     def openSXPaintTool(self):
@@ -5127,10 +5171,12 @@ class UI(object):
             numberOfRadioButtons=2,
             onCommand1=(
                 "sxtools.settings.project['dockPosition'] = 1\n"
-                "cmds.workspaceControl('SXTools', edit=True, dockToControl=('Outliner', 'right'))"),
+                "cmds.workspaceControl('SXTools', edit=True,"
+                " dockToControl=('Outliner', 'right'))"),
             onCommand2=(
                 "sxtools.settings.project['dockPosition'] = 2\n"
-                "cmds.workspaceControl('SXTools', edit=True, dockToControl=('AttributeEditor', 'left'))"))
+                "cmds.workspaceControl('SXTools', edit=True,"
+                " dockToControl=('AttributeEditor', 'left'))"))
 
         maya.cmds.frameLayout(
             'setupFrame',
@@ -5163,8 +5209,11 @@ class UI(object):
 
         if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
                 str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
-            maya.cmds.text(label='Current settings location:')
-            maya.cmds.text(label=maya.cmds.optionVar(query='SXToolsPrefsFile'), ww=True)
+            maya.cmds.text(
+                label='Current settings location:')
+            maya.cmds.text(
+                label=maya.cmds.optionVar(query='SXToolsPrefsFile'),
+                ww=True)
         else:
             maya.cmds.text(
                 label='WARNING: Settings file location not set!',
@@ -5292,7 +5341,7 @@ class UI(object):
                 if value[3] == 2:
                     alpha2 = key
                     alpha2Export = value[2]
-                if value[4] == True:
+                if value[4] is True:
                     overlay = key
                     overlayExport = ', '.join(value[2])
             maya.cmds.textField(
@@ -5407,7 +5456,7 @@ class UI(object):
             labelID = 'display'+str(i+1)
             labelText = settings.refArray[i] + ' display name:'
             fieldLabel = settings.refArray[i] + 'Display'
-            if (('LayerData' in settings.project) and 
+            if (('LayerData' in settings.project) and
                (layerName in settings.project['LayerData'].keys())):
                 layerName = settings.project['LayerData'][layerName][6]
             maya.cmds.text(labelID, label=labelText)
@@ -5447,7 +5496,7 @@ class UI(object):
             layerName = settings.refArray[i]
             fieldLabel = layerName + 'Display'
             if i < maya.cmds.intField('layerCount', query=True, value=True):
-                if (('LayerData' in settings.project) and 
+                if (('LayerData' in settings.project) and
                    (layerName in settings.project['LayerData'].keys())):
                     layerText = settings.project['LayerData'][layerName][6]
                 else:
@@ -5650,14 +5699,32 @@ class UI(object):
                 "colorShadedDisplay=True)\n"
                 "maya.mel.eval('DisplayLight;')"))
         tools.verifyShadingMode()
-        maya.cmds.button(
-            label='Toggle all layers',
-            command='sxtools.layers.toggleAllLayers()')
+        
+        maya.cmds.textScrollList(
+            'layerList',
+            height=200,
+            allowMultiSelection=False,
+            ann=(
+                'Doubleclick to hide/unhide layer in Final shading mode\n'
+                '(H) - hidden layer\n'
+                '(M) - mask layer\n'
+                '(A) - adjustment layer'))
+        layers.refreshLayerList()
+        
+        maya.cmds.rowColumnLayout(
+            'layerRowColumns',
+            parent='layerFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 120), (2, 120)),
+            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            rowSpacing=(1, 5))
 
+        maya.cmds.text(
+            'layerBlendModeLabel',
+            label='layer Blend Mode:')
         maya.cmds.optionMenu(
             'layerBlendModes',
-            parent='layerFrame',
-            label='Layer Blend Mode:',
+            parent='layerRowColumns',
             changeCommand='sxtools.tools.setLayerBlendMode()')
         maya.cmds.menuItem(
             'alphaBlend',
@@ -5672,31 +5739,12 @@ class UI(object):
             label='Multiply',
             parent='layerBlendModes')
 
-        maya.cmds.textScrollList(
-            'layerList',
-            height=200,
-            allowMultiSelection=False,
-            ann=(
-                'Doubleclick to hide/unhide layer in Final shading mode\n'
-                '(H) - hidden layer\n'
-                '(M) - mask layer\n'
-                '(A) - adjustment layer'))
-        layers.refreshLayerList()
-        layers.refreshSelectedItem()
-        maya.cmds.rowColumnLayout(
-            'layerRowColumns',
-            parent='layerFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
         maya.cmds.text(
             'layerColorLabel',
-            label=str(layers.getSelectedLayer()) + ' colors:')
+            label='layer Colors:')
         maya.cmds.palettePort(
             'layerPalette',
             dimensions=(8, 1),
-            width=120,
             height=10,
             actualTotal=8,
             editable=True,
@@ -5708,12 +5756,11 @@ class UI(object):
 
         maya.cmds.text(
             'layerOpacityLabel',
-            label=str(layers.getSelectedLayer()) + ' opacity:')
+            label='layer Opacity:')
         maya.cmds.floatSlider(
             'layerOpacitySlider',
             min=0.0,
             max=1.0,
-            width=100,
             changeCommand=(
                 "sxtools.tools.setLayerOpacity()\n"
                 "sxtools.layers.refreshLayerList()\n"
@@ -5721,6 +5768,8 @@ class UI(object):
         tools.getLayerPaletteOpacity(
             settings.shapeArray[len(settings.shapeArray)-1],
             layers.getSelectedLayer())
+        layers.refreshSelectedItem()
+
         maya.cmds.rowColumnLayout(
             'layerSelectRowColumns',
             parent='layerFrame',
@@ -5733,6 +5782,7 @@ class UI(object):
             label='Merge Layer Up',
             parent='layerSelectRowColumns',
             width=100,
+            height=20,
             command=(
                 "sxtools.layers.mergeLayerDirection("
                 "sxtools.settings.shapeArray, True)"))
@@ -5741,12 +5791,14 @@ class UI(object):
             label='Merge Layer Down',
             parent='layerSelectRowColumns',
             width=100,
+            height=20,
             command=(
                 "sxtools.layers.mergeLayerDirection("
                 "sxtools.settings.shapeArray, False)"))
         maya.cmds.button(
             label='Select Layer Mask',
             width=100,
+            height=20,
             statusBarMessage='Shift-click button to invert selection',
             command="maya.cmds.select(sxtools.tools.getLayerMask())")
         if len(settings.componentArray) > 0:
@@ -5757,6 +5809,7 @@ class UI(object):
                     'Shift-click button to clear'
                     'all layers on selected components'),
                 width=100,
+                height=20,
                 command=(
                     "sxtools.tools.clearSelector()\n"
                     "sxtools.tools.getLayerPaletteOpacity("
@@ -5773,6 +5826,7 @@ class UI(object):
                     'Shift-click button to clear'
                     'all layers on selected objects'),
                 width=100,
+                height=20,
                 command=(
                     "sxtools.tools.clearSelector()\n"
                     "sxtools.tools.getLayerPaletteOpacity("
@@ -5781,12 +5835,23 @@ class UI(object):
                     "sxtools.layers.getSelectedLayer())\n"
                     "sxtools.layers.refreshLayerList()\n"
                     "sxtools.layers.refreshSelectedItem()"))
+        maya.cmds.button(
+            label='Paint Vertex Colors',
+            width=100,
+            height=20,
+            command="sxtools.ui.openSXPaintTool()")
+        maya.cmds.button(
+            width=100,
+            height=20,
+            label='Toggle all layers',
+            command='sxtools.layers.toggleAllLayers()')
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(
             "applyColorFrame",
-            parent="toolFrame",
+            parent="canvas",
             label="Apply Color",
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -5799,9 +5864,18 @@ class UI(object):
             "applyColorRowColumns",
             parent="applyColorFrame",
             numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, "left", 0), (2, "both", 5)],
+            columnWidth=((1, 80), (2, 160)),
+            columnAttach=[(1, "right", 0), (2, "both", 5)],
             rowSpacing=(1, 5))
+        maya.cmds.text('overwriteAlphaLabel', label='Overwrite Alpha:')
+        maya.cmds.checkBox(
+            'overwriteAlpha',
+            label='',
+            value=settings.tools['overwriteAlpha'],
+            changeCommand=(
+                'sxtools.settings.tools["overwriteAlpha"] = ('
+                'maya.cmds.checkBox('
+                '"overwriteAlpha", query=True, value=True))'))
         maya.cmds.text('recentPaletteLabel', label="Recent Colors:")
         maya.cmds.palettePort(
             'recentPalette',
@@ -5813,6 +5887,7 @@ class UI(object):
             colorEditable=False,
             scc=settings.tools['recentPaletteIndex'],
             changeCommand='sxtools.tools.setApplyColor()')
+
         maya.cmds.colorSliderGrp(
             'sxApplyColor',
             parent='applyColorFrame',
@@ -5820,22 +5895,14 @@ class UI(object):
             rgb=settings.currentColor,
             columnWidth3=(80, 20, 60),
             adjustableColumn3=3,
-            columnAlign3=('left', 'left', 'left'),
+            columnAlign3=('right', 'left', 'left'),
             changeCommand=(
                 "sxtools.settings.currentColor = ("
                 "maya.cmds.colorSliderGrp("
                 "'sxApplyColor', query=True, rgbValue=True))")
         )
         maya.cmds.setParent('applyColorFrame')
-        maya.cmds.checkBox(
-            'overwriteAlpha',
-            label='Overwrite Alpha',
-            value=settings.tools['overwriteAlpha'],
-            changeCommand=(
-                'sxtools.settings.tools["overwriteAlpha"] = ('
-                'maya.cmds.checkBox('
-                '"overwriteAlpha", query=True, value=True))')
-                )
+
         maya.cmds.button(
             label='Apply Color',
             parent='applyColorFrame',
@@ -5848,19 +5915,28 @@ class UI(object):
                 'sxtools.tools.colorFill('
                 'maya.cmds.checkBox('
                 '"overwriteAlpha", query=True, value=True))\n'
-                'sxtools.tools.updateRecentPalette()')
-            )
-        maya.cmds.setParent("toolFrame")
+                'sxtools.tools.updateRecentPalette()'))
         tools.getPalette(
             'recentPalette',
             settings.paletteDict,
             'SXToolsRecentPalette')
 
     def refreshRampMenu(self):
+        maya.cmds.menuItem(label='X-Axis', parent='rampDirection')
+        maya.cmds.menuItem(label='Y-Axis', parent='rampDirection')
+        maya.cmds.menuItem(label='Z-Axis', parent='rampDirection')
+        maya.cmds.menuItem(label='Surface Luminance', parent='rampDirection')
+        maya.cmds.menuItem(label='Surface Curvature', parent='rampDirection')
+        
         presetNameArray = maya.cmds.nodePreset(list='SXRamp')
         if presetNameArray != 0:
             for presetName in presetNameArray:
                 maya.cmds.menuItem(label=presetName, parent='rampPresets')
+
+        maya.cmds.optionMenu(
+            'rampDirection',
+            edit=True,
+            select=settings.tools['gradientDirection'])
 
     def gradientToolUI(self):
         # ramp nodes for gradient tool
@@ -5876,8 +5952,9 @@ class UI(object):
 
         maya.cmds.frameLayout(
             "gradientFrame",
-            parent="toolFrame",
+            parent="canvas",
             label="Gradient Fill",
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -5887,53 +5964,63 @@ class UI(object):
             expandCommand=(
                 "sxtools.settings.frames['gradientCollapse']=False"),
             borderVisible=False)
-        maya.cmds.optionMenu(
-            'rampPresets',
-            parent='gradientFrame',
-            label='Presets:',
-            changeCommand="sxtools.tools.gradientToolManager('load')")
-        self.refreshRampMenu()
         maya.cmds.rowColumnLayout(
             'gradientRowColumns',
             parent='gradientFrame',
             numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-            rowSpacing=(1, 5))
+            columnWidth=((1, 80), (2, 160)),
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
+            rowSpacing=(1, 2))
+
+        maya.cmds.text(label='Direction:')
+        maya.cmds.optionMenu(
+            'rampDirection',
+            parent='gradientRowColumns',
+            changeCommand=(
+                'sxtools.settings.tools["gradientDirection"]='
+                'maya.cmds.optionMenu("rampDirection", query=True, select=True)'))
+
+        maya.cmds.text(label='Preset:')
+        maya.cmds.optionMenu(
+            'rampPresets',
+            parent='gradientRowColumns',
+            changeCommand="sxtools.tools.gradientToolManager('load')")
+        self.refreshRampMenu()
+
         maya.cmds.button(
             'savePreset',
+            parent='gradientRowColumns',
             label='Save Preset',
-            width=100,
             ann='Shift-click to delete preset',
             command=(
                 "sxtools.tools.gradientToolManager('preset')\n"
                 "sxtools.sx.updateSXTools()\n"
-                "sxtools.settings.savePreferences()")
-        )
+                "sxtools.settings.savePreferences()"))
         maya.cmds.textField(
             'presetName',
+            parent='gradientRowColumns',
             enterCommand=("maya.cmds.setFocus('MayaWindow')"),
             placeholderText='Preset Name')
+
         maya.cmds.attrColorSliderGrp(
             'sxRampColor',
             parent='gradientFrame',
             label='Selected Color:',
             showButton=False,
-            columnWidth4=(80, 20, 60, 0),
+            columnWidth4=(80, 20, 140, 0),
             adjustableColumn4=3,
-            columnAlign4=('left', 'left', 'left', 'left'))
+            columnAlign4=('right', 'left', 'left', 'left'))
         maya.cmds.attrEnumOptionMenuGrp(
             'sxRampMode',
             parent='gradientFrame',
             label='Interpolation:',
-            columnWidth2=(80, 100),
-            columnAttach2=('left', 'left'),
-            columnAlign2=('left', 'left'))
+            columnWidth2=(80, 160),
+            columnAttach2=('right', 'left'),
+            columnAlign2=('right', 'left'))
         maya.cmds.rampColorPort(
             'sxRampControl',
             parent="gradientFrame",
             node='SXRamp',
-            height=90,
             selectedColorControl='sxRampColor',
             selectedInterpControl='sxRampMode')
         maya.cmds.attrColorSliderGrp(
@@ -5941,69 +6028,38 @@ class UI(object):
             parent='gradientFrame',
             label='Selected Alpha:',
             showButton=False,
-            columnWidth4=(80, 20, 60, 0),
+            columnWidth4=(80, 20, 140, 0),
             adjustableColumn4=3,
-            columnAlign4=('left', 'left', 'left', 'left'))
+            columnAlign4=('right', 'left', 'left', 'left'))
         maya.cmds.attrEnumOptionMenuGrp(
             'sxAlphaRampMode',
             parent='gradientFrame',
             label='Interpolation:',
-            columnWidth2=(80, 100),
-            columnAttach2=('left', 'left'),
-            columnAlign2=('left', 'left'))
+            columnWidth2=(80, 160),
+            columnAttach2=('right', 'left'),
+            columnAlign2=('right', 'left'))
         maya.cmds.rampColorPort(
             'sxRampAlphaControl',
             parent='gradientFrame',
             node='SXAlphaRamp',
-            height=90,
             selectedColorControl='sxRampAlpha',
             selectedInterpControl='sxAlphaRampMode')
-        maya.cmds.radioButtonGrp(
-            'gradientDirection',
-            parent='gradientFrame',
-            columnWidth3=(80, 80, 80),
-            columnAttach3=('left', 'left', 'left'),
-            labelArray3=['X', 'Y', 'Z'],
-            numberOfRadioButtons=3)
-        maya.cmds.radioButtonGrp(
-            'gradientMode',
-            parent='gradientFrame',
-            columnWidth2=(120, 120),
-            shareCollection='gradientDirection',
-            columnAttach2=('left', 'left'),
-            labelArray2=['Luminance', 'Curvature'],
-            numberOfRadioButtons=2)
         maya.cmds.button(
             label='Apply Gradient',
             parent='gradientFrame',
             height=30,
-            width=100,
             command=(
                 "sxtools.tools.gradientToolManager("
-                "maya.cmds.radioButtonGrp("
-                "'gradientDirection', query=True, select=True), 0)\n"
-                "sxtools.tools.gradientToolManager("
-                "maya.cmds.radioButtonGrp("
-                "'gradientMode', query=True, select=True), 1)"
-            ))
-        maya.cmds.setParent('toolFrame')
-
-        if 'SXToolsGradientDirection' in settings.project:
-            gradientDirection = settings.project['SXToolsGradientDirection']
-            if gradientDirection <= 3:
-                maya.cmds.radioButtonGrp(
-                    'gradientDirection', edit=True, select=gradientDirection)
-            elif gradientDirection > 3:
-                maya.cmds.radioButtonGrp(
-                    'gradientMode', edit=True, select=(gradientDirection - 3))
-        else:
-            maya.cmds.radioButtonGrp('gradientDirection', edit=True, select=1)
+                "maya.cmds.optionMenu('rampDirection', "
+                "query=True, select=True))"))
+        maya.cmds.setParent('canvas')
 
     def colorNoiseToolUI(self):
         maya.cmds.frameLayout(
             'noiseFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Color Noise',
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -6018,7 +6074,7 @@ class UI(object):
             parent='noiseFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
             rowSpacing=(1, 2))
         maya.cmds.text('monoLabel', label='Monochromatic:')
         maya.cmds.checkBox(
@@ -6051,13 +6107,14 @@ class UI(object):
             "sxtools.tools.setLayerOpacity()\n"
             "sxtools.layers.refreshLayerList()\n"
             "sxtools.layers.refreshSelectedItem()")
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def bakeOcclusionToolUI(self):
         maya.cmds.frameLayout(
             'occlusionFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Bake Occlusion',
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -6174,7 +6231,7 @@ class UI(object):
                 ann='Shift-click to bake all objects together',
                 command="sxtools.tools.bakeOcclusionArnold()")
 
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def refreshCategoryMenu(self):
         categoryNameArray = []
@@ -6191,7 +6248,7 @@ class UI(object):
             maya.cmds.optionMenu(
                 'masterCategories',
                 edit=True,
-                select = settings.tools['categoryPreset'])
+                select=settings.tools['categoryPreset'])
 
     def masterPaletteToolUI(self):
         if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
@@ -6199,317 +6256,324 @@ class UI(object):
             settings.loadPalettes()
         maya.cmds.frameLayout(
             'masterPaletteFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Apply Master Palette',
+            width=250,
             marginWidth=5,
             marginHeight=5,
             collapsable=True,
             collapse=settings.frames['masterPaletteCollapse'],
             collapseCommand=(
-                "sxtools.settings.frames['masterPaletteCollapse']=True\n"
-                "sxtools.sx.updateSXTools()"),
+                "sxtools.settings.frames['masterPaletteCollapse']=True"),
             expandCommand=(
-                "sxtools.settings.frames['masterPaletteCollapse']=False\n"
-                "sxtools.sx.updateSXTools()"))
+                "sxtools.settings.frames['masterPaletteCollapse']=False"))
 
-        if settings.frames['masterPaletteCollapse'] is False:
-            maya.cmds.frameLayout(
-                'paletteCategoryFrame',
-                parent='masterPaletteFrame',
-                label='Palette List',
-                marginWidth=2,
-                marginHeight=0,
-                collapsable=True,
-                collapse=settings.frames['paletteCategoryCollapse'],
-                collapseCommand=(
-                    "sxtools.settings.frames['paletteCategoryCollapse']=True\n"
-                    "sxtools.sx.updateSXTools()"),
-                expandCommand=(
-                    "sxtools.settings.frames['paletteCategoryCollapse']=False\n"
-                    "sxtools.sx.updateSXTools()"))
-            if len(settings.masterPaletteArray) > 0:
-                for categoryDict in settings.masterPaletteArray:
-                    if categoryDict.keys()[0]+'Collapse' not in settings.frames:
-                        settings.frames[categoryDict.keys()[0]+'Collapse']=True
-                    maya.cmds.frameLayout(
-                        categoryDict.keys()[0],
-                        parent='paletteCategoryFrame',
-                        label=categoryDict.keys()[0],
-                        marginWidth=0,
-                        marginHeight=0,
-                        enableBackground=True,
-                        backgroundColor=[0.32, 0.32, 0.32],
-                        collapsable=True,
-                        collapse=settings.frames[categoryDict.keys()[0]+'Collapse'],
-                        collapseCommand=(
-                            'sxtools.settings.frames["'+categoryDict.keys()[0]+'"+"Collapse"]=True'),
-                        expandCommand=(
-                            'sxtools.settings.frames["'+categoryDict.keys()[0]+'"+"Collapse"]=False'))
-                    if len(categoryDict[categoryDict.keys()[0]]) > 0:
-                        for i, (name, colors) in enumerate(categoryDict[categoryDict.keys()[0]].iteritems()):
-                            stripeColor = []
-                            if i % 2 == 0:
-                                stripeColor = [0.22, 0.22, 0.22]
-                            else:
-                                stripeColor = [0.24, 0.24, 0.24]
-                            maya.cmds.rowColumnLayout(
-                                categoryDict.keys()[0]+name,
-                                parent=categoryDict.keys()[0],
-                                numberOfColumns=3,
-                                enableBackground=True,
-                                backgroundColor=stripeColor,
-                                columnWidth=((1, 90), (2, 90), (3, 40)),
-                                columnAttach=[(1, 'both', 0), (2, 'right', 5), (3, 'right', 0)],
-                                rowSpacing=(1, 0))
-                            maya.cmds.text(
-                                label=name,
-                                align='right',
-                                font='smallPlainLabelFont')
-                            maya.cmds.palettePort(
-                                categoryDict.keys()[0]+name+'Palette',
-                                dimensions=(5, 1),
-                                width=80,
-                                height=20,
-                                actualTotal=5,
-                                editable=True,
-                                colorEditable=False,
-                                changeCommand=(
-                                    'sxtools.settings.currentColor = maya.cmds.palettePort('
-                                    +'\"'+categoryDict.keys()[0]+name+'Palette'+'\", query=True, rgb=True)\n'
-                                    'sxtools.tools.setMasterPalette('
-                                    +'\"'+categoryDict.keys()[0]
-                                    +'\", \"'+name+'\")\n'
-                                    'sxtools.tools.setPaintColor(sxtools.settings.currentColor)'))
-                            tools.getPalette(
-                                categoryDict.keys()[0]+name+'Palette',
-                                categoryDict.keys()[0],
-                                name)
-                            maya.cmds.button(
-                                categoryDict.keys()[0]+name+'Button',
-                                label='Apply',
-                                height=20,
-                                ann='Shift-click to delete palette',
-                                command=(
-                                    'sxtools.tools.paletteButtonManager('
-                                    +'\"'+categoryDict.keys()[0]
-                                    +'\", \"'+name+'\")'))
+        maya.cmds.frameLayout(
+            'paletteCategoryFrame',
+            parent='masterPaletteFrame',
+            label='Palette List',
+            marginWidth=2,
+            marginHeight=0,
+            collapsable=True,
+            collapse=settings.frames['paletteCategoryCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['paletteCategoryCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['paletteCategoryCollapse']=False"))
+        if len(settings.masterPaletteArray) > 0:
+            for categoryDict in settings.masterPaletteArray:
+                if categoryDict.keys()[0]+'Collapse' not in settings.frames:
+                    settings.frames[categoryDict.keys()[0]+'Collapse'] = True
+                maya.cmds.frameLayout(
+                    categoryDict.keys()[0],
+                    parent='paletteCategoryFrame',
+                    label=categoryDict.keys()[0],
+                    marginWidth=0,
+                    marginHeight=0,
+                    enableBackground=True,
+                    backgroundColor=[0.32, 0.32, 0.32],
+                    collapsable=True,
+                    collapse=(
+                        settings.frames[categoryDict.keys()[0]+'Collapse']),
+                    collapseCommand=(
+                        'sxtools.settings.frames["' +
+                        categoryDict.keys()[0]+'"+"Collapse"]=True'),
+                    expandCommand=(
+                        'sxtools.settings.frames["' +
+                        categoryDict.keys()[0]+'"+"Collapse"]=False'))
+                if len(categoryDict[categoryDict.keys()[0]]) > 0:
+                    for i, (name, colors) in enumerate(
+                       categoryDict[categoryDict.keys()[0]].iteritems()):
+                        stripeColor = []
+                        if i % 2 == 0:
+                            stripeColor = [0.22, 0.22, 0.22]
+                        else:
+                            stripeColor = [0.24, 0.24, 0.24]
+                        maya.cmds.rowColumnLayout(
+                            categoryDict.keys()[0]+name,
+                            parent=categoryDict.keys()[0],
+                            numberOfColumns=3,
+                            enableBackground=True,
+                            backgroundColor=stripeColor,
+                            columnWidth=((1, 90), (2, 90), (3, 40)),
+                            columnAttach=[
+                                (1, 'both', 0),
+                                (2, 'right', 5),
+                                (3, 'right', 0)],
+                            rowSpacing=(1, 0))
+                        maya.cmds.text(
+                            label=name,
+                            align='right',
+                            font='smallPlainLabelFont')
+                        maya.cmds.palettePort(
+                            categoryDict.keys()[0]+name+'Palette',
+                            dimensions=(5, 1),
+                            width=80,
+                            height=20,
+                            actualTotal=5,
+                            editable=True,
+                            colorEditable=False,
+                            changeCommand=(
+                                'sxtools.settings.currentColor = '
+                                'maya.cmds.palettePort(' +
+                                '\"'+categoryDict.keys()[0]+name +
+                                'Palette'+'\", query=True, rgb=True)\n'
+                                'sxtools.tools.setMasterPalette(' +
+                                '\"'+categoryDict.keys()[0] +
+                                '\", \"'+name+'\")\n'
+                                'sxtools.tools.setPaintColor('
+                                'sxtools.settings.currentColor)'))
+                        tools.getPalette(
+                            categoryDict.keys()[0]+name+'Palette',
+                            categoryDict.keys()[0],
+                            name)
+                        maya.cmds.button(
+                            categoryDict.keys()[0]+name+'Button',
+                            label='Apply',
+                            height=20,
+                            ann='Shift-click to delete palette',
+                            command=(
+                                'sxtools.tools.paletteButtonManager(' +
+                                '\"'+categoryDict.keys()[0] +
+                                '\", \"'+name+'\")'))
 
-            maya.cmds.frameLayout(
-                'createPaletteFrame',
-                parent='masterPaletteFrame',
-                label='Edit Palettes',
-                marginWidth=5,
-                marginHeight=5,
-                collapsable=True,
-                collapse=settings.frames['newPaletteCollapse'],
-                collapseCommand=(
-                    "sxtools.settings.frames['newPaletteCollapse']=True"),
-                expandCommand=(
-                    "sxtools.settings.frames['newPaletteCollapse']=False\n"
-                    "sxtools.sx.updateSXTools()"))
+        maya.cmds.frameLayout(
+            'createPaletteFrame',
+            parent='masterPaletteFrame',
+            label='Edit Palettes',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=settings.frames['newPaletteCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['newPaletteCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['newPaletteCollapse']=False"))
 
-            maya.cmds.rowColumnLayout(
-                'masterPaletteRowColumns',
-                parent='createPaletteFrame',
-                numberOfColumns=2,
-                columnWidth=((1, 100), (2, 140)),
-                columnAttach=[(1, 'right', 0), (2, 'both', 5)],
-                rowSpacing=(1, 5))
+        maya.cmds.rowColumnLayout(
+            'masterPaletteRowColumns',
+            parent='createPaletteFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 100), (2, 140)),
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
+            rowSpacing=(1, 5))
 
-            maya.cmds.text(label='Category:')
+        maya.cmds.text(label='Category:')
 
-            maya.cmds.optionMenu(
-                'masterCategories',
-                parent='masterPaletteRowColumns',
-                changeCommand=(
-                    'sxtools.settings.tools["categoryPreset"]='
-                    'maya.cmds.optionMenu("masterCategories", query=True, select=True)'))
+        maya.cmds.optionMenu(
+            'masterCategories',
+            parent='masterPaletteRowColumns',
+            changeCommand=(
+                'sxtools.settings.tools["categoryPreset"]='
+                'maya.cmds.optionMenu('
+                '"masterCategories", query=True, select=True)'))
 
-            self.refreshCategoryMenu()
+        self.refreshCategoryMenu()
 
-            maya.cmds.button(
-                'savePaletteCategory',
-                label='Save Category',
-                width=100,
-                ann='Shift-click to delete a category and contained palettes',
-                command=(
-                    'sxtools.tools.saveMasterCategory()'))
-            maya.cmds.textField(
-                'saveCategoryName',
-                enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='Category Name')
-            maya.cmds.button(
-                'saveMasterPalette',
-                label='Save Palette',
-                ann='The palette is saved under selected category',
-                width=100,
-                command=(
-                    'sxtools.tools.saveMasterPalette()\n'
-                    'sxtools.sx.updateSXTools()'))
-            maya.cmds.textField(
-                'savePaletteName',
-                enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='Palette Name')
-            maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
-            maya.cmds.palettePort(
-                'masterPalette',
-                dimensions=(5, 1),
-                width=120,
-                height=10,
-                actualTotal=5,
-                editable=True,
-                colorEditable=True,
-                changeCommand=(
-                    "sxtools.tools.storePalette("
-                    "'masterPalette',"
-                    "sxtools.settings.paletteDict,"
-                    "'SXToolsMasterPalette')"),
-                colorEdited=(
-                    "sxtools.tools.storePalette("
-                    "'masterPalette',"
-                    "sxtools.settings.paletteDict,"
-                    "'SXToolsMasterPalette')"))
+        maya.cmds.button(
+            'savePaletteCategory',
+            label='Save Category',
+            width=100,
+            ann='Shift-click to delete a category and contained palettes',
+            command=(
+                'sxtools.tools.saveMasterCategory()'))
+        maya.cmds.textField(
+            'saveCategoryName',
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='Category Name')
+        maya.cmds.button(
+            'saveMasterPalette',
+            label='Save Palette',
+            ann='The palette is saved under selected category',
+            width=100,
+            command=(
+                'sxtools.tools.saveMasterPalette()\n'
+                'sxtools.sx.updateSXTools()'))
+        maya.cmds.textField(
+            'savePaletteName',
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='Palette Name')
+        maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
+        maya.cmds.palettePort(
+            'masterPalette',
+            dimensions=(5, 1),
+            width=120,
+            height=10,
+            actualTotal=5,
+            editable=True,
+            colorEditable=True,
+            changeCommand=(
+                "sxtools.tools.storePalette("
+                "'masterPalette',"
+                "sxtools.settings.paletteDict,"
+                "'SXToolsMasterPalette')"),
+            colorEdited=(
+                "sxtools.tools.storePalette("
+                "'masterPalette',"
+                "sxtools.settings.paletteDict,"
+                "'SXToolsMasterPalette')"))
 
-            tools.getPalette(
-                'masterPalette',
-                settings.paletteDict,
-                'SXToolsMasterPalette')
+        tools.getPalette(
+            'masterPalette',
+            settings.paletteDict,
+            'SXToolsMasterPalette')
 
-            maya.cmds.frameLayout(
-                'paletteSettingsFrame',
-                parent='masterPaletteFrame',
-                label='Master Palette Settings',
-                marginWidth=5,
-                marginHeight=5,
-                collapsable=True,
-                collapse=settings.frames['paletteSettingsCollapse'],
-                collapseCommand=(
-                    "sxtools.settings.frames['paletteSettingsCollapse']=True"),
-                expandCommand=(
-                    "sxtools.settings.frames['paletteSettingsCollapse']=False"))
+        maya.cmds.frameLayout(
+            'paletteSettingsFrame',
+            parent='masterPaletteFrame',
+            label='Master Palette Settings',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=settings.frames['paletteSettingsCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['paletteSettingsCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['paletteSettingsCollapse']=False"))
 
-            if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
-               (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
-                # settings.loadPalettes()
-                maya.cmds.text(
-                    label='Current palettes location:',
-                    parent='paletteSettingsFrame')
-                maya.cmds.text(
-                    label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
-                    parent='paletteSettingsFrame',
-                    ww=True)
-            else:
-                maya.cmds.text(
-                    label='WARNING: Palettes file location not set!',
-                    parent='paletteSettingsFrame',
-                    height=20,
-                    backgroundColor=(0.35, 0.1, 0),
-                    ww=True)
-            
-            maya.cmds.button(
-                label='Select Palettes File',
+        if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
+           (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
+            # settings.loadPalettes()
+            maya.cmds.text(
+                label='Current palettes location:',
+                parent='paletteSettingsFrame')
+            maya.cmds.text(
+                label=maya.cmds.optionVar(query='SXToolsPalettesFile'),
                 parent='paletteSettingsFrame',
-                statusBarMessage=(
-                    'Shift-click button to reload palettes from file'),
-                command=(
-                    'sxtools.settings.setPalettesFile()\n'
-                    'sxtools.sx.updateSXTools()'))
-
-            maya.cmds.rowColumnLayout(
-                'targetRowColumns',
+                ww=True)
+        else:
+            maya.cmds.text(
+                label='WARNING: Palettes file location not set!',
                 parent='paletteSettingsFrame',
-                numberOfColumns=2,
-                columnWidth=((1, 100), (2, 140)),
-                columnAttach=[(1, 'left', 0), (2, 'both', 5)],
-                rowSpacing=(1, 5))
+                height=20,
+                backgroundColor=(0.35, 0.1, 0),
+                ww=True)
+        
+        maya.cmds.button(
+            label='Select Palettes File',
+            parent='paletteSettingsFrame',
+            statusBarMessage=(
+                'Shift-click button to reload palettes from file'),
+            command=(
+                'sxtools.settings.setPalettesFile()\n'
+                'sxtools.sx.updateSXTools()'))
 
-            maya.cmds.text(label='Color 1 Target(s): ')
-            maya.cmds.textField(
-                'masterTarget1',
-                parent='targetRowColumns',
-                text=', '.join(settings.project['paletteTarget1']),
-                enterCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget1', query=True, text=True), 1)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                changeCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget1', query=True, text=True), 1)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='layer1')
-            maya.cmds.text(label='Color 2 Target(s): ')
-            maya.cmds.textField(
-                'masterTarget2',
-                parent='targetRowColumns',
-                text=', '.join(settings.project['paletteTarget2']),
-                enterCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget2', query=True, text=True), 2)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                changeCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget2', query=True, text=True), 2)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='layer2')
-            maya.cmds.text(label='Color 3 Target(s): ')
-            maya.cmds.textField(
-                'masterTarget3',
-                parent='targetRowColumns',
-                text=', '.join(settings.project['paletteTarget3']),
-                enterCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget3', query=True, text=True), 3)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                changeCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget3', query=True, text=True), 3)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='layer3')
-            maya.cmds.text(label='Color 4 Target(s): ')
-            maya.cmds.textField(
-                'masterTarget4',
-                parent='targetRowColumns',
-                text=', '.join(settings.project['paletteTarget4']),
-                enterCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget4', query=True, text=True), 4)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                changeCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget4', query=True, text=True), 4)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='layer4')
-            maya.cmds.text(label='Color 5 Target(s): ')
-            maya.cmds.textField(
-                'masterTarget5',
-                parent='targetRowColumns',
-                text=', '.join(settings.project['paletteTarget5']),
-                enterCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget5', query=True, text=True), 5)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                changeCommand=(
-                    "sxtools.tools.checkTarget("
-                    "maya.cmds.textField("
-                    "'masterTarget5', query=True, text=True), 5)\n"
-                    "maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='layer5')
-            maya.cmds.setParent('toolFrame')
+        maya.cmds.rowColumnLayout(
+            'targetRowColumns',
+            parent='paletteSettingsFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 100), (2, 140)),
+            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            rowSpacing=(1, 5))
+
+        maya.cmds.text(label='Color 1 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget1',
+            parent='targetRowColumns',
+            text=', '.join(settings.project['paletteTarget1']),
+            enterCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget1', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget1', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer1')
+        maya.cmds.text(label='Color 2 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget2',
+            parent='targetRowColumns',
+            text=', '.join(settings.project['paletteTarget2']),
+            enterCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget2', query=True, text=True), 2)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget2', query=True, text=True), 2)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer2')
+        maya.cmds.text(label='Color 3 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget3',
+            parent='targetRowColumns',
+            text=', '.join(settings.project['paletteTarget3']),
+            enterCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget3', query=True, text=True), 3)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget3', query=True, text=True), 3)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer3')
+        maya.cmds.text(label='Color 4 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget4',
+            parent='targetRowColumns',
+            text=', '.join(settings.project['paletteTarget4']),
+            enterCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget4', query=True, text=True), 4)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget4', query=True, text=True), 4)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer4')
+        maya.cmds.text(label='Color 5 Target(s): ')
+        maya.cmds.textField(
+            'masterTarget5',
+            parent='targetRowColumns',
+            text=', '.join(settings.project['paletteTarget5']),
+            enterCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget5', query=True, text=True), 5)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.tools.checkTarget("
+                "maya.cmds.textField("
+                "'masterTarget5', query=True, text=True), 5)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer5')
+        maya.cmds.setParent('canvas')
 
     def swapLayerToolUI(self):
         maya.cmds.frameLayout(
             'swapLayerFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Swap Layers',
+            width=250,
             marginWidth=5,
             marginHeight=5,
             collapsable=True,
@@ -6523,7 +6587,7 @@ class UI(object):
             parent='swapLayerFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
             rowSpacing=(1, 0))
         maya.cmds.text('layerALabel', label='Layer A:')
         maya.cmds.textField(
@@ -6542,13 +6606,14 @@ class UI(object):
             height=30,
             width=100,
             command=('sxtools.tools.swapLayers(sxtools.settings.shapeArray)'))
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def copyLayerToolUI(self):
         maya.cmds.frameLayout(
             'copyLayerFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Copy Layer',
+            width=250,
             marginWidth=5,
             marginHeight=5,
             collapsable=True,
@@ -6562,7 +6627,7 @@ class UI(object):
             parent='copyLayerFrame',
             numberOfColumns=2,
             columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
             rowSpacing=(1, 0))
         maya.cmds.text('source layer', label='Source Layer:')
         maya.cmds.textField(
@@ -6581,13 +6646,14 @@ class UI(object):
             height=30,
             width=100,
             command=('sxtools.tools.copyLayer(sxtools.settings.objectArray)'))
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):
         maya.cmds.frameLayout(
             'creaseFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Assign to Crease Set',
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -6614,13 +6680,14 @@ class UI(object):
             height=30,
             width=100,
             command=("sxtools.tools.assignToCreaseSet('sxCrease0')"))
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def swapLayerSetsUI(self):
         maya.cmds.frameLayout(
             'swapLayerSetsFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Swap Layer Sets',
+            width=250,
             marginWidth=5,
             marginHeight=2,
             collapsable=True,
@@ -6662,15 +6729,18 @@ class UI(object):
                     label=(
                         'Current Layer Set: ' +
                         str(int(maya.cmds.getAttr(str(settings.shapeArray[0]) +
-                            '.activeLayerSet'))+1) +
-                        '/' + str(layers.getLayerSet(settings.shapeArray[0])+1)))
+                            '.activeLayerSet'))+1) + '/' +
+                            str(layers.getLayerSet(settings.shapeArray[0])+1)))
                 maya.cmds.intSliderGrp(
                     'layerSetSlider',
                     field=True,
                     label='Layer Set',
                     adjustableColumn=1,
                     columnWidth=((2, 40), (3, 120)),
-                    columnAttach=[(1, 'both', 5), (2, 'both', 5), (3, 'both', 0)],
+                    columnAttach=[
+                        (1, 'both', 5),
+                        (2, 'both', 5),
+                        (3, 'both', 0)],
                     minValue=1,
                     maxValue=(
                         layers.getLayerSet(settings.shapeArray[0])+1),
@@ -6700,15 +6770,16 @@ class UI(object):
                 label=(
                     '\nObjects with mismatching\nLayer Sets selected!')
             )
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
     def exportFlagsUI(self):
         maya.cmds.frameLayout(
             'exportFlagsFrame',
-            parent='toolFrame',
+            parent='canvas',
             label='Export Flags',
+            width=250,
             marginWidth=5,
-            marginHeight=5,
+            marginHeight=0,
             collapsable=True,
             collapse=settings.frames['exportFlagsCollapse'],
             collapseCommand=(
@@ -6716,20 +6787,24 @@ class UI(object):
             expandCommand=(
                 "sxtools.settings.frames['exportFlagsCollapse']=False"))
         maya.cmds.text(
-            label='Custom per-object attributes to be exported to game engine.',
+            label=(
+                'Custom per-object attributes to be exported to game engine.'),
             align='left',
             ww=True)
 
         maya.cmds.checkBox(
             'staticPaletteCheckbox',
             label='Static Vertex Colors',
-            value=maya.cmds.getAttr(settings.objectArray[0] + '.staticVertexColors'),
+            value=(
+                maya.cmds.getAttr(settings.objectArray[0] + '.staticVertexColors')),
             onCommand=(
-                'sxtools.tools.setExportFlags(sxtools.settings.objectArray, True)'),
+                'sxtools.tools.setExportFlags('
+                'sxtools.settings.objectArray, True)'),
             offCommand=(
-                'sxtools.tools.setExportFlags(sxtools.settings.objectArray, False)'))
+                'sxtools.tools.setExportFlags('
+                'sxtools.settings.objectArray, False)'))
         maya.cmds.setParent('exportFlagsFrame')
-        maya.cmds.setParent('toolFrame')
+        maya.cmds.setParent('canvas')
 
 
 class Core(object):
@@ -6943,30 +7018,6 @@ class Core(object):
                 ui.multiShapesUI()
 
             ui.layerViewUI()
-
-            maya.cmds.frameLayout(
-                'toolFrame',
-                parent='canvas',
-                label='Tools',
-                width=250,
-                marginWidth=2,
-                marginHeight=2,
-                collapsable=True,
-                collapse=settings.frames['toolCollapse'],
-                collapseCommand=(
-                    "sxtools.settings.frames['toolCollapse']=True\n"
-                    "maya.cmds.workspaceControl(sxtools.dockID,"
-                    "edit=True, resizeHeight=5, resizeWidth=250)"),
-                expandCommand=(
-                    "sxtools.settings.frames['toolCollapse']=False"))
-
-            maya.cmds.setParent("toolFrame")
-            maya.cmds.button(
-                label='Paint Vertex Colors',
-                height=30,
-                width=100,
-                command="sxtools.ui.openSXPaintTool()")
-
             ui.applyColorToolUI()
             ui.gradientToolUI()
             ui.colorNoiseToolUI()
@@ -6980,16 +7031,11 @@ class Core(object):
             ui.swapLayerSetsUI()
             ui.exportFlagsUI()
 
-            maya.cmds.columnLayout(
-                'processColumn',
-                parent='canvas',
-                width=250,
-                rowSpacing=5,
-                adjustableColumn=True)
-            maya.cmds.text(label=' ', parent='processColumn')
+            maya.cmds.text(label=' ', parent='canvas')
             maya.cmds.button(
                 label='Create Export Objects',
-                parent='processColumn',
+                parent='canvas',
+                width=250,
                 command=(
                     "sxtools.export.processObjects("
                     "sxtools.settings.selectionArray)"))
