@@ -478,9 +478,6 @@ class SceneSetup(object):
                        transmission=False,
                        emission=False):
         if maya.cmds.objExists('SXShader'):
-            shadingGroup = maya.cmds.listConnections(
-                'SXShader', type='shadingEngine')
-            componentsWithMaterial = maya.cmds.sets(shadingGroup, q=True)
             maya.cmds.delete('SXShader')
             print('SX Tools: Updating default materials')
         if maya.cmds.objExists('SXShaderSG'):
@@ -1365,14 +1362,11 @@ class SceneSetup(object):
 
     def createSXExportShader(self):
         if maya.cmds.objExists('SXExportShader'):
-            shadingGroup = maya.cmds.listConnections(
-                'SXExportShader', type='shadingEngine')
             maya.cmds.delete('SXExportShader')
         if maya.cmds.objExists('SXExportShaderSG'):
             maya.cmds.delete('SXExportShaderSG')
 
         maskID = settings.project['LayerData']['layer1'][2]
-        maskAxis = str(maskID[0])
         maskIndex = int(maskID[1])
         numLayers = float(settings.project['LayerCount'])
 
@@ -1702,15 +1696,13 @@ class SceneSetup(object):
 
     def createSXExportOverlayShader(self):
         if maya.cmds.objExists('SXExportOverlayShader'):
-            shadingGroup = maya.cmds.listConnections(
-                'SXExportOverlayShader', type='shadingEngine')
             maya.cmds.delete('SXExportOverlayShader')
         if maya.cmds.objExists('SXExportOverlayShaderSG'):
             maya.cmds.delete('SXExportOverlayShaderSG')
 
         UV1 = None
         UV2 = None
-        for key, value in settings.project['LayerData'].iteritems():
+        for value in settings.project['LayerData'].values():
             if value[4] is True:
                 UV1 = value[2][0]
                 UV2 = value[2][1]
@@ -1852,9 +1844,6 @@ class SceneSetup(object):
 
         nodeIDs = []
         channels = ('occlusion', 'specular', 'transmission', 'emission')
-        maskID = settings.project['LayerData']['layer1'][2]
-        maskAxis = str(maskID[0])
-        maskIndex = int(maskID[1])
         uvDict = {}
 
         pbmatName = 'SXPBShader'
@@ -2140,7 +2129,6 @@ class SceneSetup(object):
     def setPrimVars(self):
         refLayers = layers.sortLayers(
             settings.project['LayerData'].keys())
-        refCount = settings.project['LayerCount']
 
         if refLayers == 'layer1':
             refLayers = 'layer1',
@@ -2437,8 +2425,8 @@ class Export(object):
             elif value[4] is True:
                 overlay.append(key)
                 overlayUVArray.append(value[2])
-        
-        if (alphaOverlayUVArray[0][1] != alphaOverlayUVArray[1][1]):
+      
+        if (str(alphaOverlayUVArray[0])[1] != str(alphaOverlayUVArray[1])[1]):
             print('SX Tools Error: Two alpha overlays must be assigned'
                   ' to the same UV Set')
             return
@@ -2465,7 +2453,6 @@ class Export(object):
 
         exportSmoothValue = settings.project['SmoothExport']
         exportOffsetValue = settings.project['ExportOffset']
-        numMasks = settings.project['MaskCount']
         numLayers = (
             settings.project['LayerCount'] -
             len(overlay) -
@@ -2599,8 +2586,8 @@ class Export(object):
 
             # Bake alpha overlays
             if alphaOverlayArray != [None, None]:
-                if alphaOverlayUVArray[0][1] == alphaOverlayUVArray[1][1]:
-                    alphaOverlayUV = 'UV' + str(alphaOverlayUVArray[0][1])
+                if str(alphaOverlayUVArray[0])[1] == str(alphaOverlayUVArray[1])[1]:
+                    alphaOverlayUV = 'UV' + str(alphaOverlayUVArray[0])[1]
                 self.dataToUV(
                     exportShape,
                     alphaOverlayArray[0],
@@ -2716,7 +2703,6 @@ class Export(object):
                 root = maya.cmds.ls(obj, l=True)[0].split("|")[1]
                 if root == '_staticExports':
                     return True
-                    break
         else:
             return False
 
@@ -2938,7 +2924,6 @@ class ToolActions(object):
     def bakeOcclusion(self):
         bbox = []
         settings.bakeSet = settings.shapeArray
-        modifiers = maya.cmds.getModifiers()
 
         if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
@@ -3072,8 +3057,6 @@ class ToolActions(object):
             faceIds = OM.MIntArray()
             vtxIds = OM.MIntArray()
 
-            testColor = OM.MColor()
-
             lenSel = len(layerColorArray)
 
             faceIds.setLength(lenSel)
@@ -3085,7 +3068,6 @@ class ToolActions(object):
             while not fvIt.isDone():
                 faceIds[k] = fvIt.faceId()
                 vtxIds[k] = fvIt.vertexId()
-                testColor = fvIt.getColor('occlusion')
                 layerColorArray[k].r = (
                     (1-sliderValue) * localColorArray[k].r +
                     sliderValue * globalColorArray[k].r)
@@ -3237,8 +3219,6 @@ class ToolActions(object):
     def applyTexture(self, texture, uvSetName, applyAlpha):
         colors = []
         color = []
-        uCoords = []
-        vCoords = []
 
         maya.cmds.polyUVSet(
             settings.shapeArray,
@@ -3504,7 +3484,6 @@ class ToolActions(object):
         layers.refreshSelectedItem()
 
     def colorFill(self, overwriteAlpha=False):
-        alphaMax = settings.layerAlphaMax
         fillColor = settings.currentColor
         # maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)
 
@@ -4384,7 +4363,6 @@ class ToolActions(object):
         if shift is True:
             layers.clearLayerSets()
         else:
-            objList = objects
             refLayers = layers.sortLayers(settings.project['LayerData'].keys())
             actives = []
             numSets = []
@@ -4511,8 +4489,6 @@ class LayerManagement(object):
             target = targetLayer
         else:
             target = sourceLayer
-        refLayers = self.sortLayers(
-            settings.project['LayerData'].keys())
 
         selected = str(object)
         attr = '.' + str(self.getSelectedLayer()) + 'BlendMode'
@@ -4945,13 +4921,10 @@ class LayerManagement(object):
 
     def sortLayers(self, layers):
         sortedLayers = []
-
         if layers is not None:
-            layerCount = len(layers)
             for ref in settings.refArray:
                 if ref in layers:
                     sortedLayers.append(ref)
-
         return sortedLayers
 
     def verifyLayerState(self, layer):
@@ -5501,7 +5474,6 @@ class UI(object):
                     layerText = settings.project['LayerData'][layerName][6]
                 else:
                     layerText = settings.refLayerData[settings.refArray[i]][6]
-                labelText = layerName + ' display name:'
                 maya.cmds.textField(
                     fieldLabel,
                     edit=True,
@@ -6302,8 +6274,8 @@ class UI(object):
                         'sxtools.settings.frames["' +
                         categoryDict.keys()[0]+'"+"Collapse"]=False'))
                 if len(categoryDict[categoryDict.keys()[0]]) > 0:
-                    for i, (name, colors) in enumerate(
-                       categoryDict[categoryDict.keys()[0]].iteritems()):
+                    for i, (name) in enumerate(
+                       categoryDict[categoryDict.keys()[0]].keys()):
                         stripeColor = []
                         if i % 2 == 0:
                             stripeColor = [0.22, 0.22, 0.22]
