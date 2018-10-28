@@ -105,7 +105,6 @@ class Settings(object):
             'creaseCollapse': True,
             'noiseCollapse': True,
             'applyColorCollapse': True,
-            'swapLayerCollapse': True,
             'gradientCollapse': True,
             'copyLayerCollapse': True,
             'swapLayerSetsCollapse': True,
@@ -3485,7 +3484,6 @@ class ToolActions(object):
 
     def colorFill(self, overwriteAlpha=False):
         fillColor = settings.currentColor
-        # maya.cmds.colorSliderGrp('sxApplyColor', query=True, rgbValue=True)
 
         if ((len(settings.componentArray) > 0) and
            (overwriteAlpha is True)):
@@ -3646,8 +3644,8 @@ class ToolActions(object):
         refLayers = layers.sortLayers(
             settings.project['LayerData'].keys())
 
-        layerA = maya.cmds.textField('layerA', query=True, text=True)
-        layerB = maya.cmds.textField('layerB', query=True, text=True)
+        layerA = maya.cmds.textField('layersrc', query=True, text=True)
+        layerB = maya.cmds.textField('layertgt', query=True, text=True)
 
         for shape in shapes:
             # selected = str(settings.shapeArray[len(settings.shapeArray)-1])
@@ -5992,6 +5990,7 @@ class UI(object):
         maya.cmds.rampColorPort(
             'sxRampControl',
             parent="gradientFrame",
+            height=90,
             node='SXRamp',
             selectedColorControl='sxRampColor',
             selectedInterpControl='sxRampMode')
@@ -6013,6 +6012,7 @@ class UI(object):
         maya.cmds.rampColorPort(
             'sxRampAlphaControl',
             parent='gradientFrame',
+            height=90,
             node='SXAlphaRamp',
             selectedColorControl='sxRampAlpha',
             selectedInterpControl='sxAlphaRampMode')
@@ -6540,51 +6540,11 @@ class UI(object):
             placeholderText='layer5')
         maya.cmds.setParent('canvas')
 
-    def swapLayerToolUI(self):
-        maya.cmds.frameLayout(
-            'swapLayerFrame',
-            parent='canvas',
-            label='Swap Layers',
-            width=250,
-            marginWidth=5,
-            marginHeight=5,
-            collapsable=True,
-            collapse=settings.frames['swapLayerCollapse'],
-            collapseCommand=(
-                "sxtools.settings.frames['swapLayerCollapse']=True"),
-            expandCommand=(
-                "sxtools.settings.frames['swapLayerCollapse']=False"))
-        maya.cmds.rowColumnLayout(
-            'swapLayerRowColumns',
-            parent='swapLayerFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
-            rowSpacing=(1, 0))
-        maya.cmds.text('layerALabel', label='Layer A:')
-        maya.cmds.textField(
-            'layerA',
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='Layer A Name')
-        maya.cmds.text('layerBLabel', label='Layer B:')
-        maya.cmds.textField(
-            'layerB',
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='Layer B Name')
-        maya.cmds.setParent('swapLayerFrame')
-        maya.cmds.button(
-            label='Swap Layers',
-            parent='swapLayerFrame',
-            height=30,
-            width=100,
-            command=('sxtools.tools.swapLayers(sxtools.settings.shapeArray)'))
-        maya.cmds.setParent('canvas')
-
     def copyLayerToolUI(self):
         maya.cmds.frameLayout(
             'copyLayerFrame',
             parent='canvas',
-            label='Copy Layer',
+            label='Copy / Swap Layers',
             width=250,
             marginWidth=5,
             marginHeight=5,
@@ -6612,12 +6572,23 @@ class UI(object):
             enterCommand=("maya.cmds.setFocus('MayaWindow')"),
             placeholderText='Target Layer Name')
         maya.cmds.setParent('copyLayerFrame')
+        maya.cmds.rowColumnLayout(
+            'copySwapRowColumns',
+            parent='copyLayerFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 120), (2, 120)),
+            columnSpacing=([1, 0], [2, 5]),
+            rowSpacing=(1, 5))
         maya.cmds.button(
             label='Copy Layer',
-            parent='copyLayerFrame',
+            parent='copySwapRowColumns',
             height=30,
-            width=100,
             command=('sxtools.tools.copyLayer(sxtools.settings.objectArray)'))
+        maya.cmds.button(
+            label='Swap Layers',
+            parent='copySwapRowColumns',
+            height=30,
+            command=('sxtools.tools.swapLayers(sxtools.settings.shapeArray)'))
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):
@@ -6997,7 +6968,6 @@ class Core(object):
             if ('Mayatomr' in plugList) or ('mtoa' in plugList):
                 ui.bakeOcclusionToolUI()
             ui.masterPaletteToolUI()
-            ui.swapLayerToolUI()
             ui.copyLayerToolUI()
             ui.assignCreaseToolUI()
             ui.swapLayerSetsUI()
