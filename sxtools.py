@@ -96,7 +96,7 @@ class Settings(object):
         self.frames = {
             'prefsCollapse': True,
             'setupCollapse': False,
-            'toolCollapse': False,
+            'skinMeshCollapse': True,
             'occlusionCollapse': True,
             'masterPaletteCollapse': True,
             'paletteCategoryCollapse': False,
@@ -2120,10 +2120,14 @@ class SceneSetup(object):
             print('SX Tools: Creating assetsLayer')
             maya.cmds.createDisplayLayer(
                 name='assetsLayer', number=1, empty=True)
+        if 'skinMeshLayer' not in maya.cmds.ls(type='displayLayer'):
+            print('SX Tools: Creating skinMeshLayer')
+            maya.cmds.createDisplayLayer(
+                name='skinMeshLayer', number=2, empty=True)
         if 'exportsLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating exportsLayer')
             maya.cmds.createDisplayLayer(
-                name='exportsLayer', number=2, empty=True)
+                name='exportsLayer', number=3, empty=True)
 
     def setPrimVars(self):
         refLayers = layers.sortLayers(
@@ -2620,6 +2624,47 @@ class Export(object):
                 currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
             
+            # Check for skinned meshes, copy skin weights to export meshes
+            if maya.cmds.objExists(str(exportShape).split('|')[-1] + '_skinned'):
+                skinnedMesh = str(exportShape).split('|')[-1] + '_skinned'
+                skinMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
+                skinClusterA = maya.cmds.ls(skinMeshHistory, type='skinCluster')
+                # TODO: read smooth skin attributes from _skinned mesh skinCluster
+                skinInfluences = maya.cmds.skinCluster(skinClusterA[0], query=True, weightedInfluence=True)
+                skinJoints = []
+                for influence in skinInfluences:
+                    if maya.cmds.nodeType(influence) == 'joint':
+                        skinJoints.append(influence)
+                maya.cmds.setAttr(exportShape + '.translate',
+                    0, 0, 0, type='double3')
+                maya.cmds.makeIdentity(
+                    exportShape, apply=True, t=1, r=1, s=1, n=0, pn=1)
+                maya.cmds.dagPose(skinJoints, 'bindPose1', restore=True)
+                maya.cmds.skinCluster(exportShape, skinJoints[0])
+                skinMeshHistory = maya.cmds.listHistory(exportShape, pdo=True)
+                skinClusterB = maya.cmds.ls(skinMeshHistory, type='skinCluster')
+                maya.cmds.copySkinWeights(ss=skinClusterA[0], ds=skinClusterB[0], noMirror=True)
+            # For non-skinned meshes: move to origin, freeze transformations
+            else:
+                finalList = maya.cmds.listRelatives(
+                    '_staticExports', children=True, fullPath=True)
+                offsetX = 0
+                offsetZ = 0
+                offsetDist = exportOffsetValue
+                for final in finalList:
+                    maya.cmds.setAttr(
+                        str(final) + '.translate',
+                        0, 0, 0, type='double3')
+                    maya.cmds.makeIdentity(
+                        final, apply=True, t=1, r=1, s=1, n=0, pn=1)
+                    maya.cmds.setAttr(
+                        str(final) + '.translate',
+                        offsetX, 0, offsetZ, type='double3')
+                    offsetX += offsetDist
+                    if offsetX == offsetDist * 5:
+                        offsetX = 0
+                        offsetZ += offsetDist
+
             # Smooth mesh as last step for export
             if exportSmoothValue > 0:
                 maya.cmds.polySmooth(
@@ -2630,25 +2675,8 @@ class Export(object):
                     kt=1, kmb=1, suv=1, peh=0,
                     sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
-            # Move to origin, freeze transformations
-            finalList = maya.cmds.listRelatives(
-                '_staticExports', children=True, fullPath=True)
-            offsetX = 0
-            offsetZ = 0
-            offsetDist = exportOffsetValue
-            for final in finalList:
-                maya.cmds.setAttr(
-                    str(final) + '.translate',
-                    0, 0, 0, type='double3')
-                maya.cmds.makeIdentity(
-                    final, apply=True, t=1, r=1, s=1, n=0, pn=1)
-                maya.cmds.setAttr(
-                    str(final) + '.translate',
-                    offsetX, 0, offsetZ, type='double3')
-                offsetX += offsetDist
-                if offsetX == offsetDist * 5:
-                    offsetX = 0
-                    offsetZ += offsetDist
+            # Bake skin weights to smooth mesh
+            maya.cmds.bakePartialHistory(exportShape, prePostDeformers=True)
 
         totalTime = maya.cmds.timerX(startTime=startTime0)
         print('SX Tools: Total time ' + str(totalTime))
@@ -2690,6 +2718,7 @@ class Export(object):
     def viewExported(self):
         maya.cmds.select('_staticExports')
         maya.cmds.setAttr('exportsLayer.visibility', 1)
+        maya.cmds.setAttr('skinMeshLayer.visibility', 0)
         maya.cmds.setAttr('assetsLayer.visibility', 0)
         maya.mel.eval('FrameSelectedWithoutChildren;')
         maya.mel.eval('fitPanel -selectedNoChildren;')
@@ -4470,6 +4499,38 @@ class ToolActions(object):
                 layerAColors = MFnMesh.getFaceVertexColors(colorSet=source)
                 MFnMesh.setFaceVertexColors(layerAColors, faceIds, vtxIds)
 
+    def createSkinMesh(self, objects):
+        skinMeshArray = []
+        export.stripPrimVars(settings.shapeArray)
+        for obj in objects:
+            skinMesh = maya.cmds.duplicate(
+                objects, renameChildren=True, name=obj+'_skinned')
+            maya.cmds.setAttr(
+                skinMesh[0] + '.translate',
+                0, 0, 0, type='double3')
+            maya.cmds.makeIdentity(
+                skinMesh, apply=True, t=1, r=1, s=1, n=0, pn=1)
+            maya.cmds.addAttr(skinMesh,
+                ln='skinnedMesh',
+                at='bool', dv=True)
+            skinMeshArray.append(skinMesh[0])
+        maya.cmds.sets(skinMeshArray, e=True, forceElement='initialShadingGroup')
+        maya.cmds.editDisplayLayerMembers(
+            'skinMeshLayer',
+            skinMeshArray)
+        maya.cmds.setAttr('exportsLayer.visibility', 0)
+        maya.cmds.setAttr('skinMeshLayer.visibility', 1)
+        maya.cmds.setAttr('assetsLayer.visibility', 0)
+
+    def checkSkinMesh(self, objects):
+        if len(settings.objectArray) > 0:
+            for obj in objects:
+                if maya.cmds.attributeQuery('skinnedMesh', node=obj, exists=True):
+                    return True
+            return False
+        else:
+            return False
+
     def setExportFlags(self, objects, bool):
         for obj in objects:
             maya.cmds.setAttr(obj+'.staticVertexColors', bool)
@@ -5497,8 +5558,9 @@ class UI(object):
         maya.cmds.button(
             label='Hide exported, show source meshes',
             command=(
-                "maya.cmds.setAttr( 'exportsLayer.visibility', 0 )\n"
-                "maya.cmds.setAttr( 'assetsLayer.visibility', 1 )"))
+                "maya.cmds.setAttr('exportsLayer.visibility', 0)\n"
+                "maya.cmds.setAttr('skinMeshLayer.visibility', 0)\n"
+                "maya.cmds.setAttr('assetsLayer.visibility', 1)"))
 
         maya.cmds.text(label='Preview export object data:')
         maya.cmds.radioButtonGrp(
@@ -5630,6 +5692,25 @@ class UI(object):
                 label='Add missing color sets',
                 command=(
                     'sxtools.layers.patchLayers(sxtools.settings.patchArray)'))
+        maya.cmds.setParent('patchFrame')
+        maya.cmds.setParent('canvas')
+        maya.cmds.workspaceControl(
+            dockID, edit=True, resizeHeight=5, resizeWidth=250)
+
+    def skinMeshUI(self):
+        maya.cmds.frameLayout(
+            'patchFrame',
+            label='Skinning Mesh Selected',
+            parent='canvas',
+            width=250,
+            marginWidth=10,
+            marginHeight=0)
+        maya.cmds.text(
+            parent='patchFrame',
+            label=(
+                "Create skeletons and edit skin weights on meshes with _skinned suffix.\n\n"
+                "Blend shapes are also supported.\n\n"
+                "Select non-skinned meshes in the Outliner."), align='left', ww=True)
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
         maya.cmds.workspaceControl(
@@ -6715,6 +6796,28 @@ class UI(object):
             )
         maya.cmds.setParent('canvas')
 
+    # TODO: create visibility management buttons, assign joints to skinMeshLayer
+    def createSkinMeshUI(self):
+        maya.cmds.frameLayout(
+            'skinMeshFrame',
+            parent='canvas',
+            label='Create Skinning Mesh',
+            width=250,
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=settings.frames['skinMeshCollapse'],
+            collapseCommand=(
+                "sxtools.settings.frames['skinMeshCollapse']=True"),
+            expandCommand=(
+                "sxtools.settings.frames['skinMeshCollapse']=False"))
+        maya.cmds.button(
+            label='Create Skinning Mesh',
+            parent='skinMeshFrame',
+            height=30,
+            command=('sxtools.tools.createSkinMesh(sxtools.settings.objectArray)'))
+        maya.cmds.setParent('canvas')
+
     def exportFlagsUI(self):
         maya.cmds.frameLayout(
             'exportFlagsFrame',
@@ -6938,6 +7041,13 @@ class Core(object):
         elif export.checkExported(settings.objectArray) is True:
             ui.exportObjectsUI()
 
+        # If skinned meshes are selected, construct message
+        elif tools.checkSkinMesh(settings.objectArray) is True:
+            maya.cmds.setAttr('exportsLayer.visibility', 0)
+            maya.cmds.setAttr('skinMeshLayer.visibility', 1)
+            maya.cmds.setAttr('assetsLayer.visibility', 0)
+            ui.skinMeshUI()
+
         # If objects have empty color sets, construct error message
         elif layers.verifyObjectLayers(settings.shapeArray)[0] == 1:
             ui.emptyObjectsUI()
@@ -6952,6 +7062,7 @@ class Core(object):
                 'assetsLayer',
                 settings.objectArray)
             maya.cmds.setAttr('exportsLayer.visibility', 0)
+            maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 1)
             
             if ui.history is True:
@@ -6971,6 +7082,7 @@ class Core(object):
             ui.copyLayerToolUI()
             ui.assignCreaseToolUI()
             ui.swapLayerSetsUI()
+            ui.createSkinMeshUI()
             ui.exportFlagsUI()
 
             maya.cmds.text(label=' ', parent='canvas')
