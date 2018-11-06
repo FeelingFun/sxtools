@@ -2737,7 +2737,7 @@ class Export(object):
                     for attr in attrs:
                         maya.cmds.setAttr(obj+'.'+attr+axis, lock=False)
 
-        if exportArray is not None:
+        if len(exportArray) > 0:
             print('SX Tools: Writing deforming object FBX files')
             maya.cmds.sets(exportArray, n='deformingExportSet')
             maya.mel.eval('gameFbxExporter;')
