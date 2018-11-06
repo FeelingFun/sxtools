@@ -2454,8 +2454,6 @@ class Export(object):
             if (uSource, vSource, uvSet) not in exportBlocks:
                 exportBlocks.append((uSource, vSource, uvSet))
 
-        exportSmoothValue = settings.project['SmoothExport']
-        exportOffsetValue = settings.project['ExportOffset']
         numLayers = (
             settings.project['LayerCount'] -
             len(overlay) -
@@ -2469,6 +2467,7 @@ class Export(object):
         # Find the root nodes of all selected elements
         for selection in selectionArray:
             source = maya.cmds.ls(selection, l=True)[0].split("|")[1]
+
             if source not in sourceArray:
                 sourceArray.append(source)
 
@@ -2508,13 +2507,13 @@ class Export(object):
                 tools.swapLayerSets([variant, ], x)
                 varParent = maya.cmds.listRelatives(
                     exportShape, parent=True)[0]
-                if maya.cmds.objExists(varParent+'_var'+str(x)) is False:
+                if (varParent != '_staticExports') and (maya.cmds.objExists(varParent+'_var'+str(x)) is False):
                     maya.cmds.group(
                         empty=True,
                         name=varParent+'_var'+str(x),
                         parent='_staticExports')
-                varParent = varParent+'_var'+str(x)
-                maya.cmds.parent(variant, varParent)
+                    varParent = varParent+'_var'+str(x)
+                    maya.cmds.parent(variant, varParent)
 
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
@@ -2624,59 +2623,76 @@ class Export(object):
                 currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
             
-            # Check for skinned meshes, copy skin weights to export meshes
+            # Check for skinned meshes, copy replace processed meshes when appropriate
             if maya.cmds.objExists(str(exportShape).split('|')[-1] + '_skinned'):
                 skinnedMesh = str(exportShape).split('|')[-1] + '_skinned'
-                skinMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
-                skinClusterA = maya.cmds.ls(skinMeshHistory, type='skinCluster')
-                # TODO: read smooth skin attributes from _skinned mesh skinCluster
-                skinInfluences = maya.cmds.skinCluster(skinClusterA[0], query=True, weightedInfluence=True)
+                # TODO: skinnedMesh _var meshes
+                skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
+                maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
+                maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
+                # maya.cmds.group(skinTarget, n=str(exportShape).split('|')[-1]+'Root', world=True)
+                maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')                
+                maya.cmds.group(exportShape, n='_ignore', world=True)
+                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
+                maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=1)
+
+                # Set the joints on the mesh to be exported to bindPose, move to same root
+                skinMeshHistory = maya.cmds.listHistory(skinTarget, pdo=True)
+                skinCluster = maya.cmds.ls(skinMeshHistory, type='skinCluster')
+                skinInfluences = maya.cmds.skinCluster(skinCluster[0], query=True, weightedInfluence=True)
                 skinJoints = []
                 for influence in skinInfluences:
                     if maya.cmds.nodeType(influence) == 'joint':
                         skinJoints.append(influence)
-                maya.cmds.setAttr(exportShape + '.translate',
-                    0, 0, 0, type='double3')
-                maya.cmds.makeIdentity(
-                    exportShape, apply=True, t=1, r=1, s=1, n=0, pn=1)
-                maya.cmds.dagPose(skinJoints, 'bindPose1', restore=True)
-                maya.cmds.skinCluster(exportShape, skinJoints[0])
-                skinMeshHistory = maya.cmds.listHistory(exportShape, pdo=True)
-                skinClusterB = maya.cmds.ls(skinMeshHistory, type='skinCluster')
-                maya.cmds.copySkinWeights(ss=skinClusterA[0], ds=skinClusterB[0], noMirror=True)
+                bindPose = maya.cmds.dagPose(skinJoints[0], query=True, bindPose=True)
+                maya.cmds.dagPose(skinJoints, bindPose, restore=True)
+                maya.cmds.parent(skinJoints[0], skinTarget)
+
+                if settings.project['SmoothExport'] > 0:
+                    maya.cmds.polySmooth(
+                        skinTarget, mth=0, sdt=2, ovb=1,
+                        ofb=3, ofc=0, ost=1, ocr=0,
+                        dv=settings.project['SmoothExport'], bnr=1,
+                        c=1, kb=1, ksb=1, khe=0,
+                        kt=1, kmb=1, suv=1, peh=0,
+                        sl=1, dpe=1, ps=0.1, ro=1, ch=0)
+                
+                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
+
             # For non-skinned meshes: move to origin, freeze transformations
             else:
                 finalList = maya.cmds.listRelatives(
                     '_staticExports', children=True, fullPath=True)
                 offsetX = 0
                 offsetZ = 0
-                offsetDist = exportOffsetValue
+                offsetDist = settings.project['ExportOffset']
                 for final in finalList:
-                    maya.cmds.setAttr(
-                        str(final) + '.translate',
-                        0, 0, 0, type='double3')
-                    maya.cmds.makeIdentity(
-                        final, apply=True, t=1, r=1, s=1, n=0, pn=1)
-                    maya.cmds.setAttr(
-                        str(final) + '.translate',
-                        offsetX, 0, offsetZ, type='double3')
-                    offsetX += offsetDist
-                    if offsetX == offsetDist * 5:
-                        offsetX = 0
-                        offsetZ += offsetDist
+                    if '_skn' not in final:
+                        maya.cmds.setAttr(
+                            str(final) + '.translate',
+                            0, 0, 0, type='double3')
+                        maya.cmds.makeIdentity(
+                            final, apply=True, t=1, r=1, s=1, n=0, pn=1)
+                        maya.cmds.setAttr(
+                            str(final) + '.translate',
+                            offsetX, 0, offsetZ, type='double3')
+                        offsetX += offsetDist
+                        if offsetX == offsetDist * 5:
+                            offsetX = 0
+                            offsetZ += offsetDist
 
             # Smooth mesh as last step for export
-            if exportSmoothValue > 0:
-                maya.cmds.polySmooth(
-                    exportShape, mth=0, sdt=2, ovb=1,
-                    ofb=3, ofc=0, ost=1, ocr=0,
-                    dv=exportSmoothValue, bnr=1,
-                    c=1, kb=1, ksb=1, khe=0,
-                    kt=1, kmb=1, suv=1, peh=0,
-                    sl=1, dpe=1, ps=0.1, ro=1, ch=0)
+            if settings.project['SmoothExport'] > 0:
+                if maya.cmds.objExists(exportShape):
+                    maya.cmds.polySmooth(
+                        exportShape, mth=0, sdt=2, ovb=1,
+                        ofb=3, ofc=0, ost=1, ocr=0,
+                        dv=settings.project['SmoothExport'], bnr=1,
+                        c=1, kb=1, ksb=1, khe=0,
+                        kt=1, kmb=1, suv=1, peh=0,
+                        sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
-            # Bake skin weights to smooth mesh
-            maya.cmds.bakePartialHistory(exportShape, prePostDeformers=True)
+                    maya.cmds.delete(exportShape, ch=True)
 
         totalTime = maya.cmds.timerX(startTime=startTime0)
         print('SX Tools: Total time ' + str(totalTime))
@@ -2690,27 +2706,60 @@ class Export(object):
     # includes finding the unique file using their fullpath names,
     # then stripping the path to create a clean name for the file.
     def exportObjects(self, exportPath):
-        print('SX Tools: Writing FBX files, please hold.')
         exportArray = maya.cmds.listRelatives(
             '_staticExports', children=True, fullPath=True)
-        for export in exportArray:
-            maya.cmds.select(export)
-            if settings.project['ExportSuffix'] is True:
+        if exportArray is not None:
+            print('SX Tools: Writing static object FBX files')
+            for export in exportArray:
+                maya.cmds.select(export)
                 exportName = str(export).split('|')[-1] + '.fbx'
-            else:
-                if str(export).endswith('_paletted'):
+                if settings.project['ExportSuffix'] and str(export).endswith('_paletted'):
                     exportName = str(str(export)[:-9]).split('|')[-1] + '.fbx'
-                else:
-                    exportName = str(export).split('|')[-1] + '.fbx'
-            exportString = exportPath + exportName
-            print(exportString + '\n')
-            maya.cmds.file(
-                exportString,
-                force=True,
-                options='v=0',
-                typ='FBX export',
-                pr=True,
-                es=True)
+                exportString = exportPath + exportName
+                print(exportString + '\n')
+                maya.cmds.file(
+                    exportString,
+                    force=True,
+                    options='v=0',
+                    typ='FBX export',
+                    pr=True,
+                    es=True)
+
+        # The export phase for deforming meshes
+        exportArray = []
+        axes = ['x', 'y', 'z']
+        attrs = ['t', 'r', 's']
+        rootObjs = maya.cmds.ls(assemblies=True)
+        for obj in rootObjs:
+            if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
+                exportArray.append(obj)
+                for axis in axes:
+                    for attr in attrs:
+                        maya.cmds.setAttr(obj+'.'+attr+axis, lock=False)
+
+        if exportArray is not None:
+            print('SX Tools: Writing deforming object FBX files')
+            maya.cmds.sets(exportArray, n='deformingExportSet')
+            maya.mel.eval('gameFbxExporter;')
+            maya.cmds.setAttr('gameExporterPreset1.exportSetIndex', 3)
+            maya.cmds.setAttr('gameExporterPreset1.selectionSetName', 'deformingExportSet', type='string')
+            maya.cmds.setAttr('gameExporterPreset1.modelFileMode', 2)
+            maya.cmds.setAttr('gameExporterPreset1.smoothingGroups', 0)
+            maya.cmds.setAttr('gameExporterPreset1.smoothMesh', 0)
+            maya.cmds.setAttr('gameExporterPreset1.splitVertexNormals', 0)
+            maya.cmds.setAttr('gameExporterPreset1.triangulate', 0)
+            maya.cmds.setAttr('gameExporterPreset1.tangentsBinormals', 1)
+            maya.cmds.setAttr('gameExporterPreset1.skinning', 1)
+            maya.cmds.setAttr('gameExporterPreset1.blendshapes', 1)
+            maya.cmds.setAttr('gameExporterPreset1.moveToOrigin', 0)
+            maya.cmds.setAttr('gameExporterPreset1.exportAnimation', 0)
+            maya.cmds.setAttr('gameExporterPreset1.inputConnections', 0)
+            maya.cmds.setAttr('gameExporterPreset1.embedMedia', 0)
+            maya.cmds.setAttr('gameExporterPreset1.viewInFBXReview', 0)
+            maya.cmds.setAttr('gameExporterPreset1.exportPath', exportPath, type='string')
+            maya.cmds.setAttr('gameExporterPreset1.exportFilename', '', type='string')
+            maya.mel.eval('gameExp_DoExport();')
+            maya.cmds.deleteUI('gameExporterWindow')
 
     # After a selection of meshes has been processed for export,
     # the user has a button in the tool UI
@@ -2730,6 +2779,8 @@ class Export(object):
             for obj in objects:
                 root = maya.cmds.ls(obj, l=True)[0].split("|")[1]
                 if root == '_staticExports':
+                    return True
+                elif maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
                     return True
         else:
             return False
@@ -3824,6 +3875,9 @@ class ToolActions(object):
                 if 'assetsLayer' in str(hist):
                     histList.remove(hist)
             for hist in reversed(histList):
+                if 'exportsLayer' in str(hist):
+                    histList.remove(hist)
+            for hist in reversed(histList):
                 if 'sxCrease' in str(hist):
                     histList.remove(hist)
             for hist in reversed(histList):
@@ -4501,10 +4555,15 @@ class ToolActions(object):
 
     def createSkinMesh(self, objects):
         skinMeshArray = []
-        export.stripPrimVars(settings.shapeArray)
         for obj in objects:
             skinMesh = maya.cmds.duplicate(
-                objects, renameChildren=True, name=obj+'_skinned')
+                obj, renameChildren=True, name=obj+'_skinned')
+            skinShape = maya.cmds.listRelatives(
+                skinMesh,
+                type='mesh',
+                allDescendents=True,
+                fullPath=True)
+            export.stripPrimVars(skinShape)
             maya.cmds.setAttr(
                 skinMesh[0] + '.translate',
                 0, 0, 0, type='double3')
@@ -4513,7 +4572,43 @@ class ToolActions(object):
             maya.cmds.addAttr(skinMesh,
                 ln='skinnedMesh',
                 at='bool', dv=True)
+            colSets = maya.cmds.polyColorSet(
+                skinMesh,
+                query=True, allColorSets=True)
+            for set in colSets:
+                if str(set) != 'layer1':
+                    maya.cmds.polyColorSet(
+                        skinMesh,
+                        delete=True, colorSet=str(set))
+                else:
+                    maya.cmds.polyColorSet(
+                        skinMesh,
+                        currentColorSet=True,
+                        colorSet='layer1')
+                    maya.cmds.polyColorPerVertex(
+                        skinMesh[0],
+                        r=0.5,
+                        g=0.5,
+                        b=0.5,
+                        a=1,
+                        representation=4,
+                        cdo=True)
+            name = maya.cmds.getAttr(
+                skinMesh[0] + '.uvSet[0].uvSetName')
+            maya.cmds.polyUVSet(
+                skinMesh,
+                rename=True,
+                uvSet=name, newUVSet='UV0')
+            maya.cmds.polyUVSet(
+                skinMesh,
+                currentUVSet=True, uvSet='UV0')
+            maya.cmds.polyAutoProjection(
+                skinMesh,
+                lm=0, pb=0, ibd=1, cm=0, l=3,
+                sc=1, o=0, p=6, ps=0.2, ws=0)
             skinMeshArray.append(skinMesh[0])
+
+        maya.cmds.delete(skinMeshArray, ch=True)
         maya.cmds.sets(skinMeshArray, e=True, forceElement='initialShadingGroup')
         maya.cmds.editDisplayLayerMembers(
             'skinMeshLayer',
@@ -4531,9 +4626,9 @@ class ToolActions(object):
         else:
             return False
 
-    def setExportFlags(self, objects, bool):
+    def setExportFlags(self, objects, flag):
         for obj in objects:
-            maya.cmds.setAttr(obj+'.staticVertexColors', bool)
+            maya.cmds.setAttr(obj+'.staticVertexColors', flag)
 
 
 class LayerManagement(object):
@@ -5607,8 +5702,7 @@ class UI(object):
             width=120,
             command=(
                 "sxtools.export.setExportPath()\n"
-                "sxtools.sx.updateSXTools()")
-                )
+                "sxtools.sx.updateSXTools()"))
 
         if (('SXToolsExportPath' in settings.project) and
            (len(settings.project['SXToolsExportPath']) == 0)):
@@ -5618,12 +5712,11 @@ class UI(object):
                 'Export Path: ' + settings.project['SXToolsExportPath'])
             maya.cmds.text(label=exportPathText, ww=True)
             maya.cmds.button(
-                label='Export Objects in _staticExports',
+                label='Write FBX Files',
                 width=120,
                 command=(
                     "sxtools.export.exportObjects("
-                    "sxtools.settings.project['SXToolsExportPath'])")
-                    )
+                    "sxtools.settings.project['SXToolsExportPath'])"))
         else:
             maya.cmds.text(label='No export folder selected!')
 
