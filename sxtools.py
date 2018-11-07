@@ -2282,7 +2282,6 @@ class Export(object):
             vArray.setLength(lenColorArray)
 
         uvIdArray = MFnMesh.getAssignedUVs()
-        # for mode 1? uvIdArray = MFnMesh.getAssignedUVs(uvSet='UV1')
 
         # mode 1 - layer masks
         if mode == 1:
@@ -2395,6 +2394,7 @@ class Export(object):
     # 2) Rename new objects to match originals but with a suffix
     # 3) Call the mesh processing functions
     # 4) Delete history on the processed meshes.
+    # 5) Treat deforming meshes as a special case
     def processObjects(self, selectionArray):
         # Timer for evaluating script performance
         startTime0 = maya.cmds.timerX()
@@ -2459,10 +2459,17 @@ class Export(object):
             len(overlay) -
             len(alphaOverlayArray))
 
-        # Clear existing static exports folder and create if necessary
+        # Clear existing export objects and create if necessary
         if maya.cmds.objExists('_staticExports'):
             maya.cmds.delete('_staticExports')
         maya.cmds.group(empty=True, name='_staticExports')
+        if maya.cmds.objExists('_ignore'):
+            maya.cmds.delete('_ignore')
+        maya.cmds.group(empty=True, name='_ignore')
+        rootObjs = maya.cmds.ls(assemblies=True)
+        for obj in rootObjs:
+            if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
+                maya.cmds.delete(obj)
 
         # Find the root nodes of all selected elements
         for selection in selectionArray:
@@ -2599,7 +2606,7 @@ class Export(object):
             # Bake overlays
             if overlay != [None]:
                 self.overlayToUV(exportShape, overlay, overlayUVArray)
-            
+
             # Delete history
             maya.cmds.delete(exportShape, ch=True)
 
@@ -2622,17 +2629,15 @@ class Export(object):
                 exportShape,
                 currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
-            
+
             # Check for skinned meshes, copy replace processed meshes when appropriate
-            if maya.cmds.objExists(str(exportShape).split('|')[-1] + '_skinned'):
-                skinnedMesh = str(exportShape).split('|')[-1] + '_skinned'
-                # TODO: skinnedMesh _var meshes
+            if maya.cmds.objExists(str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'):
+                skinnedMesh = str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'
                 skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
                 maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
-                # maya.cmds.group(skinTarget, n=str(exportShape).split('|')[-1]+'Root', world=True)
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')                
-                maya.cmds.group(exportShape, n='_ignore', world=True)
+                maya.cmds.parent(exportShape, '_ignore')
                 maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
                 maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=1)
 
