@@ -524,16 +524,16 @@ class SceneSetup(object):
         bcol_node.color = (0, 0, 0, 1)
         bcol_node.posx = -2500
         bcol_node.posy = -250
-        bcolID = maya.cmds.shaderfx(
-            sfxnode=materialName, getNodeIDByName='black')
+        # bcolID = maya.cmds.shaderfx(
+        #     sfxnode=materialName, getNodeIDByName='black')
 
         wcol_node = settings.material.add(sfxnodes.Color)
         wcol_node.name = 'white'
         wcol_node.color = (1, 1, 1, 1)
         wcol_node.posx = -2500
         wcol_node.posy = -500
-        wcolID = maya.cmds.shaderfx(
-            sfxnode=materialName, getNodeIDByName='white')
+        # wcolID = maya.cmds.shaderfx(
+        #     sfxnode=materialName, getNodeIDByName='white')
 
         alphaValue_node = settings.material.add(sfxnodes.Float)
         alphaValue_node.name = 'TestValue0'
@@ -676,8 +676,8 @@ class SceneSetup(object):
         invOne_node.posx = -1750
         invOne_node.posy = 250
         invOne_node.name = invOneName
-        invOneID = maya.cmds.shaderfx(
-            sfxnode=materialName, getNodeIDByName=invOneName)
+        # invOneID = maya.cmds.shaderfx(
+        #     sfxnode=materialName, getNodeIDByName=invOneName)
 
         wlerpName = 'wLerp'
         wlerp_node = settings.material.add(sfxnodes.LinearInterpolateMix)
@@ -720,45 +720,45 @@ class SceneSetup(object):
         blendModePath_node.posx = -2250
         blendModePath_node.posy = 750
         blendModePath_node.name = blendModePathName
-        blendModePathID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=blendModePathName)
+        # blendModePathID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=blendModePathName)
 
         visPathName = 'visPath'
         visPath_node = settings.material.add(sfxnodes.IfElseBasic)
         visPath_node.posx = -750
         visPath_node.posy = 0
         visPath_node.name = visPathName
-        visPathID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=visPathName)
+        # visPathID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=visPathName)
 
         visModePathName = 'visModePath'
         visModePath_node = settings.material.add(sfxnodes.PathDirectionList)
         visModePath_node.posx = -2250
         visModePath_node.posy = 1000
         visModePath_node.name = visModePathName
-        visModePathID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=visModePathName)
+        # visModePathID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=visModePathName)
 
         repeatName = 'repeatLoop'
         repeat_node = settings.material.add(sfxnodes.RepeatLoop)
         repeat_node.posx = -750
         repeat_node.posy = -250
         repeat_node.name = repeatName
-        repeatID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=repeatName)
+        # repeatID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=repeatName)
 
         repeatAlphaName = 'repeatAlphaLoop'
         repeatAlpha_node = settings.material.add(sfxnodes.RepeatLoop)
         repeatAlpha_node.posx = -750
         repeatAlpha_node.posy = 250
         repeatAlpha_node.name = repeatAlphaName
-        repeatAlphaID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=repeatAlphaName)
+        # repeatAlphaID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=repeatAlphaName)
 
         alphaAdd_node = settings.material.add(sfxnodes.Add)
         alphaAdd_node.name = 'alphaAdd'
@@ -773,18 +773,18 @@ class SceneSetup(object):
         alphaVar_node.value = 0
         alphaVar_node.posx = -1000
         alphaVar_node.posy = 500
-        alphaVarID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName='alphaVar')
+        # alphaVarID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName='alphaVar')
 
         indexName = 'layerIndex'
         index_node = settings.material.add(sfxnodes.IntValue)
         index_node.posx = -1000
         index_node.posy = -250
         index_node.name = indexName
-        indexID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=indexName)
+        # indexID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=indexName)
 
         countName = 'layerCount'
         count_node = settings.material.add(sfxnodes.IntValue)
@@ -792,9 +792,9 @@ class SceneSetup(object):
         count_node.posy = -250
         count_node.name = countName
         count_node.value = settings.project['LayerCount']
-        countID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=countName)
+        # countID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=countName)
 
         outputName = 'outputVar'
         output_node = settings.material.add(sfxnodes.Float3)
@@ -804,9 +804,9 @@ class SceneSetup(object):
         output_node.valueY = 0
         output_node.valueZ = 0
         output_node.name = outputName
-        outputID = maya.cmds.shaderfx(
-            sfxnode=materialName,
-            getNodeIDByName=outputName)
+        # outputID = maya.cmds.shaderfx(
+        #     sfxnode=materialName,
+        #     getNodeIDByName=outputName)
 
         diffCompName = 'diffuseComp'
         diffComp_node = settings.material.add(sfxnodes.IfElseBasic)
@@ -1208,9 +1208,9 @@ class SceneSetup(object):
                 spv_node.name = 'specularPowerValue'
                 spv_node.value = 20
                 spv_node.defineinheader = True
-                spv_nodeID = maya.cmds.shaderfx(
-                    sfxnode=materialName,
-                    getNodeIDByName='specularPowerValue')
+                # spv_nodeID = maya.cmds.shaderfx(
+                #     sfxnode=materialName,
+                #     getNodeIDByName='specularPowerValue')
 
                 spec_nodeID = maya.cmds.shaderfx(
                     sfxnode=materialName,
@@ -1234,7 +1234,7 @@ class SceneSetup(object):
                     (specMul_nodeID, 1))
 
                 # Connect specular power
-                specRaw_nodeID = settings.nodeDict['specular']
+                # specRaw_nodeID = settings.nodeDict['specular']
                 settings.material.connect(
                     spv_node.outputs.float,
                     specPow_node.inputs.x)
@@ -1873,9 +1873,9 @@ class SceneSetup(object):
         vertCol_node.posx = -1000
         vertCol_node.posy = -250
         vertCol_node.name = 'vertCol'
-        vertColID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='vertCol')
+        # vertColID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='vertCol')
 
         black_node = pbmat.add(pbsnodes.ConstantVector3)
         black_node.posx = -1250
@@ -1907,25 +1907,25 @@ class SceneSetup(object):
         invert_node.posx = -750
         invert_node.posy = 250
         invert_node.name = 'inv'
-        invertID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='inv')
+        # invertID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='inv')
 
         metPow_node = pbmat.add(pbsnodes.Power)
         metPow_node.posx = -500
         metPow_node.posy = 0
         metPow_node.name = 'MetallicPower'
-        metPowID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='MetallicPower')
+        # metPowID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='MetallicPower')
 
         roughPow_node = pbmat.add(pbsnodes.Power)
         roughPow_node.posx = -500
         roughPow_node.posy = 250
         roughPow_node.name = 'RoughnessPower'
-        roughPowID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='RoughnessPower')
+        # roughPowID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='RoughnessPower')
 
         metVal_node = pbmat.add(pbsnodes.MaterialVariable)
         metVal_node.posx = -1250
@@ -1933,9 +1933,9 @@ class SceneSetup(object):
         metVal_node.name = 'MetallicValue'
         metVal_node.type = 0
         metVal_node.defaultscalar = 0.9
-        metValID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='MetallicValue')
+        # metValID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='MetallicValue')
 
         roughVal_node = pbmat.add(pbsnodes.MaterialVariable)
         roughVal_node.posx = -1250
@@ -1943,9 +1943,9 @@ class SceneSetup(object):
         roughVal_node.name = 'RoughnessValue'
         roughVal_node.type = 0
         roughVal_node.defaultscalar = 0.4
-        roughValID = maya.cmds.shaderfx(
-            sfxnode=pbmatName,
-            getNodeIDByName='RoughnessValue')
+        # roughValID = maya.cmds.shaderfx(
+        #     sfxnode=pbmatName,
+        #     getNodeIDByName='RoughnessValue')
 
         # Create connections
         pbmat.connect(
@@ -2652,7 +2652,18 @@ class Export(object):
                 bindPose = maya.cmds.dagPose(skinJoints[0], query=True, bindPose=True)
                 maya.cmds.dagPose(skinJoints, bindPose, restore=True)
                 maya.cmds.parent(skinJoints[0], skinTarget)
+                
+                # Rename the root joint of the mesh to be exported
+                skinnedMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
+                skinnedCluster = maya.cmds.ls(skinnedMeshHistory, type='skinCluster')
+                skinnedInfluences = maya.cmds.skinCluster(skinnedCluster[0], query=True, weightedInfluence=True)
+                skinnedJoints = []
+                for influence in skinnedInfluences:
+                    if maya.cmds.nodeType(influence) == 'joint':
+                        skinnedJoints.append(influence)
+                maya.cmds.rename(skinJoints[0], skinnedJoints[0])
 
+                # Apply smoothing if set in project prefs
                 if settings.project['SmoothExport'] > 0:
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
@@ -2757,7 +2768,7 @@ class Export(object):
             maya.cmds.setAttr('gameExporterPreset1.skinning', 1)
             maya.cmds.setAttr('gameExporterPreset1.blendshapes', 1)
             maya.cmds.setAttr('gameExporterPreset1.moveToOrigin', 0)
-            maya.cmds.setAttr('gameExporterPreset1.exportAnimation', 0)
+            maya.cmds.setAttr('gameExporterPreset1.exportAnimation', 1)
             maya.cmds.setAttr('gameExporterPreset1.inputConnections', 0)
             maya.cmds.setAttr('gameExporterPreset1.embedMedia', 0)
             maya.cmds.setAttr('gameExporterPreset1.viewInFBXReview', 0)
