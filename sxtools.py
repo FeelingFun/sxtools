@@ -174,7 +174,6 @@ class Settings(object):
         if shift is True:
             self.project['dockPosition'] = 1,
             self.project['AlphaTolerance'] = 1.0
-            self.project['SmoothExport'] = 0
             self.project['ExportOffset'] = 5
             self.project['LayerCount'] = 10
             self.project['MaskCount'] = 7
@@ -221,8 +220,6 @@ class Settings(object):
         self.project['RefNames'] = []
         self.project['AlphaTolerance'] = maya.cmds.floatField(
             'exportTolerance', query=True, value=True)
-        self.project['SmoothExport'] = maya.cmds.intField(
-            'exportSmooth', query=True, value=True)
         self.project['ExportOffset'] = maya.cmds.intField(
             'exportOffset', query=True, value=True)
         self.project['LayerCount'] = maya.cmds.intField(
@@ -2145,6 +2142,11 @@ class SceneSetup(object):
                     obj,
                     ln='staticVertexColors',
                     at='bool', dv=False)
+            if ('subdivisionLevel' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='subdivisionLevel',
+                    at='byte', min=0, max=5, dv=0)
 
         for shape in settings.shapeArray:
             attrList = maya.cmds.listAttr(shape, ud=True)
@@ -2611,7 +2613,6 @@ class Export(object):
             maya.cmds.delete(exportShape, ch=True)
 
             # Flatten colors to layer1
-            # maya.cmds.select(exportShape)
             self.flattenLayers(exportShape, numLayers)
 
             # Delete unnecessary color sets (leave only layer1)
@@ -2636,6 +2637,7 @@ class Export(object):
                 skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
                 maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
+                maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')                
                 maya.cmds.parent(exportShape, '_ignore')
                 maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
@@ -2663,12 +2665,12 @@ class Export(object):
                         skinnedJoints.append(influence)
                 maya.cmds.rename(skinJoints[0], skinnedJoints[0])
 
-                # Apply smoothing if set in project prefs
-                if settings.project['SmoothExport'] > 0:
+                # Apply smoothing if set in export flags
+                if maya.cmds.getAttr(skinTarget+'.subdivisionLevel') > 0:
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
-                        dv=settings.project['SmoothExport'], bnr=1,
+                        dv=maya.cmds.getAttr(skinTarget+'.subdivisionLevel'), bnr=1,
                         c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
@@ -2698,12 +2700,12 @@ class Export(object):
                             offsetZ += offsetDist
 
             # Smooth mesh as last step for export
-            if settings.project['SmoothExport'] > 0:
-                if maya.cmds.objExists(exportShape):
+            if maya.cmds.objExists(exportShape):
+                if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
-                        dv=settings.project['SmoothExport'], bnr=1,
+                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'), bnr=1,
                         c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
@@ -5549,21 +5551,6 @@ class UI(object):
                 'exportTolerance',
                 edit=True,
                 value=settings.project['AlphaTolerance'])
-
-        maya.cmds.text(label='Smoothing iterations:')
-        maya.cmds.intField(
-            'exportSmooth',
-            value=0,
-            minValue=0,
-            maxValue=3,
-            step=1,
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"))
-        if 'SmoothExport' in settings.project:
-            maya.cmds.intField(
-                'exportSmooth',
-                edit=True,
-                value=settings.project['SmoothExport'])
-
         maya.cmds.text(label='Export preview grid spacing:')
         maya.cmds.intField(
             'exportOffset',
@@ -6941,15 +6928,18 @@ class UI(object):
                 "sxtools.settings.frames['exportFlagsCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['exportFlagsCollapse']=False"))
-        maya.cmds.text(
-            label=(
-                'Custom per-object attributes to be exported to game engine.'),
-            align='left',
-            ww=True)
-
+        maya.cmds.rowColumnLayout(
+            'exportFlagsRowColumns',
+            parent='exportFlagsFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 140), (2, 100)),
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
+            rowSpacing=(1, 0))
+        maya.cmds.text('staticPaletteLabel', label='Static Vertex Colors:')
         maya.cmds.checkBox(
             'staticPaletteCheckbox',
-            label='Static Vertex Colors',
+            label='',
+            ann='If enabled, the object vertex colors remain exactly as applied in Maya.',
             value=(
                 maya.cmds.getAttr(settings.objectArray[0] + '.staticVertexColors')),
             onCommand=(
@@ -6958,6 +6948,19 @@ class UI(object):
             offCommand=(
                 'sxtools.tools.setExportFlags('
                 'sxtools.settings.objectArray, False)'))
+        maya.cmds.text('smoothStepsLabel', label='Export Subdivision Level:')
+        maya.cmds.intField(
+            'smoothSteps',
+            min=0,
+            max=5,
+            step=1,
+            value=(
+                maya.cmds.getAttr(str(settings.objectArray[0]) +
+                                  '.subdivisionLevel')),
+            changeCommand=(
+                'maya.cmds.setAttr(sxtools.settings.objectArray[0] +'
+                '".subdivisionLevel", maya.cmds.intField('
+                '"smoothSteps", query=True, value=True))'))
         maya.cmds.setParent('exportFlagsFrame')
         maya.cmds.setParent('canvas')
 
