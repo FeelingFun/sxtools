@@ -2637,7 +2637,10 @@ class Export(object):
                 skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
                 maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
-                maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
+                if maya.cmds.attributeQuery('subdivisionLevel', node=skinTarget, exists=True):
+                    maya.cmds.setAttr(skinTarget + '.subdivisionLevel', maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
+                else:
+                    maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')                
                 maya.cmds.parent(exportShape, '_ignore')
                 maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
