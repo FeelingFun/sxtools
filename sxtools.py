@@ -2465,9 +2465,13 @@ class Export(object):
         if maya.cmds.objExists('_staticExports'):
             maya.cmds.delete('_staticExports')
         maya.cmds.group(empty=True, name='_staticExports')
+        maya.cmds.setAttr('_staticExports.outlinerColor', 0.25,0.75,.25)
+        maya.cmds.setAttr('_staticExports.useOutlinerColor', True)
         if maya.cmds.objExists('_ignore'):
             maya.cmds.delete('_ignore')
         maya.cmds.group(empty=True, name='_ignore')
+        maya.cmds.setAttr('_ignore.outlinerColor', 0.25,0.75,.25)
+        maya.cmds.setAttr('_ignore.useOutlinerColor', True)
         rootObjs = maya.cmds.ls(assemblies=True)
         for obj in rootObjs:
             if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
@@ -2543,6 +2547,8 @@ class Export(object):
                 '_staticExports', ad=True, type='mesh', fullPath=True))
 
         for exportShape in exportShapeArray:
+            maya.cmds.setAttr(exportShape + '.outlinerColor', 0.25,0.75,.25)
+            maya.cmds.setAttr(exportShape + '.useOutlinerColor', True)
             # Check for existing additional UV sets and delete them,
             # create default UVs to UV0
             indices = maya.cmds.polyUVSet(
@@ -2635,38 +2641,51 @@ class Export(object):
             if maya.cmds.objExists(str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'):
                 skinnedMesh = str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'
                 skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
+                maya.cmds.setAttr(skinTarget + '.outlinerColor', 0.25,0.75,.25)
+                maya.cmds.setAttr(skinTarget + '.useOutlinerColor', True)
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
                 maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
                 if maya.cmds.attributeQuery('subdivisionLevel', node=skinTarget, exists=True):
                     maya.cmds.setAttr(skinTarget + '.subdivisionLevel', maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 else:
                     maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
-                maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')                
+                maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')
+                # Apply optional smoothing to original for accurate attribute transfer
+                # TODO: See if attributes could be transferred to the OrigShape of skinTarget
+                if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
+                    maya.cmds.polySmooth(
+                        exportShape, mth=0, sdt=2, ovb=1,
+                        ofb=3, ofc=0, ost=1, ocr=0,
+                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'), bnr=1,
+                        c=1, kb=1, ksb=1, khe=0,
+                        kt=1, kmb=1, suv=1, peh=0,
+                        sl=1, dpe=1, ps=0.1, ro=1, ch=0)
                 maya.cmds.parent(exportShape, '_ignore')
-                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
-                maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=1)
+                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
+                maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=4, colorBorders=1)
 
                 # Set the joints on the mesh to be exported to bindPose, move to same root
                 skinMeshHistory = maya.cmds.listHistory(skinTarget, pdo=True)
                 skinCluster = maya.cmds.ls(skinMeshHistory, type='skinCluster')
-                skinInfluences = maya.cmds.skinCluster(skinCluster[0], query=True, weightedInfluence=True)
-                skinJoints = []
-                for influence in skinInfluences:
-                    if maya.cmds.nodeType(influence) == 'joint':
-                        skinJoints.append(influence)
-                bindPose = maya.cmds.dagPose(skinJoints[0], query=True, bindPose=True)
-                maya.cmds.dagPose(skinJoints, bindPose, restore=True)
-                maya.cmds.parent(skinJoints[0], skinTarget)
+                if len(skinCluster) > 0:
+                    skinInfluences = maya.cmds.skinCluster(skinCluster[0], query=True, weightedInfluence=True)
+                    skinJoints = []
+                    for influence in skinInfluences:
+                        if maya.cmds.nodeType(influence) == 'joint':
+                            skinJoints.append(influence)
+                    bindPose = maya.cmds.dagPose(skinJoints[0], query=True, bindPose=True)
+                    maya.cmds.dagPose(skinJoints, bindPose, restore=True)
+                    maya.cmds.parent(skinJoints[0], skinTarget)
                 
-                # Rename the root joint of the mesh to be exported
-                skinnedMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
-                skinnedCluster = maya.cmds.ls(skinnedMeshHistory, type='skinCluster')
-                skinnedInfluences = maya.cmds.skinCluster(skinnedCluster[0], query=True, weightedInfluence=True)
-                skinnedJoints = []
-                for influence in skinnedInfluences:
-                    if maya.cmds.nodeType(influence) == 'joint':
-                        skinnedJoints.append(influence)
-                maya.cmds.rename(skinJoints[0], skinnedJoints[0])
+                    # Rename the root joint of the mesh to be exported
+                    skinnedMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
+                    skinnedCluster = maya.cmds.ls(skinnedMeshHistory, type='skinCluster')
+                    skinnedInfluences = maya.cmds.skinCluster(skinnedCluster[0], query=True, weightedInfluence=True)
+                    skinnedJoints = []
+                    for influence in skinnedInfluences:
+                        if maya.cmds.nodeType(influence) == 'joint':
+                            skinnedJoints.append(influence)
+                    maya.cmds.rename(skinJoints[0], skinnedJoints[0])
 
                 # Apply smoothing if set in export flags
                 if maya.cmds.getAttr(skinTarget+'.subdivisionLevel') > 0:
@@ -2677,8 +2696,8 @@ class Export(object):
                         c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
-                
-                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True)
+
+                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
 
             # For non-skinned meshes: move to origin, freeze transformations
             else:
@@ -4627,6 +4646,8 @@ class ToolActions(object):
                 skinMesh,
                 lm=0, pb=0, ibd=1, cm=0, l=3,
                 sc=1, o=0, p=6, ps=0.2, ws=0)
+            maya.cmds.setAttr(skinMesh[0] + '.outlinerColor', 0.75,0.25,1)
+            maya.cmds.setAttr(skinMesh[0] + '.useOutlinerColor', True)
             skinMeshArray.append(skinMesh[0])
 
         maya.cmds.delete(skinMeshArray, ch=True)
