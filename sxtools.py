@@ -2645,6 +2645,7 @@ class Export(object):
                 maya.cmds.setAttr(skinTarget + '.useOutlinerColor', True)
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
                 maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
+                maya.cmds.addAttr(skinTarget, ln='staticVertexColors', at='bool', dv=maya.cmds.getAttr(exportShape+'.staticVertexColors'))
                 if maya.cmds.attributeQuery('subdivisionLevel', node=skinTarget, exists=True):
                     maya.cmds.setAttr(skinTarget + '.subdivisionLevel', maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 else:
@@ -2660,6 +2661,8 @@ class Export(object):
                         c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
+                maya.cmds.editDisplayLayerMembers(
+                    'exportsLayer', exportShape)
                 maya.cmds.parent(exportShape, '_ignore')
                 maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
                 maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=4, colorBorders=1)
@@ -3477,6 +3480,25 @@ class ToolActions(object):
                         'masterPalette', query=True, rgb=True)[1],
                     b=maya.cmds.palettePort(
                         'masterPalette', query=True, rgb=True)[2])
+                # clear empty vertices of RGB info
+                if layer != 'layer1':
+                    maskList = []
+                    vertFaceList = maya.cmds.ls(
+                        maya.cmds.polyListComponentConversion(
+                            objects, tvf=True), fl=True)
+
+                    for vertFace in vertFaceList:
+                        if maya.cmds.polyColorPerVertex(
+                           vertFace, query=True, a=True)[0] == 0:
+                            maskList.append(vertFace)
+
+                    if len(maskList) == 0:
+                        maskList = vertFaceList
+                    
+                    maya.cmds.select(maskList)
+                    layers.clearLayer([layer, ])
+
+        maya.cmds.select(objects)
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
@@ -3900,6 +3922,10 @@ class ToolActions(object):
         ui.multiShapes = False
 
         for obj in objList:
+            if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
+                print('SX Tools: Deforming export mesh selected')
+                return
+
             histList = maya.cmds.listHistory(obj)
             shapeList = maya.cmds.listRelatives(
                 obj, shapes=True, fullPath=True)
@@ -4609,6 +4635,10 @@ class ToolActions(object):
                 0, 0, 0, type='double3')
             maya.cmds.makeIdentity(
                 skinMesh, apply=True, t=1, r=1, s=1, n=0, pn=1)
+            if maya.cmds.attributeQuery('staticVertexColors', node=skinMesh[0], exists=True):
+                maya.cmds.deleteAttr(skinMesh[0]+'.staticVertexColors')
+            if maya.cmds.attributeQuery('subdivisionLevel', node=skinMesh[0], exists=True):
+                maya.cmds.deleteAttr(skinMesh[0]+'.subdivisionLevel')
             maya.cmds.addAttr(skinMesh,
                 ln='skinnedMesh',
                 at='bool', dv=True)
