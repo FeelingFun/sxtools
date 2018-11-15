@@ -3925,6 +3925,9 @@ class ToolActions(object):
             if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
                 print('SX Tools: Deforming export mesh selected')
                 return
+            if '_skinned' in obj:
+                print('SX Tools: Skinning Mesh Selected')
+                return
 
             histList = maya.cmds.listHistory(obj)
             shapeList = maya.cmds.listRelatives(
