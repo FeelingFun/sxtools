@@ -2651,6 +2651,7 @@ class Export(object):
                 else:
                     maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')
+                maya.cmds.sets(skinTarget, e=True, forceElement='SXPBShaderSG')
                 # Apply optional smoothing to original for accurate attribute transfer
                 # TODO: See if attributes could be transferred to the OrigShape of skinTarget
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
@@ -2663,6 +2664,7 @@ class Export(object):
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
                 maya.cmds.editDisplayLayerMembers(
                     'exportsLayer', exportShape)
+                maya.cmds.hide(exportShape)
                 maya.cmds.parent(exportShape, '_ignore')
                 maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
                 maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=4, colorBorders=1)
@@ -2808,10 +2810,18 @@ class Export(object):
     # the user has a button in the tool UI
     # that allows an isolated view of the results.
     def viewExported(self):
-        maya.cmds.select('_staticExports')
+        exportObjs = ['_staticExports', ]
+        rootObjs = maya.cmds.ls(assemblies=True)
+        for obj in rootObjs:
+            if maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
+                exportObjs.append(obj)
+        maya.cmds.select(exportObjs)
         maya.cmds.setAttr('exportsLayer.visibility', 1)
         maya.cmds.setAttr('skinMeshLayer.visibility', 0)
         maya.cmds.setAttr('assetsLayer.visibility', 0)
+        maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
+        # hacky hack to refresh the layer editor
+        maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
         maya.mel.eval('FrameSelectedWithoutChildren;')
         maya.mel.eval('fitPanel -selectedNoChildren;')
 
@@ -2822,6 +2832,8 @@ class Export(object):
             for obj in objects:
                 root = maya.cmds.ls(obj, l=True)[0].split("|")[1]
                 if root == '_staticExports':
+                    return True
+                elif root == '_ignore':
                     return True
                 elif maya.cmds.attributeQuery('exportMesh', node=obj, exists=True):
                     return True
@@ -4691,6 +4703,10 @@ class ToolActions(object):
         maya.cmds.setAttr('exportsLayer.visibility', 0)
         maya.cmds.setAttr('skinMeshLayer.visibility', 1)
         maya.cmds.setAttr('assetsLayer.visibility', 0)
+        maya.cmds.editDisplayLayerGlobals(cdl='skinMeshLayer')
+        # hacky hack to refresh the layer editor
+        maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
+        
 
     def checkSkinMesh(self, objects):
         if len(settings.objectArray) > 0:
@@ -5715,7 +5731,10 @@ class UI(object):
             command=(
                 "maya.cmds.setAttr('exportsLayer.visibility', 0)\n"
                 "maya.cmds.setAttr('skinMeshLayer.visibility', 0)\n"
-                "maya.cmds.setAttr('assetsLayer.visibility', 1)"))
+                "maya.cmds.setAttr('assetsLayer.visibility', 1)\n"
+                "maya.cmds.editDisplayLayerGlobals(cdl='assetsLayer')\n"
+                "maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))\n"
+                "maya.cmds.select(clear=True)"))
 
         maya.cmds.text(label='Preview export object data:')
         maya.cmds.radioButtonGrp(
@@ -6964,11 +6983,18 @@ class UI(object):
                 "sxtools.settings.frames['skinMeshCollapse']=True"),
             expandCommand=(
                 "sxtools.settings.frames['skinMeshCollapse']=False"))
-        maya.cmds.button(
-            label='Create Skinning Mesh',
-            parent='skinMeshFrame',
-            height=30,
-            command=('sxtools.tools.createSkinMesh(sxtools.settings.objectArray)'))
+
+        if maya.cmds.objExists(str(settings.objectArray[0]).split('|')[-1].split('_var')[0] + '_skinned'):
+            maya.cmds.text(
+                parent='skinMeshFrame',
+                label=('Skinning Mesh already exists for '+str(settings.objectArray[0]).split('|')[-1]),
+                ww=True)
+        else:
+            maya.cmds.button(
+                label='Create Skinning Mesh',
+                parent='skinMeshFrame',
+                height=30,
+                command=('sxtools.tools.createSkinMesh(sxtools.settings.objectArray)'))
         maya.cmds.setParent('canvas')
 
     def exportFlagsUI(self):
@@ -7208,6 +7234,12 @@ class Core(object):
 
         # If exported objects selected, construct message
         elif export.checkExported(settings.objectArray) is True:
+            maya.cmds.setAttr('exportsLayer.visibility', 1)
+            maya.cmds.setAttr('skinMeshLayer.visibility', 0)
+            maya.cmds.setAttr('assetsLayer.visibility', 0)
+            maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
+            # hacky hack to refresh the layer editor
+            maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
             ui.exportObjectsUI()
 
         # If skinned meshes are selected, construct message
@@ -7215,6 +7247,9 @@ class Core(object):
             maya.cmds.setAttr('exportsLayer.visibility', 0)
             maya.cmds.setAttr('skinMeshLayer.visibility', 1)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
+            maya.cmds.editDisplayLayerGlobals(cdl='skinMeshLayer')
+            # hacky hack to refresh the layer editor
+            maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
             ui.skinMeshUI()
 
         # If objects have empty color sets, construct error message
@@ -7233,6 +7268,9 @@ class Core(object):
             maya.cmds.setAttr('exportsLayer.visibility', 0)
             maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 1)
+            maya.cmds.editDisplayLayerGlobals(cdl='assetsLayer')
+            # hacky hack to refresh the layer editor
+            maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
             
             if ui.history is True:
                 ui.historyUI()
