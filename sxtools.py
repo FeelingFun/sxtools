@@ -2317,29 +2317,24 @@ class Export(object):
         # mode 2 - material channels
         elif mode == 2:
             for k in range(lenColorArray):
+                uArray[k] = 0
+                vArray[k] = 0
                 if uColorArray[k].a > 0:
                     uArray[k] = uColorArray[k].r
-                elif vColorArray[k].r <= 0:
-                    uArray[k] = 0
-
                 if vColorArray[k].a > 0:
                     vArray[k] = vColorArray[k].r
-                elif vColorArray[k].a <= 0:
-                    vArray[k] = 0
+
         # mode 3 - alpha overlays
         elif mode == 3:
             uArray.setLength(lenColorArray)
             vArray.setLength(lenColorArray)
             for k in range(lenColorArray):
+                uArray[k] = 0
+                vArray[k] = 0
                 if uColorArray[k].a > 0:
                     uArray[k] = uColorArray[k].a
-                elif vColorArray[k].r <= 0:
-                    uArray[k] = 0
-
                 if vColorArray[k].a > 0:
                     vArray[k] = vColorArray[k].a
-                elif vColorArray[k].a <= 0:
-                    vArray[k] = 0
 
         MFnMesh.setUVs(uArray, vArray, targetUVSet)
         MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
@@ -7298,6 +7293,11 @@ class Core(object):
                 parent='canvas',
                 width=250,
                 command=(
+                    "sxtools.tools.setShadingMode(0)\n"
+                    "maya.cmds.polyOptions(activeObjects=True,"
+                    "colorMaterialChannel='ambientDiffuse',"
+                    "colorShadedDisplay=True)\n"
+                    "maya.mel.eval('DisplayLight;')\n"
                     "sxtools.export.processObjects("
                     "sxtools.settings.selectionArray)"))
             maya.cmds.setParent('canvas')
