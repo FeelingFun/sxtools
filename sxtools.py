@@ -3561,10 +3561,13 @@ class ToolActions(object):
                         (compPos[i][2] - objectBoundsZmin) /
                         (objectBoundsZmax - objectBoundsZmin))
                 ratio[i] = max(min(ratioRaw[i], 1), 0)
-                compColor[i] = maya.cmds.colorAtPoint(
-                    'SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
                 compAlpha[i] = maya.cmds.colorAtPoint(
                     'SXAlphaRamp', o='A', u=(ratio[i]), v=(ratio[i]))[0]
+                if compAlpha[i] > 0:
+                    compColor[i] = maya.cmds.colorAtPoint(
+                        'SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
+                else:
+                    compColor[i] = (0, 0, 0)
                 maya.cmds.polyColorPerVertex(
                     components[i], rgb=compColor[i], a=compAlpha[i])
         else:
@@ -3615,9 +3618,14 @@ class ToolActions(object):
                         'SXRamp', o='RGB', u=(ratio), v=(ratio))
                     outAlpha = maya.cmds.colorAtPoint(
                         'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
-                    layerColors[k].r = outColor[0]
-                    layerColors[k].g = outColor[1]
-                    layerColors[k].b = outColor[2]
+                    if outAlpha[0] > 0:
+                        layerColors[k].r = outColor[0]
+                        layerColors[k].g = outColor[1]
+                        layerColors[k].b = outColor[2]
+                    else:
+                        layerColors[k].r = outAlpha[0]
+                        layerColors[k].g = outAlpha[0]
+                        layerColors[k].b = outAlpha[0]
                     layerColors[k].a = outAlpha[0]
                     k += 1
                     fvIt.next()
@@ -4701,7 +4709,6 @@ class ToolActions(object):
         maya.cmds.editDisplayLayerGlobals(cdl='skinMeshLayer')
         # hacky hack to refresh the layer editor
         maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
-        
 
     def checkSkinMesh(self, objects):
         if len(settings.objectArray) > 0:
@@ -4715,6 +4722,10 @@ class ToolActions(object):
     def setExportFlags(self, objects, flag):
         for obj in objects:
             maya.cmds.setAttr(obj+'.staticVertexColors', flag)
+
+    def setSubdivisionFlag(self, objects, flag):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.subdivisionLevel', flag)
 
 
 class LayerManagement(object):
@@ -7036,9 +7047,10 @@ class UI(object):
                 maya.cmds.getAttr(str(settings.objectArray[0]) +
                                   '.subdivisionLevel')),
             changeCommand=(
-                'maya.cmds.setAttr(sxtools.settings.objectArray[0] +'
-                '".subdivisionLevel", maya.cmds.intField('
-                '"smoothSteps", query=True, value=True))'))
+                'sxtools.tools.setSubdivisionFlag('
+                'sxtools.settings.objectArray,'
+                'maya.cmds.intField("smoothSteps",'
+                ' query=True, value=True))'))
         maya.cmds.setParent('exportFlagsFrame')
         maya.cmds.setParent('canvas')
 
