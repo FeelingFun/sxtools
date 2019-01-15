@@ -2480,6 +2480,7 @@ class Export(object):
                 sourceArray.append(source)
 
         # Duplicate all selected objects for export
+        # TODO: Handle long names returned by duplicate names in the scene
         sourceNamesArray = maya.cmds.ls(sourceArray, dag=True, tr=True)
         exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)
 
@@ -2520,6 +2521,9 @@ class Export(object):
                         empty=True,
                         name=varParent+'_var'+str(x),
                         parent='_staticExports')
+                    varParent = varParent+'_var'+str(x)
+                    maya.cmds.parent(variant, varParent)
+                elif (varParent != '_staticExports') and (maya.cmds.objExists(varParent+'_var'+str(x))):
                     varParent = varParent+'_var'+str(x)
                     maya.cmds.parent(variant, varParent)
 
