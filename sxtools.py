@@ -2654,6 +2654,11 @@ class Export(object):
                 # Apply optional smoothing to original for accurate attribute transfer
                 # TODO: See if attributes could be transferred to the OrigShape of skinTarget
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
+                    sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
@@ -2693,6 +2698,11 @@ class Export(object):
 
                 # Apply smoothing if set in export flags
                 if maya.cmds.getAttr(skinTarget+'.subdivisionLevel') > 0:
+                    sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
@@ -2728,6 +2738,11 @@ class Export(object):
             # Smooth mesh as last step for export
             if maya.cmds.objExists(exportShape):
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
+                    sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
@@ -2818,6 +2833,7 @@ class Export(object):
         maya.cmds.setAttr('exportsLayer.visibility', 1)
         maya.cmds.setAttr('skinMeshLayer.visibility', 0)
         maya.cmds.setAttr('assetsLayer.visibility', 0)
+        maya.cmds.displaySmoothness(divisionsU=0, divisionsV=0, pointsWire=4, pointsShaded=1, polygonObject=1)
         maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
         # hacky hack to refresh the layer editor
         maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
@@ -4730,6 +4746,8 @@ class ToolActions(object):
     def setSubdivisionFlag(self, objects, flag):
         for obj in objects:
             maya.cmds.setAttr(obj+'.subdivisionLevel', flag)
+            objShape = maya.cmds.listRelatives(obj, shapes=True)[0]
+            maya.cmds.setAttr(objShape+'.smoothLevel', flag)
 
 
 class LayerManagement(object):
@@ -6873,7 +6891,7 @@ class UI(object):
             parent='creaseFrame',
             columnWidth4=(50, 50, 50, 50),
             columnAttach4=('left', 'left', 'left', 'left'),
-            labelArray4=['[0.5]', '[1.0]', '[2.0]', '[Hard]'],
+            labelArray4=['25%', '50%', '75%', 'Hard'],
             numberOfRadioButtons=4,
             onCommand1="sxtools.tools.assignToCreaseSet('sxCrease1')",
             onCommand2="sxtools.tools.assignToCreaseSet('sxCrease2')",
@@ -7328,6 +7346,13 @@ class Core(object):
                     colorShadedDisplay=True)
                 maya.mel.eval('DisplayLight;')
                 maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
+
+            if maya.cmds.getAttr(settings.objectArray[0]+'.subdivisionLevel') > 0:
+                sdl = maya.cmds.getAttr(settings.objectArray[0]+'.subdivisionLevel')
+                maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
+                maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
+                maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
 
         maya.cmds.setFocus('MayaWindow')
 
