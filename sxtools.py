@@ -3426,6 +3426,65 @@ class ToolActions(object):
         layers.refreshLayerList()
         layers.refreshSelectedItem()
 
+
+    # TODO: handle global/multiple meshes
+    def calculateOcclusion(self, objects, numRays=100, coneAngle=90, bias=0.01, max=1000.0, weighted=True):
+        startTimeOcc = maya.cmds.timerX()
+        selectionList = OM.MSelectionList()
+        nodeDagPath = OM.MDagPath()
+        vtxPoints = OM.MPointArray()
+        vtxColors = OM.MColorArray()
+        vtxIds = OM.MIntArray()
+        vtxNormals = OM.MFloatVectorArray()
+        vtxNormal = OM.MVector()
+        contribution = 1.0/float(numRays)
+
+        for idx, obj in enumerate(objects):
+            selectionList.add(obj)
+            nodeDagPath = selectionList.getDagPath(idx)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
+            accelGrid = MFnMesh.autoUniformGridParams()
+            vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
+            vtxNormals = MFnMesh.getVertexNormals(weighted, OM.MSpace.kWorld)
+            numVtx = MFnMesh.numVertices
+
+            vtxColors.setLength(numVtx)
+            vtxIds.setLength(numVtx)
+
+            vtxIt = OM.MItMeshVertex(nodeDagPath)
+            while not vtxIt.isDone():
+                i = vtxIt.index()
+                vtxIds[i] = i
+                vtxNormal = vtxIt.getNormal()
+                point = OM.MFloatPoint(vtxPoints[i])
+                normal = vtxNormals[i]
+                point = point + bias*normal
+                occValue = 1.0
+
+                for e in range(0, numRays):
+                    u1 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    u2 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    u3 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(u1, u2, u3, OM.MEulerRotation.kXYZ)))
+
+                    #sxtools.tools.calculateOcclusion(sxtools.settings.objectArray, 100, 90, 0.1, 10.0, True)
+                    result = MFnMesh.anyIntersection(point, sampleVector, OM.MSpace.kWorld, max, False, accelParams=accelGrid)
+                    if result[2] != -1:
+                        occValue = occValue - contribution
+
+                vtxColors[i].r = occValue
+                vtxColors[i].g = occValue
+                vtxColors[i].b = occValue
+                vtxColors[i].a = 1.0
+                
+                vtxIt.next()
+            
+            MFnMesh.setVertexColors(vtxColors, vtxIds)
+            MFnMesh.freeCachedIntersectionAccelerator()
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Occlusion baking time: ' + str(totalTime))
+
+
     def calculateCurvature(self, objects):
         for object in objects:
             selectionList = OM.MSelectionList()
