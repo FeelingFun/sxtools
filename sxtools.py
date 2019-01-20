@@ -3070,7 +3070,144 @@ class ToolActions(object):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
 
-    def bakeOcclusion(self):
+    def bakeOcclusion(self, numRays=250, coneAngle=90, bias=0.000001, max=1000.0, weighted=True):
+        comboOffset = 0.9
+        bbox = []
+        bboxCoords = []
+        newBboxCoords = []
+        settings.bakeSet = settings.shapeArray
+
+        if settings.project['LayerData']['occlusion'][5] is True:
+            layers.setColorSet('occlusion')
+
+        if settings.tools['bakeGroundPlane'] is True:
+            maya.cmds.polyPlane(
+                name='sxGroundPlane',
+                w=settings.tools['bakeGroundScale'],
+                h=settings.tools['bakeGroundScale'],
+                sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0)
+
+        # generate global pass combo mesh
+        if len(settings.bakeSet) > 1:
+            globalMesh = maya.cmds.polyUnite(maya.cmds.duplicate(settings.bakeSet, renameChildren=True), ch=False, name='comboOcclusionObject')
+            maya.cmds.polyMoveFacet(globalMesh, lsx=comboOffset, lsy=comboOffset, lsz=comboOffset)
+
+
+        if settings.tools['bakeGroundPlane'] is True:
+            if len(settings.bakeSet) > 1:
+                bbox = maya.cmds.exactWorldBoundingBox('comboOcclusionObjectShape')
+            else:
+                bbox = maya.cmds.exactWorldBoundingBox(settings.bakeSet[0])
+            maya.cmds.setAttr(
+                'sxGroundPlane.translateY',
+                (bbox[1] - settings.tools['bakeGroundOffset']))
+
+            bakeTx = export.getTransforms([settings.bakeSet[0], ])
+            groundPos = maya.cmds.getAttr(
+                str(bakeTx[0]) + '.translate')[0]
+            maya.cmds.setAttr('sxGroundPlane.translateX', groundPos[0])
+            maya.cmds.setAttr(
+                'sxGroundPlane.translateY',
+                (bbox[1] - settings.tools['bakeGroundOffset']))
+            maya.cmds.setAttr('sxGroundPlane.translateZ', groundPos[2])
+
+            if len(settings.bakeSet) > 1:
+                globalMesh = maya.cmds.polyUnite(('comboOcclusionObject', 'sxGroundPlane'), ch=False, name='comboOcclusionObject')
+                settings.bakeSet.append(globalMesh[0])
+
+        maya.cmds.select(settings.bakeSet)
+        sx.selectionManager()
+
+        contribution = 1.0/float(numRays)
+
+        for bake in settings.bakeSet:            
+            selectionList = OM.MSelectionList()
+            nodeDagPath = OM.MDagPath()
+            vtxPoints = OM.MPointArray()
+            vtxColors = OM.MColorArray()
+            vtxIds = OM.MIntArray()
+            vtxNormals = OM.MFloatVectorArray()
+            vtxNormal = OM.MVector()
+
+            selectionList.add(bake)
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
+            accelGrid = MFnMesh.autoUniformGridParams()
+            vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
+            vtxNormals = MFnMesh.getVertexNormals(weighted, OM.MSpace.kWorld)
+            numVtx = MFnMesh.numVertices
+
+            vtxColors.setLength(numVtx)
+            vtxIds.setLength(numVtx)
+
+            vtxIt = OM.MItMeshVertex(nodeDagPath)
+            while not vtxIt.isDone():
+                i = vtxIt.index()
+                vtxIds[i] = i
+                vtxNormal = vtxIt.getNormal()
+                point = OM.MFloatPoint(vtxPoints[i])
+                normal = vtxNormals[i]
+                point = point + bias*normal
+                occValue = 1.0
+
+                for e in range(0, numRays):
+                    u1 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    u2 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    u3 = math.radians(random.uniform(-coneAngle, coneAngle))
+                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(u1, u2, u3, OM.MEulerRotation.kXYZ)))
+
+                    result = MFnMesh.anyIntersection(point, sampleVector, OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
+                    if result[2] != -1:
+                        occValue = occValue - contribution
+
+                vtxColors[i].r = occValue
+                vtxColors[i].g = occValue
+                vtxColors[i].b = occValue
+                vtxColors[i].a = 1.0
+                
+                vtxIt.next()
+             
+            MFnMesh.setVertexColors(vtxColors, vtxIds)
+            MFnMesh.freeCachedIntersectionAccelerator()
+
+            # assign global mesh colors to individual pieces
+            if bake == globalMesh[0]:
+                settings.bakeSet.remove(bake)
+                bboxCoords.sort()
+                newObj = maya.cmds.polySeparate(globalMesh)
+                newBakes = maya.cmds.listRelatives(children=True)
+                for newBake in newBakes:
+                    bbx = maya.cmds.exactWorldBoundingBox(newBake)
+                    if (bbx[0] < -45) and (bbx[3] > 45):
+                        maya.cmds.delete(newBake)
+                        newBakes.remove(newBake)
+                    else:
+                        newBboxCoords.append((bbx[0], bbx[1], bbx[2], newBake))
+                newBboxCoords.sort()
+
+                for idx, obj in enumerate(newBboxCoords):
+                    selectionList = OM.MSelectionList()
+                    selectionList.add(obj[3])
+                    nodeDagPath = selectionList.getDagPath(0)
+                    MFnMesh = OM.MFnMesh(nodeDagPath)
+                    globalColorArray = OM.MColorArray()
+                    globalColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
+                    settings.globalOcclusionDict[bboxCoords[idx][3]] = globalColorArray
+
+                maya.cmds.delete(newObj)
+            else:
+                localColorArray = OM.MColorArray()
+                localColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
+                settings.localOcclusionDict[bake] = localColorArray
+                # calculate bounding box and use bboxmin to sort shapes
+                bbx = maya.cmds.exactWorldBoundingBox(bake)
+                bboxCoords.append((bbx[0], bbx[1], bbx[2], bake))
+
+        maya.cmds.select(settings.bakeSet)
+        sx.selectionManager()
+
+
+    def bakeOcclusionMR(self):
         bbox = []
         settings.bakeSet = settings.shapeArray
 
@@ -3151,10 +3288,21 @@ class ToolActions(object):
         sx.selectionManager()
 
     def bakeBlendOcclusion(self):
+        startTimeOcc = maya.cmds.timerX()
+        print('SX Tools: Baking local occlusion pass')
+        settings.tools['bakeGroundPlane'] = True
+        self.bakeOcclusion()
+
+        settings.tools['blendSlider'] = 0.0
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Occlusion baking time: ' + str(totalTime))
+
+    def bakeBlendOcclusionMR(self):
+        startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking local occlusion pass')
         settings.tools['bakeGroundPlane'] = False
         settings.tools['bakeTogether'] = False
-        self.bakeOcclusion()
+        self.bakeOcclusionMR()
 
         for shape in settings.shapeArray:
             selectionList = OM.MSelectionList()
@@ -3167,10 +3315,13 @@ class ToolActions(object):
             localColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
             settings.localOcclusionDict[shape] = localColorArray
 
+        halfTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Local occlusion baking time: ' + str(halfTime))
+
         print('SX Tools: Baking global occlusion pass')
         settings.tools['bakeGroundPlane'] = True
         settings.tools['bakeTogether'] = True
-        self.bakeOcclusion()
+        self.bakeOcclusionMR()
 
         for shape in settings.shapeArray:
             selectionList = OM.MSelectionList()
@@ -3185,29 +3336,28 @@ class ToolActions(object):
             settings.globalOcclusionDict[shape] = globalColorArray
 
         settings.tools['blendSlider'] = 1.0
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Occlusion baking time: ' + str(totalTime))
 
     def blendOcclusion(self):
         sliderValue = settings.tools['blendSlider']
-
+            
         for bake in settings.bakeSet:
             selectionList = OM.MSelectionList()
-            selectionList.add(bake)
             nodeDagPath = OM.MDagPath()
+            localColorArray = OM.MColorArray()
+            globalColorArray = OM.MColorArray()
+            layerColorArray = OM.MColorArray()
+            faceIds = OM.MIntArray()
+            vtxIds = OM.MIntArray()
+            selectionList.add(bake)
             nodeDagPath = selectionList.getDagPath(0)
             MFnMesh = OM.MFnMesh(nodeDagPath)
 
-            localColorArray = OM.MColorArray()
             localColorArray = settings.localOcclusionDict[bake]
-            globalColorArray = OM.MColorArray()
             globalColorArray = settings.globalOcclusionDict[bake]
-            layerColorArray = OM.MColorArray()
             layerColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
-
-            faceIds = OM.MIntArray()
-            vtxIds = OM.MIntArray()
-
             lenSel = len(layerColorArray)
-
             faceIds.setLength(lenSel)
             vtxIds.setLength(lenSel)
 
@@ -3237,133 +3387,6 @@ class ToolActions(object):
             settings.shapeArray[len(settings.shapeArray)-1],
             layers.getSelectedLayer())
 
-    def bakeOcclusionArnold(self):
-        bakePath = maya.cmds.textField('bakepath', query=True, text=True)
-        if bakePath is None:
-            bakePath = 'C:/'
-        # check if path has a slash, add if necessary
-
-        # create AO material
-        if maya.cmds.objExists('aiSXAO') is False:
-            maya.cmds.shadingNode(
-                'aiAmbientOcclusion',
-                asShader=True,
-                name='aiSXAO')
-            maya.cmds.setAttr('aiSXAO.samples', 8)
-            maya.cmds.setAttr('aiSXAO.falloff', 0.1)
-            maya.cmds.setAttr('aiSXAO.invertNormals', 0)
-            maya.cmds.setAttr('aiSXAO.nearClip', 0.01)
-            maya.cmds.setAttr('aiSXAO.farClip', 100)
-            maya.cmds.setAttr('aiSXAO.selfOnly', 0)
-            print('SX Tools: Creating occlusion material')
-
-        if maya.cmds.objExists('SXAOTexture') is False:
-            maya.cmds.shadingNode('file', asTexture=True, name='SXAOTexture')
-
-        bbox = []
-        settings.bakeSet = settings.shapeArray
-        modifiers = maya.cmds.getModifiers()
-        shift = bool((modifiers & 1) > 0)
-
-        if settings.project['LayerData']['occlusion'][5] is True:
-            layers.setColorSet('occlusion')
-
-        if settings.tools['bakeGroundPlane'] is True:
-            maya.cmds.polyPlane(
-                name='sxGroundPlane',
-                w=settings.tools['bakeGroundScale'],
-                h=settings.tools['bakeGroundScale'],
-                sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0)
-            maya.cmds.select(settings.bakeSet)
-            sx.selectionManager()
-
-        for bake in settings.bakeSet:
-            # create uvAO uvset
-            uvList = maya.cmds.polyUVSet(bake, q=True, allUVSets=True)
-            if 'uvAO' not in uvList:
-                maya.cmds.polyAutoProjection(
-                    bake,
-                    lm=0, pb=0, ibd=1, cm=1,
-                    l=2, sc=1, o=0, p=6,
-                    uvSetName='uvAO',
-                    ps=0.2, ws=0)
-
-        # bake everything together
-        if shift is True:
-            if settings.tools['bakeGroundPlane'] is True:
-                bbox = maya.cmds.exactWorldBoundingBox(settings.bakeSet)
-                maya.cmds.setAttr(
-                    'sxGroundPlane.translateY',
-                    (bbox[1] - settings.tools['bakeGroundOffset']))
-            maya.cmds.arnoldRenderToTexture(
-                settings.bakeSet,
-                resolution=512,
-                shader='aiSXAO',
-                aa_samples=1,
-                normal_offset=0.001,
-                filter='closest',
-                folder=bakePath,
-                uv_set='uvAO')
-
-        # bake each object separately
-        elif shift is False:
-            for bake in settings.bakeSet:
-                maya.cmds.setAttr((str(bake) + '.visibility'), False)
-
-            for bake in settings.bakeSet:
-                if settings.tools['bakeGroundPlane'] is True:
-                    bbox = maya.cmds.exactWorldBoundingBox(bake)
-                    bakeTx = export.getTransforms([
-                        bake,
-                    ])
-                    groundPos = maya.cmds.getAttr(
-                        str(bakeTx[0]) + '.translate')[0]
-                    maya.cmds.setAttr(
-                        'sxGroundPlane.translateX', groundPos[0])
-                    maya.cmds.setAttr(
-                        'sxGroundPlane.translateY',
-                        (bbox[1] - settings.tools['bakeGroundOffset']))
-                    maya.cmds.setAttr(
-                        'sxGroundPlane.translateZ', groundPos[2])
-
-                maya.cmds.setAttr(
-                    (str(bake) + '.visibility'), True)
-                maya.cmds.arnoldRenderToTexture(
-                    bake,
-                    resolution=512,
-                    shader='aiSXAO',
-                    aa_samples=1,
-                    normal_offset=0.001,
-                    filter='closest',
-                    folder=bakePath,
-                    uv_set='uvAO')
-                maya.cmds.setAttr(
-                    (str(bake) + '.visibility'), False)
-
-            for bake in settings.bakeSet:
-                maya.cmds.setAttr(
-                    (str(bake) + '.visibility'), True)
-
-        if settings.tools['bakeGroundPlane'] is True:
-            maya.cmds.delete('sxGroundPlane')
-
-        # apply baked maps to occlusion layers
-        for bake in settings.bakeSet:
-            bakeFileName = bakePath + '/' + str(bake).split('|')[-1] + '.exr'
-            maya.cmds.setAttr(
-                'SXAOTexture.fileTextureName', bakeFileName, type='string')
-            maya.cmds.setAttr(
-                'SXAOTexture.filterType', 0)
-            maya.cmds.setAttr(
-                'SXAOTexture.aiFilter', 0)
-            # maya.cmds.setAttr('SXAOTexture.hdrMapping', 'HDR_LINEAR_MAPPING')
-            self.applyTexture(
-                'SXAOTexture', 'uvAO', False)
-
-        # TODO: Fix HDR mapping, fix UV alpha seams
-
-        maya.cmds.select(settings.bakeSet)
-        sx.selectionManager()
 
     def applyTexture(self, texture, uvSetName, applyAlpha):
         colors = []
@@ -3425,65 +3448,6 @@ class ToolActions(object):
             layers.getSelectedLayer())
         layers.refreshLayerList()
         layers.refreshSelectedItem()
-
-
-    # TODO: handle global/multiple meshes
-    def calculateOcclusion(self, objects, numRays=100, coneAngle=90, bias=0.01, max=1000.0, weighted=True):
-        startTimeOcc = maya.cmds.timerX()
-        selectionList = OM.MSelectionList()
-        nodeDagPath = OM.MDagPath()
-        vtxPoints = OM.MPointArray()
-        vtxColors = OM.MColorArray()
-        vtxIds = OM.MIntArray()
-        vtxNormals = OM.MFloatVectorArray()
-        vtxNormal = OM.MVector()
-        contribution = 1.0/float(numRays)
-
-        for idx, obj in enumerate(objects):
-            selectionList.add(obj)
-            nodeDagPath = selectionList.getDagPath(idx)
-            MFnMesh = OM.MFnMesh(nodeDagPath)
-            accelGrid = MFnMesh.autoUniformGridParams()
-            vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
-            vtxNormals = MFnMesh.getVertexNormals(weighted, OM.MSpace.kWorld)
-            numVtx = MFnMesh.numVertices
-
-            vtxColors.setLength(numVtx)
-            vtxIds.setLength(numVtx)
-
-            vtxIt = OM.MItMeshVertex(nodeDagPath)
-            while not vtxIt.isDone():
-                i = vtxIt.index()
-                vtxIds[i] = i
-                vtxNormal = vtxIt.getNormal()
-                point = OM.MFloatPoint(vtxPoints[i])
-                normal = vtxNormals[i]
-                point = point + bias*normal
-                occValue = 1.0
-
-                for e in range(0, numRays):
-                    u1 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    u2 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    u3 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(u1, u2, u3, OM.MEulerRotation.kXYZ)))
-
-                    #sxtools.tools.calculateOcclusion(sxtools.settings.objectArray, 100, 90, 0.1, 10.0, True)
-                    result = MFnMesh.anyIntersection(point, sampleVector, OM.MSpace.kWorld, max, False, accelParams=accelGrid)
-                    if result[2] != -1:
-                        occValue = occValue - contribution
-
-                vtxColors[i].r = occValue
-                vtxColors[i].g = occValue
-                vtxColors[i].b = occValue
-                vtxColors[i].a = 1.0
-                
-                vtxIt.next()
-            
-            MFnMesh.setVertexColors(vtxColors, vtxIds)
-            MFnMesh.freeCachedIntersectionAccelerator()
-        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Occlusion baking time: ' + str(totalTime))
-
 
     def calculateCurvature(self, objects):
         for object in objects:
@@ -6521,33 +6485,19 @@ class UI(object):
             layers.getSelectedLayer())
 
         plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
+        maya.cmds.button(
+            label='Bake Occlusion',
+            parent='occlusionFrame',
+            height=30,
+            width=100,
+            command='sxtools.tools.bakeBlendOcclusion()')
         if 'Mayatomr' in plugList:
             maya.cmds.button(
                 label='Bake Occlusion (Mental Ray)',
                 parent='occlusionFrame',
                 height=30,
                 width=100,
-                command='sxtools.tools.bakeBlendOcclusion()')
-        if 'mtoa' in plugList:
-            maya.cmds.rowColumnLayout(
-                'occlusionRowColumns3',
-                parent='occlusionFrame',
-                numberOfColumns=2,
-                columnWidth=((1, 130), (2, 110)),
-                columnAttach=[(1, 'left', 0), (2, 'left', 0)],
-                rowSpacing=(1, 0))
-            maya.cmds.text('bake label', label='Bake folder:')
-            maya.cmds.textField(
-                'bakepath',
-                enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-                placeholderText='C:/')
-            maya.cmds.button(
-                label='Bake Occlusion (Arnold)',
-                parent='occlusionFrame',
-                height=30,
-                width=100,
-                ann='Shift-click to bake all objects together',
-                command="sxtools.tools.bakeOcclusionArnold()")
+                command='sxtools.tools.bakeBlendOcclusionMR()')
 
         maya.cmds.setParent('canvas')
 
