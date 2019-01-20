@@ -3070,12 +3070,12 @@ class ToolActions(object):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
 
-    def bakeOcclusion(self, numRays=250, coneAngle=90, bias=0.000001, max=1000.0, weighted=True):
-        comboOffset = 0.9
+    def bakeOcclusion(self, numRays=250, coneAngle=90, bias=0.000001, max=1000.0, weighted=True, comboOffset=0.9):
         bbox = []
         bboxCoords = []
         newBboxCoords = []
         settings.bakeSet = settings.shapeArray
+        contribution = 1.0/float(numRays)
 
         if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
@@ -3114,11 +3114,6 @@ class ToolActions(object):
             if len(settings.bakeSet) > 1:
                 globalMesh = maya.cmds.polyUnite(('comboOcclusionObject', 'sxGroundPlane'), ch=False, name='comboOcclusionObject')
                 settings.bakeSet.append(globalMesh[0])
-
-        maya.cmds.select(settings.bakeSet)
-        sx.selectionManager()
-
-        contribution = 1.0/float(numRays)
 
         for bake in settings.bakeSet:            
             selectionList = OM.MSelectionList()
@@ -3182,26 +3177,29 @@ class ToolActions(object):
                         maya.cmds.delete(newBake)
                         newBakes.remove(newBake)
                     else:
-                        newBboxCoords.append((bbx[0], bbx[1], bbx[2], newBake))
+                        bbSize = abs((bbox[3]-bbx[0])*(bbox[4]-bbx[1])*(bbox[5]-bbx[3]))
+                        newBboxCoords.append((bbSize,bbx[0], bbx[1], bbx[2], newBake))
                 newBboxCoords.sort()
 
                 for idx, obj in enumerate(newBboxCoords):
                     selectionList = OM.MSelectionList()
-                    selectionList.add(obj[3])
+                    selectionList.add(obj[4])
                     nodeDagPath = selectionList.getDagPath(0)
                     MFnMesh = OM.MFnMesh(nodeDagPath)
                     globalColorArray = OM.MColorArray()
                     globalColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
-                    settings.globalOcclusionDict[bboxCoords[idx][3]] = globalColorArray
+                    settings.globalOcclusionDict[bboxCoords[idx][4]] = globalColorArray
 
                 maya.cmds.delete(newObj)
+                maya.cmds.delete(globalMesh)
             else:
                 localColorArray = OM.MColorArray()
                 localColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
                 settings.localOcclusionDict[bake] = localColorArray
-                # calculate bounding box and use bboxmin to sort shapes
+                # calculate bounding box and use it to sort shapes
                 bbx = maya.cmds.exactWorldBoundingBox(bake)
-                bboxCoords.append((bbx[0], bbx[1], bbx[2], bake))
+                bbSize = abs((bbox[3]-bbx[0])*(bbox[4]-bbx[1])*(bbox[5]-bbx[3]))
+                bboxCoords.append((bbSize, bbx[0], bbx[1], bbx[2], bake))
 
         maya.cmds.select(settings.bakeSet)
         sx.selectionManager()
@@ -3289,7 +3287,7 @@ class ToolActions(object):
 
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Baking local occlusion pass')
+        print('SX Tools: Baking ambient occlusion')
         settings.tools['bakeGroundPlane'] = True
         self.bakeOcclusion()
 
@@ -3299,7 +3297,7 @@ class ToolActions(object):
 
     def bakeBlendOcclusionMR(self):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Baking local occlusion pass')
+        print('SX Tools: Baking ambient occlusion')
         settings.tools['bakeGroundPlane'] = False
         settings.tools['bakeTogether'] = False
         self.bakeOcclusionMR()
@@ -3315,10 +3313,6 @@ class ToolActions(object):
             localColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
             settings.localOcclusionDict[shape] = localColorArray
 
-        halfTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Local occlusion baking time: ' + str(halfTime))
-
-        print('SX Tools: Baking global occlusion pass')
         settings.tools['bakeGroundPlane'] = True
         settings.tools['bakeTogether'] = True
         self.bakeOcclusionMR()
