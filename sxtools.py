@@ -3070,12 +3070,28 @@ class ToolActions(object):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
 
-    def bakeOcclusion(self, numRays=250, coneAngle=90, bias=0.000001, max=1000.0, weighted=True, comboOffset=0.9):
+    def rayRandomizer(self, rayCount, coneAngle, segments):
+        results = []
+        for e in range(segments*2):
+            if e % 2 == 0:
+                x = 1 # Even 
+            else:
+                x = -1 # Odd
+            for f in xrange(1, (rayCount/2/segments)+1):
+                offsets = [None, None, None]
+                for g in xrange(3):
+                    offsets[g] = math.radians(random.uniform(0, (x*coneAngle)/segments*f))
+                results.append(offsets)
+
+        return results
+
+    def bakeOcclusion(self, rayCount=100, coneAngle=90, bias=0.000001, max=1000.0, weighted=True, comboOffset=0.9, segments=5):
         bbox = []
         bboxCoords = []
         newBboxCoords = []
         settings.bakeSet = settings.shapeArray
-        contribution = 1.0/float(numRays)
+        contribution = 1.0/float(rayCount)
+        offsets = self.rayRandomizer(rayCount, coneAngle, segments)
 
         if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
@@ -3091,7 +3107,6 @@ class ToolActions(object):
         if len(settings.bakeSet) > 1:
             globalMesh = maya.cmds.polyUnite(maya.cmds.duplicate(settings.bakeSet, renameChildren=True), ch=False, name='comboOcclusionObject')
             maya.cmds.polyMoveFacet(globalMesh, lsx=comboOffset, lsy=comboOffset, lsz=comboOffset)
-
 
         if settings.tools['bakeGroundPlane'] is True:
             if len(settings.bakeSet) > 1:
@@ -3145,12 +3160,8 @@ class ToolActions(object):
                 point = point + bias*normal
                 occValue = 1.0
 
-                for e in range(0, numRays):
-                    u1 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    u2 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    u3 = math.radians(random.uniform(-coneAngle, coneAngle))
-                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(u1, u2, u3, OM.MEulerRotation.kXYZ)))
-
+                for e in range(0, rayCount):
+                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(offsets[e][0], offsets[e][1], offsets[e][2], OM.MEulerRotation.kXYZ)))
                     result = MFnMesh.anyIntersection(point, sampleVector, OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
                     if result[2] != -1:
                         occValue = occValue - contribution
