@@ -3072,21 +3072,24 @@ class ToolActions(object):
 
     def rayRandomizer(self, rayCount, coneAngle, segments):
         results = []
-        for e in range(segments*2):
-            if e % 2 == 0:
-                x = 1 # Even 
-            else:
-                x = -1 # Odd
-            for f in xrange(1, (rayCount/2/segments)+1):
+        raysPerSegment = rayCount/segments
+        for e in range(segments):
+            for f in xrange(raysPerSegment):
+                if f % 2 == 0:
+                    x = 1
+                else:
+                    x = -1
                 offsets = [None, None, None]
                 for g in xrange(3):
-                    offsets[g] = math.radians(random.uniform(0, (x*coneAngle)/segments*f))
+                    #print 0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))
+                    offsets[g] = math.radians(random.uniform(0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))))
                 results.append(offsets)
 
+        print len(results)
+        print results
         return results
 
-    def bakeOcclusion(self, rayCount=100, coneAngle=90, bias=0.000001, max=1000.0, weighted=True, comboOffset=0.9, segments=5):
-        bbox = []
+    def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=5):
         bboxCoords = []
         newBboxCoords = []
         settings.bakeSet = settings.shapeArray
@@ -3096,19 +3099,21 @@ class ToolActions(object):
         if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
 
-        if settings.tools['bakeGroundPlane'] is True:
-            maya.cmds.polyPlane(
-                name='sxGroundPlane',
-                w=settings.tools['bakeGroundScale'],
-                h=settings.tools['bakeGroundScale'],
-                sx=1, sy=1, ax=(0, 1, 0), cuv=2, ch=0)
-
         # generate global pass combo mesh
         if len(settings.bakeSet) > 1:
             globalMesh = maya.cmds.polyUnite(maya.cmds.duplicate(settings.bakeSet, renameChildren=True), ch=False, name='comboOcclusionObject')
             maya.cmds.polyMoveFacet(globalMesh, lsx=comboOffset, lsy=comboOffset, lsz=comboOffset)
+        else:
+            globalMesh = maya.cmds.duplicate(settings.bakeSet[0], name='comboOcclusionObject')
 
         if settings.tools['bakeGroundPlane'] is True:
+            bbox = []
+            maya.cmds.polyPlane(
+                name='sxGroundPlane',
+                w=settings.tools['bakeGroundScale'],
+                h=settings.tools['bakeGroundScale'],
+                sx=1, sy=1, ax=(0, 1, 0), cuv=0, ch=0)
+
             if len(settings.bakeSet) > 1:
                 bbox = maya.cmds.exactWorldBoundingBox('comboOcclusionObjectShape')
             else:
@@ -3126,11 +3131,10 @@ class ToolActions(object):
                 (bbox[1] - settings.tools['bakeGroundOffset']))
             maya.cmds.setAttr('sxGroundPlane.translateZ', groundPos[2])
 
-            if len(settings.bakeSet) > 1:
-                globalMesh = maya.cmds.polyUnite(('comboOcclusionObject', 'sxGroundPlane'), ch=False, name='comboOcclusionObject')
-                settings.bakeSet.append(globalMesh[0])
+            globalMesh = maya.cmds.polyUnite(('comboOcclusionObject', 'sxGroundPlane'), ch=False, name='comboOcclusionObject')
+            settings.bakeSet.append(globalMesh[0])
 
-        for bake in settings.bakeSet:            
+        for bake in settings.bakeSet:
             selectionList = OM.MSelectionList()
             nodeDagPath = OM.MDagPath()
             vtxPoints = OM.MPointArray()
@@ -3180,28 +3184,27 @@ class ToolActions(object):
             if bake == globalMesh[0]:
                 settings.bakeSet.remove(bake)
                 bboxCoords.sort()
-                newObj = maya.cmds.polySeparate(globalMesh)
-                newBakes = maya.cmds.listRelatives(children=True)
-                for newBake in newBakes:
-                    bbx = maya.cmds.exactWorldBoundingBox(newBake)
-                    if (bbx[0] < -45) and (bbx[3] > 45):
-                        maya.cmds.delete(newBake)
-                        newBakes.remove(newBake)
+                newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
+                for newObj in newObjs:
+                    bbx = maya.cmds.exactWorldBoundingBox(newObj)
+                    if math.fabs(bbx[3] - bbx[0]) > 90 and (bbx[1] - bbx[4]) == 0:
+                        maya.cmds.delete(newObj)
+                        newObjs.remove(newObj)
                     else:
-                        bbSize = abs((bbox[3]-bbx[0])*(bbox[4]-bbx[1])*(bbox[5]-bbx[3]))
-                        newBboxCoords.append((bbSize,bbx[0], bbx[1], bbx[2], newBake))
-                newBboxCoords.sort()
+                        bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
+                        bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
+                        newBboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], newObj))
 
+                newBboxCoords.sort()
                 for idx, obj in enumerate(newBboxCoords):
                     selectionList = OM.MSelectionList()
-                    selectionList.add(obj[4])
+                    selectionList.add(obj[5])
                     nodeDagPath = selectionList.getDagPath(0)
                     MFnMesh = OM.MFnMesh(nodeDagPath)
                     globalColorArray = OM.MColorArray()
                     globalColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
-                    settings.globalOcclusionDict[bboxCoords[idx][4]] = globalColorArray
+                    settings.globalOcclusionDict[bboxCoords[idx][5]] = globalColorArray
 
-                maya.cmds.delete(newObj)
                 maya.cmds.delete(globalMesh)
             else:
                 localColorArray = OM.MColorArray()
@@ -3209,8 +3212,9 @@ class ToolActions(object):
                 settings.localOcclusionDict[bake] = localColorArray
                 # calculate bounding box and use it to sort shapes
                 bbx = maya.cmds.exactWorldBoundingBox(bake)
-                bbSize = abs((bbox[3]-bbx[0])*(bbox[4]-bbx[1])*(bbox[5]-bbx[3]))
-                bboxCoords.append((bbSize, bbx[0], bbx[1], bbx[2], bake))
+                bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
+                bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
+                bboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], bake))
 
         maya.cmds.select(settings.bakeSet)
         sx.selectionManager()
@@ -3299,7 +3303,6 @@ class ToolActions(object):
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking ambient occlusion')
-        settings.tools['bakeGroundPlane'] = True
         self.bakeOcclusion()
 
         settings.tools['blendSlider'] = 0.0
@@ -3309,6 +3312,7 @@ class ToolActions(object):
     def bakeBlendOcclusionMR(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking ambient occlusion')
+        ground = settings.tools['bakeGroundPlane']
         settings.tools['bakeGroundPlane'] = False
         settings.tools['bakeTogether'] = False
         self.bakeOcclusionMR()
@@ -3324,7 +3328,7 @@ class ToolActions(object):
             localColorArray = MFnMesh.getFaceVertexColors(colorSet='occlusion')
             settings.localOcclusionDict[shape] = localColorArray
 
-        settings.tools['bakeGroundPlane'] = True
+        settings.tools['bakeGroundPlane'] = ground
         settings.tools['bakeTogether'] = True
         self.bakeOcclusionMR()
 
@@ -3365,6 +3369,8 @@ class ToolActions(object):
             lenSel = len(layerColorArray)
             faceIds.setLength(lenSel)
             vtxIds.setLength(lenSel)
+            
+            print bake, len(localColorArray), len(globalColorArray)
 
             fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
@@ -6431,19 +6437,18 @@ class UI(object):
                 (2, 'left', 0),
                 (3, 'left', 0),
                 (4, 'left', 0)],
-            rowSpacing=(1, 0))
+            rowSpacing=(1, 5))
 
         maya.cmds.text(label=' ')
-        maya.cmds.text(label=' ')
+        maya.cmds.text(label='Enabled ')
         maya.cmds.text(label='Scale')
         maya.cmds.text(label='Offset')
 
-        maya.cmds.text('groundLabel', label='Groundplane:')
-        maya.cmds.text(label='')
-        # maya.cmds.checkBox(
-        #   'ground', label='', value=settings.tools['bakeGroundPlane'],
-        #    changeCommand=("sxtools.settings.tools['bakeGroundPlane'] = (
-        #    maya.cmds.checkBox('ground', query=True, value=True))") )
+        maya.cmds.text(label='Groundplane:')
+        maya.cmds.checkBox(
+            'ground', label='', value=settings.tools['bakeGroundPlane'],
+            changeCommand=("sxtools.settings.tools['bakeGroundPlane'] = ("
+            "maya.cmds.checkBox('ground', query=True, value=True))") )
         maya.cmds.floatField(
             'groundScale',
             value=settings.tools['bakeGroundScale'],
@@ -6474,6 +6479,7 @@ class UI(object):
         maya.cmds.text(label='Blend local vs. global')
         maya.cmds.floatSlider(
             'blendSlider',
+            step=0.2,
             min=0.0,
             max=1.0,
             width=100,
