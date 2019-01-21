@@ -121,7 +121,13 @@ class Settings(object):
             'bakeTogether': False,
             'blendSlider': 0.0,
             'categoryPreset': None,
-            'gradientDirection': 1
+            'gradientDirection': 1,
+            'rayCount': 250,
+            'coneAngle': 90,
+            'bias': 0.000001,
+            'comboOffset': 0.9,
+            'maxDistance': 3.0,
+            'segments': 5
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -3303,7 +3309,7 @@ class ToolActions(object):
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking ambient occlusion')
-        self.bakeOcclusion()
+        self.bakeOcclusion(settings.tools['rayCount'], settings.tools['coneAngle'], settings.tools['bias'], settings.tools['maxDistance'], True, settings.tools['comboOffset'], settings.tools['segments'])
 
         settings.tools['blendSlider'] = 0.0
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
@@ -6418,11 +6424,89 @@ class UI(object):
                 "sxtools.settings.frames['occlusionCollapse']=False"))
         maya.cmds.text(
             label=(
-                "Occlusion groundplane is placed"
-                "at the minY of the bounding box of"
+                "Occlusion groundplane is placed "
+                "at the minY of the bounding box of "
                 "each object being baked.\n"
                 "Offset pushes the plane down."),
             align="left", ww=True)
+
+        maya.cmds.rowColumnLayout(
+            'occlusionOptionRowColumns',
+            parent='occlusionFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 100), (2, 140)),
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
+            rowSpacing=(1, 2))
+ 
+        maya.cmds.text('rayCountLabel', label='Ray Count:')
+        maya.cmds.intField(
+            'rayCount',
+            value=settings.tools['rayCount'],
+            minValue=1,
+            maxValue=2000,
+            changeCommand=(
+                "sxtools.settings.tools['rayCount'] = ("
+                "maya.cmds.intField('rayCount', query=True, value=True))"
+            ))
+
+        maya.cmds.text('coneAngleLabel', label='Cone Angle:')
+        maya.cmds.intField(
+            'coneAngle',
+            value=settings.tools['coneAngle'],
+            minValue=10,
+            maxValue=90,
+            changeCommand=(
+                "sxtools.settings.tools['coneAngle'] = ("
+                "maya.cmds.intField('coneAngle', query=True, value=True))"
+            ))
+
+        maya.cmds.text('segmentsLabel', label='Cone Segments:')
+        maya.cmds.intField(
+            'segments',
+            value=settings.tools['segments'],
+            minValue=1,
+            maxValue=10,
+            changeCommand=(
+                "sxtools.settings.tools['segments'] = ("
+                "maya.cmds.intField('segments', query=True, value=True))"
+            ))
+
+        maya.cmds.text('maxDistanceLabel', label='Ray Max Distance:')
+        maya.cmds.floatField(
+            'maxDistance',
+            value=settings.tools['maxDistance'],
+            precision=1,
+            minValue=0.0,
+            maxValue=10000.0,
+            changeCommand=(
+                "sxtools.settings.tools['maxDistance'] = ("
+                "maya.cmds.floatField('maxDistance', query=True, value=True))"
+            ))
+
+        maya.cmds.text('comboOffsetLabel', label='Mesh Surface Offset:')
+        maya.cmds.floatField(
+            'comboOffset',
+            value=settings.tools['comboOffset'],
+            precision=1,
+            minValue=0.0,
+            maxValue=10.0,
+            changeCommand=(
+                "sxtools.settings.tools['comboOffset'] = ("
+                "maya.cmds.floatField('comboOffset', query=True, value=True))"
+            ))
+
+        maya.cmds.text('biasLabel', label='Vertex Position Offset:')
+        maya.cmds.floatField(
+            'bias',
+            value=settings.tools['comboOffset'],
+            precision=6,
+            minValue=0.0,
+            maxValue=10.0,
+            changeCommand=(
+                "sxtools.settings.tools['comboOffset'] = ("
+                "maya.cmds.floatField('comboOffset', query=True, value=True))"
+            ))
+
         maya.cmds.rowColumnLayout(
             'occlusionRowColumns',
             parent='occlusionFrame',
@@ -6495,13 +6579,14 @@ class UI(object):
             settings.shapeArray[len(settings.shapeArray)-1],
             layers.getSelectedLayer())
 
-        plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
         maya.cmds.button(
             label='Bake Occlusion',
             parent='occlusionFrame',
             height=30,
             width=100,
             command='sxtools.tools.bakeBlendOcclusion()')
+
+        plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
         if 'Mayatomr' in plugList:
             maya.cmds.button(
                 label='Bake Occlusion (Mental Ray)',
