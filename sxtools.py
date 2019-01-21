@@ -3079,6 +3079,11 @@ class ToolActions(object):
     def rayRandomizer(self, rayCount, coneAngle, segments):
         results = []
         raysPerSegment = rayCount/segments
+        if raysPerSegment < 1:
+            print('SX Tools: Ray count too low for requested segments. Using one segment.')
+            segments = 1
+            raysPerSegment = rayCount/segments
+    
         for e in range(segments):
             for f in xrange(raysPerSegment):
                 if f % 2 == 0:
@@ -3090,9 +3095,15 @@ class ToolActions(object):
                     #print 0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))
                     offsets[g] = math.radians(random.uniform(0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))))
                 results.append(offsets)
+        if len(results) != rayCount:
+            for f in xrange(rayCount-len(results)):
+                offsets = [None, None, None]
+                for g in xrange(3):
+                    offsets[g] = math.radians(random.uniform(0, coneAngle))
+                results.append(offsets)
 
         print len(results)
-        print results
+        #print results
         return results
 
     def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=5):
@@ -3376,7 +3387,7 @@ class ToolActions(object):
             faceIds.setLength(lenSel)
             vtxIds.setLength(lenSel)
             
-            print bake, len(localColorArray), len(globalColorArray)
+            #print bake, len(localColorArray), len(globalColorArray)
 
             fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
