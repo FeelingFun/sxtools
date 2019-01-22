@@ -6466,6 +6466,7 @@ class UI(object):
         maya.cmds.intField(
             'rayCount',
             value=settings.tools['rayCount'],
+            ann='The number of rays to fire from each vertex on the selection. Lower ray counts are faster but more noisy.',
             minValue=1,
             maxValue=2000,
             changeCommand=(
@@ -6476,6 +6477,7 @@ class UI(object):
         maya.cmds.text('coneAngleLabel', label='Cone Angle:')
         maya.cmds.intField(
             'coneAngle',
+            ann='Angle of the occlusion sampling hemisphere. Narrower angle usually leads to brighter results.',
             value=settings.tools['coneAngle'],
             minValue=10,
             maxValue=180,
@@ -6484,21 +6486,22 @@ class UI(object):
                 "maya.cmds.intField('coneAngle', query=True, value=True))"
             ))
 
-        maya.cmds.text('segmentsLabel', label='Cone Segments:')
-        maya.cmds.intField(
-            'segments',
-            value=settings.tools['segments'],
-            minValue=1,
-            maxValue=10,
-            changeCommand=(
-                "sxtools.settings.tools['segments'] = ("
-                "maya.cmds.intField('segments', query=True, value=True))"
-            ))
+        #maya.cmds.text('segmentsLabel', label='Cone Segments:')
+        #maya.cmds.intField(
+        #    'segments',
+        #    value=settings.tools['segments'],
+        #    minValue=1,
+        #    maxValue=10,
+        #    changeCommand=(
+        #        "sxtools.settings.tools['segments'] = ("
+        #        "maya.cmds.intField('segments', query=True, value=True))"
+        #    ))
 
         maya.cmds.text('maxDistanceLabel', label='Ray Max Distance:')
         maya.cmds.floatField(
             'maxDistance',
             value=settings.tools['maxDistance'],
+            ann='The distance beyond which no collisions are checked.',
             precision=1,
             minValue=0.0,
             maxValue=10000.0,
@@ -6507,10 +6510,11 @@ class UI(object):
                 "maya.cmds.floatField('maxDistance', query=True, value=True))"
             ))
 
-        maya.cmds.text('comboOffsetLabel', label='Mesh Surface Offset:')
+        maya.cmds.text('comboOffsetLabel', label='Mesh Offset:')
         maya.cmds.floatField(
             'comboOffset',
             value=settings.tools['comboOffset'],
+            ann='Shrinks the mesh to avoid proximity artifacts.',
             precision=3,
             minValue=0.0,
             maxValue=10.0,
@@ -6523,6 +6527,7 @@ class UI(object):
         maya.cmds.floatField(
             'bias',
             value=settings.tools['bias'],
+            ann='Offsets the ray starting point from the mesh surface to avoid self-collision.',
             precision=6,
             minValue=0.0,
             maxValue=10.0,
