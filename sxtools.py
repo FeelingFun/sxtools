@@ -123,10 +123,10 @@ class Settings(object):
             'categoryPreset': None,
             'gradientDirection': 1,
             'rayCount': 250,
-            'coneAngle': 90,
+            'coneAngle': 160,
             'bias': 0.000001,
             'comboOffset': 0.9,
-            'maxDistance': 3.0,
+            'maxDistance': 10.0,
             'segments': 5
         }
         self.refArray = [
@@ -3076,34 +3076,47 @@ class ToolActions(object):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
 
-    def rayRandomizer(self, rayCount, coneAngle, segments):
+    def rayRandomizer2(self, rayCount, coneAngle, segments):
         results = []
+        coneAngle = math.radians(coneAngle)
         raysPerSegment = rayCount/segments
         if raysPerSegment < 1:
             print('SX Tools: Ray count too low for requested segments. Using one segment.')
             segments = 1
-            raysPerSegment = rayCount/segments
+            raysPerSegment = rayCount/2/segments
     
         for e in range(segments):
             for f in xrange(raysPerSegment):
-                if f % 2 == 0:
-                    x = 1
-                else:
-                    x = -1
                 offsets = [None, None, None]
                 for g in xrange(3):
                     #print 0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))
-                    offsets[g] = math.radians(random.uniform(0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))))
+                    offsets[g] = random.uniform(0+(coneAngle/segments)*e, coneAngle-(coneAngle/segments*(segments-(e+1))))
                 results.append(offsets)
+
+        negResults = [tuple([-1*x for x in i]) for i in results]
+        results = results + negResults
+        
         if len(results) != rayCount:
             for f in xrange(rayCount-len(results)):
                 offsets = [None, None, None]
                 for g in xrange(3):
-                    offsets[g] = math.radians(random.uniform(0, coneAngle))
+                    offsets[g] = math.radians(random.uniform(-coneAngle, coneAngle))
                 results.append(offsets)
 
-        print len(results)
+        #print len(results)
         #print results
+        return results
+
+    def rayRandomizer(self, rayCount, coneAngle, segments):
+        results = [None] * rayCount
+        coneAngle = math.radians(coneAngle/2)
+    
+        for e in xrange(rayCount):
+            offsets = [None, None, None]
+            for g in xrange(3):
+                offsets[g] = random.uniform(-coneAngle, coneAngle)
+            results[e] = offsets
+
         return results
 
     def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=5):
@@ -6465,7 +6478,7 @@ class UI(object):
             'coneAngle',
             value=settings.tools['coneAngle'],
             minValue=10,
-            maxValue=90,
+            maxValue=180,
             changeCommand=(
                 "sxtools.settings.tools['coneAngle'] = ("
                 "maya.cmds.intField('coneAngle', query=True, value=True))"
@@ -6498,7 +6511,7 @@ class UI(object):
         maya.cmds.floatField(
             'comboOffset',
             value=settings.tools['comboOffset'],
-            precision=1,
+            precision=3,
             minValue=0.0,
             maxValue=10.0,
             changeCommand=(
@@ -6506,16 +6519,16 @@ class UI(object):
                 "maya.cmds.floatField('comboOffset', query=True, value=True))"
             ))
 
-        maya.cmds.text('biasLabel', label='Vertex Position Offset:')
+        maya.cmds.text('biasLabel', label='Ray Source Offset:')
         maya.cmds.floatField(
             'bias',
-            value=settings.tools['comboOffset'],
+            value=settings.tools['bias'],
             precision=6,
             minValue=0.0,
             maxValue=10.0,
             changeCommand=(
-                "sxtools.settings.tools['comboOffset'] = ("
-                "maya.cmds.floatField('comboOffset', query=True, value=True))"
+                "sxtools.settings.tools['bias'] = ("
+                "maya.cmds.floatField('bias', query=True, value=True))"
             ))
 
         maya.cmds.rowColumnLayout(
