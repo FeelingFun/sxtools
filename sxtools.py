@@ -127,7 +127,7 @@ class Settings(object):
             'bias': 0.000001,
             'comboOffset': 0.9,
             'maxDistance': 10.0,
-            'segments': 5
+            'segments': 3
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -3077,31 +3077,33 @@ class ToolActions(object):
             maya.cmds.sets(edgeList, forceElement=setName)
 
     def rayRandomizer2(self, rayCount, coneAngle, segments):
-        results = []
-        coneAngle = math.radians(coneAngle)
+        results = [None] * rayCount
+        coneAngle = math.radians(coneAngle/2)
         raysPerSegment = rayCount/segments
         if raysPerSegment < 1:
             print('SX Tools: Ray count too low for requested segments. Using one segment.')
             segments = 1
             raysPerSegment = rayCount/2/segments
     
+        k = 0
         for e in range(segments):
             for f in xrange(raysPerSegment):
+                coneAngle = -coneAngle
                 offsets = [None, None, None]
                 for g in xrange(3):
-                    #print 0+(x*coneAngle/segments)*e, x*coneAngle-(x*coneAngle/segments*(segments-(e+1)))
+                    #print math.degrees(0+(coneAngle/segments)*e), math.degrees(coneAngle-(coneAngle/segments*(segments-(e+1))))
                     offsets[g] = random.uniform(0+(coneAngle/segments)*e, coneAngle-(coneAngle/segments*(segments-(e+1))))
-                results.append(offsets)
+                results[k] = offsets
+                k += 1
 
-        negResults = [tuple([-1*x for x in i]) for i in results]
-        results = results + negResults
-        
-        if len(results) != rayCount:
-            for f in xrange(rayCount-len(results)):
+        if k != rayCount:
+            pad = rayCount - k
+            for f in xrange(pad):
                 offsets = [None, None, None]
                 for g in xrange(3):
                     offsets[g] = math.radians(random.uniform(-coneAngle, coneAngle))
-                results.append(offsets)
+                results[k] = offsets
+                k += 1
 
         #print len(results)
         #print results
@@ -3116,15 +3118,25 @@ class ToolActions(object):
             for g in xrange(3):
                 offsets[g] = random.uniform(-coneAngle, coneAngle)
             results[e] = offsets
-
+        #print results
         return results
 
-    def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=5):
+    def rayRandomizer3(self):
+        u1 = random.uniform(0, 1)
+        u2 = random.uniform(0, 1)
+        r = math.sqrt(u1)
+        theta = 2*math.pi*u2
+    
+        x = r * math.cos(theta)
+        y = r * math.sin(theta)
+        
+        return OM.MVector(x, y, math.sqrt(max(0, 1 - u1)))
+
+    def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=3):
         bboxCoords = []
         newBboxCoords = []
         settings.bakeSet = settings.shapeArray
         contribution = 1.0/float(rayCount)
-        offsets = self.rayRandomizer(rayCount, coneAngle, segments)
 
         if settings.project['LayerData']['occlusion'][5] is True:
             layers.setColorSet('occlusion')
@@ -3133,8 +3145,12 @@ class ToolActions(object):
         if len(settings.bakeSet) > 1:
             globalMesh = maya.cmds.polyUnite(maya.cmds.duplicate(settings.bakeSet, renameChildren=True), ch=False, name='comboOcclusionObject')
             maya.cmds.polyMoveFacet(globalMesh, lsx=comboOffset, lsy=comboOffset, lsz=comboOffset)
+            if settings.tools['bakeGroundPlane'] is False:
+                settings.bakeSet.append(globalMesh[0])
         else:
             globalMesh = maya.cmds.duplicate(settings.bakeSet[0], name='comboOcclusionObject')
+            if settings.tools['bakeGroundPlane'] is False:
+                settings.bakeSet.append(globalMesh[0])
 
         if settings.tools['bakeGroundPlane'] is True:
             bbox = []
@@ -3170,7 +3186,7 @@ class ToolActions(object):
             vtxPoints = OM.MPointArray()
             vtxColors = OM.MColorArray()
             vtxIds = OM.MIntArray()
-            vtxNormals = OM.MFloatVectorArray()
+            vtxFloatNormals = OM.MFloatVectorArray()
             vtxNormal = OM.MVector()
 
             selectionList.add(bake)
@@ -3178,11 +3194,17 @@ class ToolActions(object):
             MFnMesh = OM.MFnMesh(nodeDagPath)
             accelGrid = MFnMesh.autoUniformGridParams()
             vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
-            vtxNormals = MFnMesh.getVertexNormals(weighted, OM.MSpace.kWorld)
+            vtxFloatNormals = MFnMesh.getVertexNormals(weighted, OM.MSpace.kWorld)
             numVtx = MFnMesh.numVertices
 
             vtxColors.setLength(numVtx)
             vtxIds.setLength(numVtx)
+
+            sampleVectors = OM.MVectorArray()
+            sampleVectors.setLength(rayCount)
+            for idx in xrange(rayCount):
+                sampleVectors[idx] = self.rayRandomizer3()
+            print sampleVectors
 
             vtxIt = OM.MItMeshVertex(nodeDagPath)
             while not vtxIt.isDone():
@@ -3190,13 +3212,17 @@ class ToolActions(object):
                 vtxIds[i] = i
                 vtxNormal = vtxIt.getNormal()
                 point = OM.MFloatPoint(vtxPoints[i])
-                normal = vtxNormals[i]
-                point = point + bias*normal
-                occValue = 1.0
+                point = point + bias*vtxFloatNormals[i]
+                occValue = 1.
+                forward = OM.MVector(OM.MVector.kZaxisVector)
+                rotQuat = forward.rotateTo(vtxNormal)
+                sumpleVectors = OM.MFloatVectorArray()
+                sumpleVectors.setLength(rayCount)
 
-                for e in range(0, rayCount):
-                    sampleVector = OM.MFloatVector(vtxNormal.rotateBy(OM.MEulerRotation(offsets[e][0], offsets[e][1], offsets[e][2], OM.MEulerRotation.kXYZ)))
-                    result = MFnMesh.anyIntersection(point, sampleVector, OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
+                for e in xrange(rayCount):
+                    sumpleVectors[e] = OM.MFloatVector(sampleVectors[e].rotateBy(rotQuat))
+                for e in xrange(rayCount):
+                    result = MFnMesh.anyIntersection(point, sumpleVectors[e], OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
                     if result[2] != -1:
                         occValue = occValue - contribution
 
@@ -3214,18 +3240,24 @@ class ToolActions(object):
             if bake == globalMesh[0]:
                 settings.bakeSet.remove(bake)
                 bboxCoords.sort()
-                newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
+                if len(settings.bakeSet) > 1 or settings.tools['bakeGroundPlane'] is True:
+                    newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
+                else:
+                    newObjs = (globalMesh[0], )
                 for newObj in newObjs:
                     bbx = maya.cmds.exactWorldBoundingBox(newObj)
-                    if math.fabs(bbx[3] - bbx[0]) > 90 and (bbx[1] - bbx[4]) == 0:
-                        maya.cmds.delete(newObj)
-                        newObjs.remove(newObj)
-                    else:
-                        bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
-                        bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
-                        newBboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], newObj))
+                    if settings.tools['bakeGroundPlane'] is True:
+                        if (math.fabs(bbx[3] - bbx[0]) == settings.tools['bakeGroundScale']) and (bbx[1] - bbx[4]) == 0:
+                            #print 'hey groundplane', newObj, bbx
+                            maya.cmds.delete(newObj)
+                            newObjs.remove(newObj)
+                            continue
+                    bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
+                    bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
+                    newBboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], newObj))
 
                 newBboxCoords.sort()
+
                 for idx, obj in enumerate(newBboxCoords):
                     selectionList = OM.MSelectionList()
                     selectionList.add(obj[5])
