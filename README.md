@@ -42,9 +42,11 @@ For certain art styles, taking the control cages to the game engine to be tessel
 6. Import or load a mesh object
 7. Click on object, press **Add Missing Color Sets**
 8. Done, start painting vertex colors!
+9. (At some point, set a Master Palette location.)
 
 ## Caveats
-Viewport shading only works on Windows. The tools may still be useful on other platforms.
+Viewport shading only works on Windows. **Make sure your viewport is in DX11 Mode!**
+(Windows -> Settings/Preferences -> Preferences -> Display -> Viewport 2.0 -> Rendering engine: -> DirectX 11
 Some tool actions fail if the object has history. The toolbox has a built-in warning for when history is detected.
 Some tools are not undo-safe. If proper development pipeline is observed, this should not be too hazardous.
 
@@ -182,20 +184,20 @@ Allows for a custom ramp texture to be applied to the object or objects. Differe
 At value 1 creates noise between 0 and 1, so typically values below 0.1 will yield subtle results.
 
 ### Bake Occlusion
-This section shows up only if Mental Ray for Maya or Arnold is installed.
+SX Tools has a built-in ambient occlusion renderer.
+
+Additional button appears if Mental Ray for Maya is installed. Arnold support has been removed, but can be found in earlier revisions of the project.
+
+The built-in renderer and Mental Ray bake both the self-occlusion-only and everything-occludes-everything passes, and present a slider for blending between the two. Enabling a ground plane for the global pass is optional.
+
 Mental Ray for Maya can be downloaded from:
 https://forum.nvidia-arc.com/showthread.php?16656-Mental-Ray-for-Maya-2018-Version-1-2-1-Update
 Please note that Mental Ray has been discontinued by NVIDIA, but the plugin is still offered for free, without support.
 https://forum.nvidia-arc.com/showthread.php?16431-Withdrawal-of-NVIDIA-Mental-Ray-and-Mental-Ray-plugins-effective-November-20-2017&p=67166#post67166
 
-Mental Ray provides a straight-to-vertex occlusion baking, while the Arnold implementation bakes occlusion to a texture and reads that back to vertex colors. Using Mental Ray is recommended.
-
-With Mental Ray, SX Tools bakes both the self-occlusion-only and everything-occludes-everything passes, and presents a slider for blending between the two.
+SX Tool built-in renderer and Mental Ray both provide a straight-to-vertex occlusion baking, while the Arnold implementation bakes occlusion to a texture and reads that back to vertex colors.
 
 ![Occlusion Blending Example](/images/AOblend.gif)
-
-By default, each selected object is rendered separately, with an optional groundplane occluder.
-With Arnold, Shift-clicking the bake button will allow objects to occlude each other.
 
 ### Apply Master Palette
 ![Master Palette Example](/images/sxtools_palettevariations.jpg)
@@ -210,10 +212,18 @@ Swaps two layers and their blend modes.
 Copies the contents and the blend mode of a layer to another layer.
 
 ### Assign to Crease Set
-The tool supports a workflow where creasing is limited to five values. This section provides quick creasing assignment buttons. 
+The tool supports a workflow where creasing is limited to five values. This section provides quick creasing assignment buttons. Note that the crease sets are **adaptive**, meaning the value of each crease set depends on the subdivision level of the object. This is to provide four different levels of creasing to any subdivision level. By default the crease values are absolute, and only work properly on a single chosen subdivision level.
 
 ### Swap Layer Sets
 Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple re-paletted elements.
+
+### Create Skinning Mesh
+If you wish to use blend shapes and bind the mesh to a skeleton, do not use the vertex-colored object directly. The tool creates a separate mesh for deformations, and merges data from the colored and skinned meshes for export.
+
+### Export Flags
+The Static Vertex Colors flag simply adds a boolean to the object for export. This can be useful if your game supports dynamic palette changes.
+
+Export Subdivision Level also affects the viewport tessellation of the selected object!
 
 ## Exporting
 Press the button to generate export objects. The tool will automatically lay them out in a grid, and allows for the exported data channels to be viewed in the viewport.
