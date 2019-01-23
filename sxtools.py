@@ -6550,11 +6550,6 @@ class UI(object):
             columnAttach=[(1, 'left', 0), (2, 'left', 0)],
             rowSpacing=(1, 0))
 
-        if settings.bakeSet == settings.shapeArray:
-            blendEnable = True
-        else:
-            blendEnable = False
-
         maya.cmds.text(label='Blend local vs. global')
         maya.cmds.floatSlider(
             'blendSlider',
@@ -6563,7 +6558,6 @@ class UI(object):
             max=1.0,
             width=100,
             value=settings.tools['blendSlider'],
-            enable=blendEnable,
             changeCommand=(
                 "sxtools.settings.tools['blendSlider'] = ("
                 "maya.cmds.floatSlider("
