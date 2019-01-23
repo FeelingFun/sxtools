@@ -123,11 +123,9 @@ class Settings(object):
             'categoryPreset': None,
             'gradientDirection': 1,
             'rayCount': 250,
-            'coneAngle': 160,
             'bias': 0.000001,
             'comboOffset': 0.9,
             'maxDistance': 10.0,
-            'segments': 3
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
@@ -3076,52 +3074,7 @@ class ToolActions(object):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
 
-    def rayRandomizer2(self, rayCount, coneAngle, segments):
-        results = [None] * rayCount
-        coneAngle = math.radians(coneAngle/2)
-        raysPerSegment = rayCount/segments
-        if raysPerSegment < 1:
-            print('SX Tools: Ray count too low for requested segments. Using one segment.')
-            segments = 1
-            raysPerSegment = rayCount/2/segments
-    
-        k = 0
-        for e in range(segments):
-            for f in xrange(raysPerSegment):
-                coneAngle = -coneAngle
-                offsets = [None, None, None]
-                for g in xrange(3):
-                    #print math.degrees(0+(coneAngle/segments)*e), math.degrees(coneAngle-(coneAngle/segments*(segments-(e+1))))
-                    offsets[g] = random.uniform(0+(coneAngle/segments)*e, coneAngle-(coneAngle/segments*(segments-(e+1))))
-                results[k] = offsets
-                k += 1
-
-        if k != rayCount:
-            pad = rayCount - k
-            for f in xrange(pad):
-                offsets = [None, None, None]
-                for g in xrange(3):
-                    offsets[g] = math.radians(random.uniform(-coneAngle, coneAngle))
-                results[k] = offsets
-                k += 1
-
-        #print len(results)
-        #print results
-        return results
-
-    def rayRandomizer(self, rayCount, coneAngle, segments):
-        results = [None] * rayCount
-        coneAngle = math.radians(coneAngle/2)
-    
-        for e in xrange(rayCount):
-            offsets = [None, None, None]
-            for g in xrange(3):
-                offsets[g] = random.uniform(-coneAngle, coneAngle)
-            results[e] = offsets
-        #print results
-        return results
-
-    def rayRandomizer3(self):
+    def rayRandomizer(self):
         u1 = random.uniform(0, 1)
         u2 = random.uniform(0, 1)
         r = math.sqrt(u1)
@@ -3132,7 +3085,7 @@ class ToolActions(object):
         
         return OM.MVector(x, y, math.sqrt(max(0, 1 - u1)))
 
-    def bakeOcclusion(self, rayCount=250, coneAngle=90, bias=0.000001, max=3.0, weighted=True, comboOffset=0.9, segments=3):
+    def bakeOcclusion(self, rayCount=250, bias=0.000001, max=10.0, weighted=True, comboOffset=0.9):
         bboxCoords = []
         newBboxCoords = []
         settings.bakeSet = settings.shapeArray
@@ -3200,12 +3153,11 @@ class ToolActions(object):
             vtxColors.setLength(numVtx)
             vtxIds.setLength(numVtx)
 
-            sampleVectors = OM.MVectorArray()
-            sampleVectors.setLength(rayCount)
+            hemiSphere = OM.MVectorArray()
+            hemiSphere.setLength(rayCount)
             for idx in xrange(rayCount):
-                sampleVectors[idx] = self.rayRandomizer3()
-            print sampleVectors
-
+                hemiSphere[idx] = self.rayRandomizer()
+            
             vtxIt = OM.MItMeshVertex(nodeDagPath)
             while not vtxIt.isDone():
                 i = vtxIt.index()
@@ -3213,16 +3165,16 @@ class ToolActions(object):
                 vtxNormal = vtxIt.getNormal()
                 point = OM.MFloatPoint(vtxPoints[i])
                 point = point + bias*vtxFloatNormals[i]
-                occValue = 1.
+                occValue = 1.0
                 forward = OM.MVector(OM.MVector.kZaxisVector)
                 rotQuat = forward.rotateTo(vtxNormal)
-                sumpleVectors = OM.MFloatVectorArray()
-                sumpleVectors.setLength(rayCount)
+                sampleRays = OM.MFloatVectorArray()
+                sampleRays.setLength(rayCount)
 
                 for e in xrange(rayCount):
-                    sumpleVectors[e] = OM.MFloatVector(sampleVectors[e].rotateBy(rotQuat))
+                    sampleRays[e] = OM.MFloatVector(hemiSphere[e].rotateBy(rotQuat))
                 for e in xrange(rayCount):
-                    result = MFnMesh.anyIntersection(point, sumpleVectors[e], OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
+                    result = MFnMesh.anyIntersection(point, sampleRays[e], OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
                     if result[2] != -1:
                         occValue = occValue - contribution
 
@@ -3365,9 +3317,9 @@ class ToolActions(object):
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking ambient occlusion')
-        self.bakeOcclusion(settings.tools['rayCount'], settings.tools['coneAngle'], settings.tools['bias'], settings.tools['maxDistance'], True, settings.tools['comboOffset'], settings.tools['segments'])
-
-        settings.tools['blendSlider'] = 0.0
+        self.bakeOcclusion(settings.tools['rayCount'], settings.tools['bias'], settings.tools['maxDistance'], True, settings.tools['comboOffset'])
+        settings.tools['blendSlider'] = 0.5
+        self.blendOcclusion()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Occlusion baking time: ' + str(totalTime))
 
@@ -6506,29 +6458,6 @@ class UI(object):
                 "maya.cmds.intField('rayCount', query=True, value=True))"
             ))
 
-        maya.cmds.text('coneAngleLabel', label='Cone Angle:')
-        maya.cmds.intField(
-            'coneAngle',
-            ann='Angle of the occlusion sampling hemisphere. Narrower angle usually leads to brighter results.',
-            value=settings.tools['coneAngle'],
-            minValue=10,
-            maxValue=180,
-            changeCommand=(
-                "sxtools.settings.tools['coneAngle'] = ("
-                "maya.cmds.intField('coneAngle', query=True, value=True))"
-            ))
-
-        #maya.cmds.text('segmentsLabel', label='Cone Segments:')
-        #maya.cmds.intField(
-        #    'segments',
-        #    value=settings.tools['segments'],
-        #    minValue=1,
-        #    maxValue=10,
-        #    changeCommand=(
-        #        "sxtools.settings.tools['segments'] = ("
-        #        "maya.cmds.intField('segments', query=True, value=True))"
-        #    ))
-
         maya.cmds.text('maxDistanceLabel', label='Ray Max Distance:')
         maya.cmds.floatField(
             'maxDistance',
@@ -6621,6 +6550,11 @@ class UI(object):
             columnAttach=[(1, 'left', 0), (2, 'left', 0)],
             rowSpacing=(1, 0))
 
+        if settings.bakeSet == settings.shapeArray:
+            blendEnable = True
+        else:
+            blendEnable = False
+
         maya.cmds.text(label='Blend local vs. global')
         maya.cmds.floatSlider(
             'blendSlider',
@@ -6629,6 +6563,7 @@ class UI(object):
             max=1.0,
             width=100,
             value=settings.tools['blendSlider'],
+            enable=blendEnable,
             changeCommand=(
                 "sxtools.settings.tools['blendSlider'] = ("
                 "maya.cmds.floatSlider("
