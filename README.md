@@ -258,6 +258,8 @@ To remove all optionVars created by SX Tools:
 
 # Acknowledgments
 
+Thanks to Rory Driscoll for tips on better sampling.
+
 SX Tools builds on the following work:
 ### sfx
 Code for programmatically working with Maya shaderfx nodes
