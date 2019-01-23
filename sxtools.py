@@ -7412,9 +7412,7 @@ class Core(object):
             ui.applyColorToolUI()
             ui.gradientToolUI()
             ui.colorNoiseToolUI()
-            plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
-            if ('Mayatomr' in plugList) or ('mtoa' in plugList):
-                ui.bakeOcclusionToolUI()
+            ui.bakeOcclusionToolUI()
             ui.masterPaletteToolUI()
             ui.copyLayerToolUI()
             ui.assignCreaseToolUI()
