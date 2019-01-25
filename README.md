@@ -3,9 +3,9 @@
 ![Layered Example](/images/sxtools_multichannel.jpg)
 
 ### Overview
-SX Tools is an artist toolbox for vertex color painting , OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and to provide tools that simplify face and vertex coloring process.
+SX Tools is an artist toolbox for vertex coloring, OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018-2019. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and to provide tools that simplify the face and vertex coloring process.
 
-The additional vertex data is exported via UV channels to bring rich vertex colors to game engines.
+The additional vertex data created by the tool in Maya is exported via UV channels to bring rich vertex colors to game engines.
 
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
 
@@ -17,7 +17,7 @@ The tool is not fully undo-safe and does not play well with construction history
 Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply.
 
 ## Goals & Purpose
-The toolbox is developed to allow 3D artists to create simple and stylized visuals that side-step the "low-poly, limited palette" retro look that is common to many indie titles. The development is focused on a workflow where almost the entire modeling work is to create a simple, elegant control cage that is subdivided as the final export step. All modeling effort and vertex painting work is performed on the control cage. This keeps the source art lightweight, easy to edit, and avoids the hassle involved with texturing. Instead of beveling edges, creasing is used whenever possible.
+The toolbox is developed to allow 3D artists to create simple and stylized visuals that side-step the "low-poly, limited palette" retro look that is common to many indie titles. The development is focused on a workflow where almost the entire modeling work is to create a simple, elegant control cage that is subdivided as the final export step. All modeling effort and vertex painting work is performed on the control cage. This keeps the source art lightweight, easy to edit, and avoids the hassle involved with texturing. Instead of beveling edges, subdiv creasing should be used whenever possible.
 
 In other common art pipelines a model is sculpted without concern to poly counts, then baked to normal maps that are applied to a re-topo mesh. However these meshes are still fairly complex to manage when skinning, rigging etc.
 
@@ -83,13 +83,10 @@ Sets the UV channel where masks are exported.
 Choose which material channels to enable, and the UV channels to export them to.
 
 ### Overlays
-Type the layers you wish to export as overlays. RGBA Overlay needs two full UV sets to export.
+Type the layers you wish to export as overlays. RGBA Overlay needs two full UV sets to export. SX Tool supports two types of overlays: single-channel overlays that are intended for use with the Master Palette, and a full RGBA overlay that is commonly used as a 'last step' color detail layer that adds variance and interest to the paletted layers below.
 
 ### Alpha-to-mask limit
 Controls the threshold between a Mask layer and an Adjustment layer. More on that later.
-
-### Smoothing iterations
-Sets the number of times the exported mesh is subdivided.
 
 ### Export preview grid spacing
 Is the distance between all export objects when previewed. The objects are laid out in a grid.
@@ -110,7 +107,7 @@ Creating project defaults may take a few seconds, as the tool generates custom s
 The tool also by default disables color management, enables AA, smooth wireframes, enables OpenSubdiv mesh preview, and transparency depth peeling.
 
 ## Assigning Layer Sets
-Import or create polygon mesh objects while SX Tools is running. A window will pop up that allows you to add the project-defined set of layers to the object (or objects). Selecting an object with the default set of layers will bring up the main tool window.
+Import or create polygon mesh objects while SX Tools is running. A message will pop up that allows you to add the project-defined set of layers to the object (or objects). Selecting an object with the default set of layers will bring up the main tool window.
 
 
 # The Main Window
@@ -131,7 +128,7 @@ NOTE: Many buttons have alternate functionality when shift-clicked.
 Flips the visibility of all layers from their current state
 
 ### Blend mode selection
-Is similar to popular 2D paint programs:
+This is similar to popular 2D paint programs:
 
 **Alpha** - the regular transparency blend
 
@@ -151,7 +148,7 @@ Layers are marked with:
 A layer can have both (M) and (A) flags active at the same time, this indicates the layer has opacity values both below and above the adjustment-to-mask limit.
 
 ### The layer color palette
-Allows the user to pick an existing layer color as both the **Apply Color** and **Paint Vertex Tool** active color.
+Allows the user to pick an existing layer color as both the **Apply Color** tool and **Paint Vertex Colors** tool active color.
 
 ### The layer opacity slider
 Always displays the maximum opacity value found in a layer. Layers may still have other values below the max. Dragging the slider directly manipulates the alpha values of the components in the layer. This means that if the slider is dragged to 0, any variance in the values is lost - dragging the slider back up will set all component alpha values to the same constant. Alpha variance is preserved when the slider is otherwise adjusted.
@@ -164,7 +161,7 @@ Allows for new colors to be applied only to the currently masked areas. The sele
 Shift-clicking will provide inverted selection.
 
 ### Clear Layer
-Sets a layer to default value. If components are selected, only clears the selected components.
+Sets a layer to the default value. If components are selected, only clears the selected components.
 Shift-clicking will clear ALL layers.
 
 *Mask layer vs. Adjustment layer*
@@ -175,10 +172,10 @@ When layer opacity is below the ‘Alpha-to-mask limit’ specified in the proje
 ## The Tool List
 
 ### Apply Color
-Applies selected color to selected layer or components. The tool respects layer opacity value and writes values only at the max opacity value of the layer. In case of an empty layer, writes with full opacity.
+Applies selected color to selected layer or components. The tool respects layer opacity value and writes values only at the max opacity value of the layer. In case of an empty layer, writes with full opacity. If you want to flood a layer with solid color, check the "Overwrite Alpha" checkbox.
 
 ### Gradient Fill
-Allows for a custom ramp texture to be applied to the object or objects. Different modes are gradient along XYZ, remapping an existing layer’s luminance to a gradient, or applying a ramp according to the curvature of the mesh.
+Allows for a custom ramp texture to be applied to the object or objects. Different modes under the "Direction" pull-down menu are gradient along XYZ, remapping an existing layer’s luminance to a gradient, or applying a ramp according to the curvature of the mesh. Saving a preset does not currently support the alpha gradient, only color.
 
 ### Color Noise
 At value 1 creates noise between 0 and 1, so typically values below 0.1 will yield subtle results.
@@ -186,7 +183,9 @@ At value 1 creates noise between 0 and 1, so typically values below 0.1 will yie
 ### Bake Occlusion
 SX Tools has a built-in ambient occlusion renderer.
 
-Additional button appears if Mental Ray for Maya is installed. Arnold support has been removed, but can be found in earlier revisions of the project.
+The presented options for Ray Count, Ray Max Distance, Mesh Offset and Ray Source Offset are only supported by the built-in renderer. To adjust the MR bake settings, edit the sxVertexBakeSet node.
+
+An additional render button appears if Mental Ray for Maya is installed.
 
 The built-in renderer and Mental Ray bake both the self-occlusion-only and everything-occludes-everything passes, and present a slider for blending between the two. Enabling a ground plane for the global pass is optional.
 
@@ -195,13 +194,17 @@ https://forum.nvidia-arc.com/showthread.php?16656-Mental-Ray-for-Maya-2018-Versi
 Please note that Mental Ray has been discontinued by NVIDIA, but the plugin is still offered for free, without support.
 https://forum.nvidia-arc.com/showthread.php?16431-Withdrawal-of-NVIDIA-Mental-Ray-and-Mental-Ray-plugins-effective-November-20-2017&p=67166#post67166
 
-SX Tool built-in renderer and Mental Ray both provide a straight-to-vertex occlusion baking, while the Arnold implementation bakes occlusion to a texture and reads that back to vertex colors.
+SX Tool built-in renderer and Mental Ray both provide a straight-to-vertex occlusion baking.
+
+Arnold support has been removed, but can be found in earlier revisions of the project. The Arnold implementation bakes occlusion to a texture and reads that back to vertex colors, which resulted in slower performance and some visual quality issues.
 
 ![Occlusion Blending Example](/images/AOblend.gif)
 
 ### Apply Master Palette
 ![Master Palette Example](/images/sxtools_palettevariations.jpg)
-Sets the first five layers of the object to the selected palette.
+The Master Palette is a list of five colors that can be applied to any selected color layers on the object. The default setting is to map colors 1-5 to layers 1-5, but this can be changed in the Master Palette settings. Note that a palette color can be applied to multiple layers! Simply separate the layer names with a comma. Currently the tool does not support overridden display names, so "gradient1" and "gradient2" should be referred to as layer8 and layer9.
+
+The palette is a json file that can be shared among multiple artists working on the same project.
 For palettes, check out:
 https://color.adobe.com/explore/
 
@@ -212,13 +215,13 @@ Swaps two layers and their blend modes.
 Copies the contents and the blend mode of a layer to another layer.
 
 ### Assign to Crease Set
-The tool supports a workflow where creasing is limited to five values. This section provides quick creasing assignment buttons. Note that the crease sets are **adaptive**, meaning the value of each crease set depends on the subdivision level of the object. This is to provide four different levels of creasing to any subdivision level. By default the crease values are absolute, and only work properly on a single chosen subdivision level.
+The tool supports a workflow where creasing is limited to five sets. This section provides quick creasing assignment buttons. Note that the crease set values are **adaptive**, meaning the value of each crease set depends on the subdivision level of the object. This is to provide four different levels of creasing to any subdivision level. By default Maya treats crease values as absolute, and this tends to only work properly on a single (reasonably high or adaptive) subdivision level.
 
 ### Swap Layer Sets
-Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple re-paletted elements.
+Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple Master Palette swaps. Whereas a the Master Palette allows for the object to have color variations, Layer Sets allow for a single object to additionally have multiple layer masks and different material channels. 
 
 ### Create Skinning Mesh
-If you wish to use blend shapes and bind the mesh to a skeleton, do not use the vertex-colored object directly. The tool creates a separate mesh for deformations, and merges data from the colored and skinned meshes for export.
+If you wish to use blend shapes and bind the mesh to a skeleton, **do not use deformation tools on the vertex-colored object**. The tool creates a separate mesh for deformations, and merges data from the colored and skinned meshes together for export.
 
 ### Export Flags
 The Static Vertex Colors flag simply adds a boolean to the object for export. This can be useful if your game supports dynamic palette changes.
@@ -253,7 +256,7 @@ To remove all optionVars created by SX Tools:
 `sxtools.resetSXTools()` in Maya's scripting window
 
 
-(c) 2017-2018 Jani Kahrama / Secret Exit Ltd
+(c) 2017-2019 Jani Kahrama / Secret Exit Ltd
 
 
 # Acknowledgments
