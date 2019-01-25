@@ -32,34 +32,40 @@ class Core(object):
         maya.cmds.workspaceControl(
             sxglobals.dockID,
             label='SX Tools',
-            uiScript='sxtools.sxglobals.core.updateSXTools()',
+            uiScript=('sxtools.sxglobals.core.updateSXTools()'),
             retain=False,
             floating=False,
             dockToControl=('Outliner', 'right'),
             initialHeight=5,
             initialWidth=250 * displayScalingValue,
             minimumWidth=250 * displayScalingValue,
-            widthProperty='fixed')
+            widthProperty='free')
+
         # Background jobs to reconstruct window if selection changes,
         # and to clean up upon closing
         if 'updateSXTools' not in maya.cmds.scriptJob(listJobs=True):
-            self.job1ID = maya.cmds.scriptJob(event=[
-                'SelectionChanged',
+            self.job1ID = maya.cmds.scriptJob(
+                parent=sxglobals.dockID,
+                event=['SelectionChanged',
                 'sxtools.sxglobals.core.updateSXTools()'])
-            self.job2ID = maya.cmds.scriptJob(event=[
-                'Undo',
+            self.job2ID = maya.cmds.scriptJob(
+                parent=sxglobals.dockID,
+                event=['Undo',
                 'sxtools.sxglobals.core.updateSXTools()'])
-            self.job3ID = maya.cmds.scriptJob(event=[
-                'NameChanged',
+            self.job3ID = maya.cmds.scriptJob(
+                parent=sxglobals.dockID,
+                event=['NameChanged',
                 'sxtools.sxglobals.core.updateSXTools()'])
-            self.job4ID = maya.cmds.scriptJob(event=[
-                'SceneOpened',
+            self.job4ID = maya.cmds.scriptJob(
+                parent=sxglobals.dockID,
+                event=['SceneOpened',
                 'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
                 'sxtools.sxglobals.settings.setPreferences()\n'
                 'sxtools.sxglobals.core.updateSXTools()'
             ])
-            self.job5ID = maya.cmds.scriptJob(event=[
-                'NewSceneOpened',
+            self.job5ID = maya.cmds.scriptJob(
+                parent=sxglobals.dockID,
+                event=['NewSceneOpened',
                 'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
                 'sxtools.sxglobals.settings.setPreferences()\n'
                 'sxtools.sxglobals.core.updateSXTools()'
@@ -67,6 +73,10 @@ class Core(object):
         maya.cmds.scriptJob(
             runOnce=True,
             uiDeleted=[sxglobals.dockID, 'sxtools.sxglobals.core.exitSXTools()'])
+        maya.cmds.scriptJob(
+            runOnce=True,
+            event=['quitApplication',
+            'maya.cmds.workspaceControl("SXToolsUI", edit=True, close=True)'])
 
         # Set correct lighting and shading mode at start
         mel.eval('DisplayShadedAndTextured;')
@@ -178,7 +188,7 @@ class Core(object):
         maya.cmds.scrollLayout(
             'canvas',
             minChildWidth=250,
-            childResizable=False,
+            childResizable=True,
             parent=sxglobals.dockID,
             horizontalScrollBarThickness=16,
             verticalScrollBarThickness=16,
