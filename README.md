@@ -34,7 +34,7 @@ For certain art styles, taking the control cages to the game engine to be tessel
 | Layer Set | A parallel layer stack. Up to 10 layer sets can be assigned to a single object. Useful for creating color variants without generating duplicate objects. |
 
 ## Quick Start
-1. Copy sxtools.py and sfx folder to Maya scripts folder
+1. Copy sxtools.py, sxglobals.py, sxlib folder, and sfx folder to your Maya scripts folder
 2. Load shelf_SX.mel, start SX Tools by pressing shelf icon
 3. Click on empty space
 4. Click on ***Set Preferences Location*** and choose a place for your preferences file
