@@ -48,7 +48,7 @@ class Settings(object):
             'recentPaletteIndex': 1,
             'overwriteAlpha': False,
             'noiseMonochrome': False,
-            'noiseValue': 0.500,
+            'noiseColor': (1.0, 1.0, 1.0),
             'bakeGroundPlane': True,
             'bakeGroundScale': 100.0,
             'bakeGroundOffset': 1.0,

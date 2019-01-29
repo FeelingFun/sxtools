@@ -816,7 +816,8 @@ class ToolActions(object):
     def colorNoise(self, objects):
         for object in objects:
             mono = sxglobals.settings.tools['noiseMonochrome']
-            value = sxglobals.settings.tools['noiseValue']
+            color = sxglobals.settings.tools['noiseColor']
+            value = max(color[0], color[1], color[2])
             layer = sxglobals.layers.getSelectedLayer()
 
             selectionList = OM.MSelectionList()
@@ -844,9 +845,9 @@ class ToolActions(object):
                     vtxColors[i].g += randomOffset
                     vtxColors[i].b += randomOffset
                 else:
-                    vtxColors[i].r += random.uniform(-value, value)
-                    vtxColors[i].g += random.uniform(-value, value)
-                    vtxColors[i].b += random.uniform(-value, value)
+                    vtxColors[i].r += random.uniform(-color[0], color[0])
+                    vtxColors[i].g += random.uniform(-color[1], color[1])
+                    vtxColors[i].b += random.uniform(-color[2], color[2])
 
                 vtxIt.next()
 

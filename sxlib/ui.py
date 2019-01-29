@@ -250,14 +250,14 @@ class UI(object):
                 'emissionExport',
                 edit=True,
                 text=(sxglobals.settings.project['LayerData']['emission'][2]))
-            
+
             alpha1 = None
             alpha2 = None
             alpha1Export = None
             alpha2Export = None
             overlay = None
             overlayExport = None
-            
+
             for key, value in sxglobals.settings.project['LayerData'].iteritems():
                 if value[3] == 1:
                     alpha1 = key
@@ -628,7 +628,7 @@ class UI(object):
                 "colorShadedDisplay=True)\n"
                 "maya.mel.eval('DisplayLight;')"))
         sxglobals.tools.verifyShadingMode()
-        
+
         maya.cmds.textScrollList(
             'layerList',
             height=200,
@@ -639,7 +639,7 @@ class UI(object):
                 '(M) - mask layer\n'
                 '(A) - adjustment layer'))
         sxglobals.layers.refreshLayerList()
-        
+
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
             parent='layerFrame',
@@ -856,7 +856,7 @@ class UI(object):
         maya.cmds.menuItem(label='Z-Axis', parent='rampDirection')
         maya.cmds.menuItem(label='Surface Luminance', parent='rampDirection')
         maya.cmds.menuItem(label='Surface Curvature', parent='rampDirection')
-        
+
         presetNameArray = maya.cmds.nodePreset(list='SXRamp')
         if presetNameArray != 0:
             for presetName in presetNameArray:
@@ -1000,6 +1000,18 @@ class UI(object):
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['noiseCollapse']=False"),
             borderVisible=False)
+        maya.cmds.colorSliderGrp(
+            'sxNoiseColor',
+            parent='noiseFrame',
+            label='Filter Color:',
+            rgb=sxglobals.settings.tools['noiseColor'],
+            columnWidth3=(100, 20, 120),
+            adjustableColumn3=3,
+            columnAlign3=('right', 'left', 'left'),
+            changeCommand=(
+                "sxtools.sxglobals.settings.tools['noiseColor'] = ("
+                "maya.cmds.colorSliderGrp("
+                "'sxNoiseColor', query=True, rgbValue=True))"))
         maya.cmds.rowColumnLayout(
             'noiseRowColumns',
             parent='noiseFrame',
@@ -1015,17 +1027,6 @@ class UI(object):
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['noiseMonochrome'] = ("
                 "maya.cmds.checkBox('mono', query=True, value=True))"
-            ))
-        maya.cmds.text('noiseValueLabel', label='Noise Value (0-1):')
-        maya.cmds.floatField(
-            'noiseValue',
-            precision=3,
-            value=sxglobals.settings.tools['noiseValue'],
-            minValue=0.0,
-            maxValue=1.0,
-            changeCommand=(
-                "sxtools.sxglobals.settings.tools['noiseValue'] = ("
-                "maya.cmds.floatField('noiseValue', query=True, value=True))"
             ))
         maya.cmds.button(
             label='Apply Noise',
@@ -1069,7 +1070,7 @@ class UI(object):
             columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, 'right', 0), (2, 'both', 5)],
             rowSpacing=(1, 2))
- 
+
         maya.cmds.text('rayCountLabel', label='Ray Count:')
         maya.cmds.intField(
             'rayCount',
@@ -1446,7 +1447,7 @@ class UI(object):
                 height=20,
                 backgroundColor=(0.35, 0.1, 0),
                 ww=True)
-        
+
         maya.cmds.button(
             label='Select Palettes File',
             parent='paletteSettingsFrame',
