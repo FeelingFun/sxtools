@@ -261,7 +261,9 @@ To remove all optionVars created by SX Tools:
 
 # Acknowledgments
 
-Thanks to Rory Driscoll for tips on better sampling.
+Thanks to:
+Rory Driscoll for tips on better sampling
+Serge Scherbakov for tips on working with iterators
 
 SX Tools builds on the following work:
 ### sfx
