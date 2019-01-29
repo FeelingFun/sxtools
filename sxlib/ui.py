@@ -102,6 +102,14 @@ class UI(object):
                 "maya.cmds.workspaceControl('SXToolsUI', edit=True,"
                 " dockToControl=('AttributeEditor', 'left'))"))
 
+        maya.cmds.checkBox(
+            'historyToggle',
+            label='Construction History Enabled',
+            value=maya.cmds.constructionHistory(query=True, toggle=True),
+            ann='It is strongly recommended to DISABLE HISTORY when using SX Tools.',
+            onCommand='maya.cmds.constructionHistory(toggle=True)',
+            offCommand='maya.cmds.constructionHistory(toggle=False)')
+
         maya.cmds.frameLayout(
             'setupFrame',
             parent='canvas',
