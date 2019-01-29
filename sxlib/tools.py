@@ -548,21 +548,23 @@ class ToolActions(object):
         sxglobals.layers.refreshSelectedItem()
 
     def gradientFill(self, axis):
+        selectionCache = sxglobals.settings.selectionArray
+        layer = sxglobals.layers.getSelectedLayer()
+        mod = OM.MDGModifier()
+        colorRep = OM.MFnMesh.kRGBA
+        space = OM.MSpace.kWorld
+
         if len(sxglobals.settings.componentArray) > 0:
             components = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
                     sxglobals.settings.componentArray, tvf=True), fl=True)
-            # tempFaceArray is constructed because
+            # tempArray is constructed because
             # polyEvaluate doesn't work on face vertices
-            tempFaceArray = maya.cmds.ls(
-                maya.cmds.polyListComponentConversion(
-                    sxglobals.settings.componentArray, tf=True), fl=True)
-            maya.cmds.select(tempFaceArray)
+            tempArray = maya.cmds.ls(maya.cmds.polyListComponentConversion(
+                    sxglobals.settings.componentArray, tv=True), fl=True)
+            maya.cmds.select(tempArray)
             objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
         else:
-            components = maya.cmds.ls(
-                maya.cmds.polyListComponentConversion(
-                    sxglobals.settings.shapeArray, tv=True), fl=True)
             objectBounds = maya.cmds.polyEvaluate(
                 sxglobals.settings.shapeArray, b=True, ae=True)
 
@@ -573,64 +575,93 @@ class ToolActions(object):
         objectBoundsZmin = objectBounds[2][0]
         objectBoundsZmax = objectBounds[2][1]
 
-        if len(sxglobals.settings.componentArray) > 0:
-            compPos = [float] * len(components)
-            ratioRaw = [float] * len(components)
-            ratio = [float] * len(components)
-            compColor = [float] * len(components)
-            compAlpha = [float] * len(components)
 
-            for i in range(len(components)):
-                compPos[i] = maya.cmds.xform(
-                    components[i],
-                    query=True,
-                    worldSpace=True,
-                    translation=True)
-                if axis == 1:
-                    ratioRaw[i] = (
-                        (compPos[i][0] - objectBoundsXmin) /
-                        (objectBoundsXmax - objectBoundsXmin))
-                elif axis == 2:
-                    ratioRaw[i] = (
-                        (compPos[i][1] - objectBoundsYmin) /
-                        (objectBoundsYmax - objectBoundsYmin))
-                elif axis == 3:
-                    ratioRaw[i] = (
-                        (compPos[i][2] - objectBoundsZmin) /
-                        (objectBoundsZmax - objectBoundsZmin))
-                ratio[i] = max(min(ratioRaw[i], 1), 0)
-                compAlpha[i] = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(ratio[i]), v=(ratio[i]))[0]
-                if compAlpha[i] > 0:
-                    compColor[i] = maya.cmds.colorAtPoint(
-                        'SXRamp', o='RGB', u=(ratio[i]), v=(ratio[i]))
-                else:
-                    compColor[i] = (0, 0, 0)
-                maya.cmds.polyColorPerVertex(
-                    components[i], rgb=compColor[i], a=compAlpha[i])
-        else:
-            for object in sxglobals.settings.objectArray:
-                layer = sxglobals.layers.getSelectedLayer()
+        # Build face vert lists for the full meshes of the objects with component selections
+        selectionList = OM.MSelectionList()
+        for sl in sxglobals.settings.selectionArray:
+            selectionList.add(sl)
+        selDagPath = OM.MDagPath()
+        selectionIter = OM.MItSelectionList(selectionList)
 
-                selectionList = OM.MSelectionList()
-                selectionList.add(object)
-                nodeDagPath = OM.MDagPath()
-                nodeDagPath = selectionList.getDagPath(0)
-                MFnMesh = OM.MFnMesh(nodeDagPath)
-                space = OM.MSpace.kWorld
-                layerColors = OM.MColorArray()
-                layerColors = MFnMesh.getFaceVertexColors(colorSet=layer)
-                faceIds = OM.MIntArray()
-                vtxIds = OM.MIntArray()
-                mod = OM.MDGModifier()
-                colorRep = MFnMesh.kRGBA
+        while not selectionIter.isDone():
+            selDagPath = selectionIter.getDagPath()
+            MFnMesh = OM.MFnMesh(selDagPath)
 
-                lenSel = len(layerColors)
+            fvColors = OM.MColorArray()
+            fvColors = MFnMesh.getFaceVertexColors(colorSet=layer)
 
-                faceIds.setLength(lenSel)
-                vtxIds.setLength(lenSel)
+            vtxIds = OM.MIntArray()
+            fvIds = OM.MIntArray()
+            faceIds = OM.MIntArray()
 
-                fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+            lenSel = len(fvColors)
+            faceIds.setLength(lenSel)
+            fvIds.setLength(lenSel)
+            vtxIds.setLength(lenSel)
+
+            fvIt = OM.MItMeshFaceVertex(selDagPath)
+
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                fvIds[k] = fvIt.faceVertexId()
+                vtxIds[k] = fvIt.vertexId()
+                k += 1
+                fvIt.next()
+
+            if len(sxglobals.settings.componentArray) > 0:
+                # Convert component selection to face verts, fill matching vert ids with color
+                selection = OM.MSelectionList()
+                for component in components:
+                    selection.add(component)
+
+                selDag = OM.MDagPath()
+                fVert = OM.MObject()
+
+                # Match component selection with components of full mesh and modify fvColors array
+                (selDag, fVert) = selectionIter.getComponent()
+                MFnMesh = OM.MFnMesh(selDag)
+                fvIt = OM.MItMeshFaceVertex(selDag, fVert)
+                while not fvIt.isDone():
+                    faceId = fvIt.faceId()
+                    fvId = fvIt.faceVertexId()
+                    vtxId = fvIt.vertexId()
+                    for idx in xrange(lenSel):
+                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and selDag == selDagPath:
+                            ratioRaw = None
+                            ratio = None
+                            fvPos = fvIt.position(space)
+                            if axis == 1:
+                                ratioRaw = (
+                                    (fvPos[0] - objectBoundsXmin) /
+                                    (objectBoundsXmax - objectBoundsXmin))
+                            elif axis == 2:
+                                ratioRaw = (
+                                    (fvPos[1] - objectBoundsYmin) /
+                                    (objectBoundsYmax - objectBoundsYmin))
+                            elif axis == 3:
+                                ratioRaw = (
+                                    (fvPos[2] - objectBoundsZmin) /
+                                    (objectBoundsZmax - objectBoundsZmin))
+                            ratio = max(min(ratioRaw, 1), 0)
+                            outColor = maya.cmds.colorAtPoint(
+                                'SXRamp', o='RGB', u=(ratio), v=(ratio))
+                            outAlpha = maya.cmds.colorAtPoint(
+                                'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
+                            if outAlpha[0] > 0:
+                                fvColors[idx].r = outColor[0]
+                                fvColors[idx].g = outColor[1]
+                                fvColors[idx].b = outColor[2]
+                            else:
+                                fvColors[idx].r = outAlpha[0]
+                                fvColors[idx].g = outAlpha[0]
+                                fvColors[idx].b = outAlpha[0]
+                            fvColors[idx].a = outAlpha[0]
+
+                            continue
+                    fvIt.next()
+            else:
+                fvIt = OM.MItMeshFaceVertex(selDagPath)
 
                 k = 0
                 while not fvIt.isDone():
@@ -657,20 +688,22 @@ class ToolActions(object):
                     outAlpha = maya.cmds.colorAtPoint(
                         'SXAlphaRamp', o='A', u=(ratio), v=(ratio))
                     if outAlpha[0] > 0:
-                        layerColors[k].r = outColor[0]
-                        layerColors[k].g = outColor[1]
-                        layerColors[k].b = outColor[2]
+                        fvColors[k].r = outColor[0]
+                        fvColors[k].g = outColor[1]
+                        fvColors[k].b = outColor[2]
                     else:
-                        layerColors[k].r = outAlpha[0]
-                        layerColors[k].g = outAlpha[0]
-                        layerColors[k].b = outAlpha[0]
-                    layerColors[k].a = outAlpha[0]
+                        fvColors[k].r = outAlpha[0]
+                        fvColors[k].g = outAlpha[0]
+                        fvColors[k].b = outAlpha[0]
+                    fvColors[k].a = outAlpha[0]
                     k += 1
                     fvIt.next()
 
-                MFnMesh.setFaceVertexColors(
-                    layerColors, faceIds, vtxIds, mod, colorRep)
+            MFnMesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+            mod.doIt()
+            selectionIter.next()
 
+        maya.cmds.select(selectionCache)
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
             sxglobals.layers.getSelectedLayer())
@@ -739,7 +772,6 @@ class ToolActions(object):
                 (selDag, fVert) = selectionIter.getComponent()
                 MFnMesh = OM.MFnMesh(selDag)
                 fvIt = OM.MItMeshFaceVertex(selDag, fVert)
-                k = 0
                 while not fvIt.isDone():
                     faceId = fvIt.faceId()
                     fvId = fvIt.faceVertexId()
@@ -757,7 +789,6 @@ class ToolActions(object):
                             else:
                                 fvColors[idx] = fillColor
                             continue
-                    k += 1
                     fvIt.next()
             else:
                 if (overwriteAlpha is True):
