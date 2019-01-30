@@ -18,34 +18,35 @@ class UI(object):
         print('SX Tools: Exiting UI')
 
     def historyUI(self):
-        maya.cmds.columnLayout(
-            'historyWarningLayout',
+        maya.cmds.frameLayout(
+            'historyWarningFrame',
             parent='canvas',
-            width=250,
-            rowSpacing=5,
-            adjustableColumn=True)
-        maya.cmds.text(
-            label='WARNING: Objects with construction history!',
+            label='WARNING: Construction history detected!',
             backgroundColor=(0.35, 0.1, 0),
-            ww=True)
+            width=250,
+            marginWidth=10,
+            marginHeight=5)
         maya.cmds.button(
-            label='Delete History',
+            'disableHistoryButton',
+            parent='historyWarningFrame',
+            label='Delete and Disable History',
             command=(
                 'maya.cmds.delete(sxtools.sxglobals.settings.objectArray, ch=True)\n'
+                'maya.cmds.constructionHistory(toggle=False)\n'
                 'sxtools.sxglobals.core.updateSXTools()'))
 
     def multiShapesUI(self):
-        maya.cmds.columnLayout(
-            'shapeWarningLayout',
+        maya.cmds.frameLayout(
+            'shapeWarningFrame',
             parent='canvas',
-            width=250,
-            rowSpacing=5,
-            adjustableColumn=True)
-        maya.cmds.text(
             label='WARNING: Multiple shapes in one object!',
-            backgroundColor=(0.9, 0.55, 0),
-            ww=True)
+            backgroundColor=(0.6, 0.3, 0),
+            width=250,
+            marginWidth=10,
+            marginHeight=5)
         maya.cmds.button(
+            'disableShapesButton',
+            parent='shapeWarningFrame',
             label='Delete Extra Shapes',
             command=(
                 'maya.cmds.delete('
@@ -1644,7 +1645,7 @@ class UI(object):
         maya.cmds.frameLayout(
             'swapLayerSetsFrame',
             parent='canvas',
-            label='Swap Layer Sets',
+            label='Manage Layer Sets',
             width=250,
             marginWidth=5,
             marginHeight=2,

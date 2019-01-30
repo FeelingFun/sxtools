@@ -253,8 +253,8 @@ class Core(object):
             sxglobals.ui.bakeOcclusionToolUI()
             sxglobals.ui.masterPaletteToolUI()
             sxglobals.ui.copyLayerToolUI()
-            sxglobals.ui.assignCreaseToolUI()
             sxglobals.ui.swapLayerSetsUI()
+            sxglobals.ui.assignCreaseToolUI()
             sxglobals.ui.createSkinMeshUI()
             sxglobals.ui.exportFlagsUI()
 
