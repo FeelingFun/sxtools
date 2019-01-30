@@ -10,11 +10,11 @@ The additional vertex data created by the tool in Maya is exported via UV channe
 The tool is not fully undo-safe and does not play well with construction history, so for best experience, observe the following workflow:
 
 	Model your low-poly control cage ->
-	Delete construction history ->	
+	Delete and disable construction history ->	
 	Color and crease ->
 	Export to game engine
 
-Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply.
+Changing the topology of your model while coloring and creasing is probably fine, but the limitations of not having construction history apply. To avoid most hazards, simply disable construction history when using this tool. Undo still works, but no history nodes are generated. The tool will display pop-ups to encourage this.
 
 ## Goals & Purpose
 The toolbox is developed to allow 3D artists to create simple and stylized visuals that side-step the "low-poly, limited palette" retro look that is common to many indie titles. The development is focused on a workflow where almost the entire modeling work is to create a simple, elegant control cage that is subdivided as the final export step. All modeling effort and vertex painting work is performed on the control cage. This keeps the source art lightweight, easy to edit, and avoids the hassle involved with texturing. Instead of beveling edges, subdiv creasing should be used whenever possible.
