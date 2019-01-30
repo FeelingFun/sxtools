@@ -208,17 +208,14 @@ The palette is a json file that can be shared among multiple artists working on 
 For palettes, check out:
 https://color.adobe.com/explore/
 
-### Swap Layers
-Swaps two layers and their blend modes.
+### Copy / Swap Layers
+Copies the contents and the blend mode of a layer to another layer, or swaps two layers and their blend modes.
 
-### Copy Layer
-Copies the contents and the blend mode of a layer to another layer.
+### Manage Layer Sets
+Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple Master Palette swaps. Whereas a the Master Palette allows for the object to have color variations, Layer Sets allow for a single object to additionally have multiple layer masks and different material channels. 
 
 ### Assign to Crease Set
 The tool supports a workflow where creasing is limited to five sets. This section provides quick creasing assignment buttons. Note that the crease set values are **adaptive**, meaning the value of each crease set depends on the subdivision level of the object. This is to provide four different levels of creasing to any subdivision level. By default Maya treats crease values as absolute, and this tends to only work properly on a single (reasonably high or adaptive) subdivision level.
-
-### Swap Layer Sets
-Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple Master Palette swaps. Whereas a the Master Palette allows for the object to have color variations, Layer Sets allow for a single object to additionally have multiple layer masks and different material channels. 
 
 ### Create Skinning Mesh
 If you wish to use blend shapes and bind the mesh to a skeleton, **do not use deformation tools on the vertex-colored object**. The tool creates a separate mesh for deformations, and merges data from the colored and skinned meshes together for export.
