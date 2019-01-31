@@ -56,6 +56,8 @@ class ToolActions(object):
         return OM.MVector(x, y, math.sqrt(max(0, 1 - u1)))
 
     def bakeOcclusion(self, rayCount=250, bias=0.000001, max=10.0, weighted=True, comboOffset=0.9):
+        sxglobals.settings.localOcclusionDict.clear()
+        sxglobals.settings.globalOcclusionDict.clear()
         bboxCoords = []
         newBboxCoords = []
         sxglobals.settings.bakeSet = sxglobals.settings.shapeArray
@@ -63,6 +65,20 @@ class ToolActions(object):
 
         if sxglobals.settings.project['LayerData']['occlusion'][5] is True:
             sxglobals.layers.setColorSet('occlusion')
+            layer = 'occlusion'
+
+        # track merged and separated meshes that may have been parts of a combo mesh by adding a temp colorset
+        for bake in sxglobals.settings.bakeSet:
+            setName = 'AO_'+str(bake)
+            maya.cmds.polyColorSet(
+                bake,
+                create=True,
+                clamped=True,
+                representation='A',
+                colorSet=setName)
+            maya.cmds.polyColorSet(bake, currentColorSet=True, colorSet=setName)
+            maya.cmds.polyColorPerVertex(bake, a=1.0, nun=True)
+            maya.cmds.polyColorSet(bake, currentColorSet=True, colorSet=layer)
 
         # generate global pass combo mesh
         if len(sxglobals.settings.bakeSet) > 1:
@@ -164,14 +180,48 @@ class ToolActions(object):
                 bboxCoords.sort()
                 if len(sxglobals.settings.bakeSet) > 1 or sxglobals.settings.tools['bakeGroundPlane'] is True:
                     newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
+                    # merge objects that were combined before bake
+                    allSets = maya.cmds.polyColorSet(newObjs[0], query=True, allColorSets=True)
+                    AOSets = []
+                    for colorSet in allSets:
+                        if 'AO_' in colorSet:
+                            AOSets.append(colorSet)
+
+                    AOList = OM.MSelectionList()
+                    AODag = OM.MDagPath()
+                    AOCol = OM.MColor()
+                    for newObj in newObjs:
+                        AOList.add(newObj)
+                    comboParts = {}
+                    for AOSet in AOSets:
+                        comboParts[AOSet] = []
+
+                    AOIter = OM.MItSelectionList(AOList)
+                    while not AOIter.isDone():
+                        idArray = OM.MColorArray()
+                        AODag = AOIter.getDagPath()
+                        AOMesh = OM.MFnMesh(AODag)
+                        for AOSet in AOSets:
+                            idArray = AOMesh.getVertexColors(AOSet)
+                            AOCol = idArray[0]
+                            if AOCol.a == 1:
+                                comboParts[AOSet].append(str(AODag))
+                                break
+                        AOIter.next()
+                    for key in comboParts:
+                        if len(comboParts[key]) > 1:
+                            newCombo = maya.cmds.polyUnite(comboParts[key])
+                            maya.cmds.parent(newCombo[0], globalMesh[0])
+                            newObjs.append(newCombo[0])
+                            for item in comboParts[key]:
+                                newObjs.remove(item)
                 else:
                     newObjs = (globalMesh[0], )
                 for newObj in newObjs:
                     bbx = maya.cmds.exactWorldBoundingBox(newObj)
                     if sxglobals.settings.tools['bakeGroundPlane'] is True:
+                        # ignore groundplane
                         if (math.fabs(bbx[3] - bbx[0]) == sxglobals.settings.tools['bakeGroundScale']) and (bbx[1] - bbx[4]) == 0:
-                            maya.cmds.delete(newObj)
-                            newObjs.remove(newObj)
                             continue
                     bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
                     bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
@@ -199,9 +249,15 @@ class ToolActions(object):
                 bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
                 bboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], bake))
 
+        # remove redundant tracker colorsets
+        for bake in sxglobals.settings.bakeSet:
+            objSets = maya.cmds.polyColorSet(bake, query=True, allColorSets=True)
+            for AOSet in AOSets:
+                if AOSet in objSets:
+                    maya.cmds.polyColorSet(bake, delete=True, colorSet=AOSet)
+
         maya.cmds.select(sxglobals.settings.bakeSet)
         sxglobals.core.selectionManager()
-
 
     def bakeOcclusionMR(self):
         bbox = []
