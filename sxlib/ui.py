@@ -946,7 +946,7 @@ class UI(object):
             columnAttach=[(1, 'right', 0), (2, 'both', 5)],
             rowSpacing=(1, 2))
 
-        maya.cmds.text(label='Direction:')
+        maya.cmds.text(label='Fill Mode:')
         maya.cmds.optionMenu(
             'rampDirection',
             parent='gradientRowColumns',
