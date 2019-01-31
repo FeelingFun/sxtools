@@ -710,6 +710,7 @@ class ToolActions(object):
         sxglobals.layers.refreshLayerList()
         sxglobals.layers.refreshSelectedItem()
 
+
     def colorFill(self, overwriteAlpha=False):
         layer = sxglobals.layers.getSelectedLayer()
         fillColor = OM.MColor()
@@ -720,64 +721,60 @@ class ToolActions(object):
         fillColor.b = sxglobals.settings.currentColor[2]
         fillColor.a = 1.0
 
-        # Build face vert lists for the full meshes of the objects with component selections
+        if len(sxglobals.settings.componentArray) > 0:
+            # Convert component selection to face vertices, fill position-matching verts with color
+            selection = maya.cmds.ls(
+                maya.cmds.polyListComponentConversion(
+                    sxglobals.settings.selectionArray, tvf=True), fl=True)
+        else:
+            selection = sxglobals.settings.shapeArray
+
         selectionList = OM.MSelectionList()
-        for sl in sxglobals.settings.selectionArray:
+        for sl in selection:
             selectionList.add(sl)
         selDagPath = OM.MDagPath()
+        fVert = OM.MObject()
+        fvColors = OM.MColorArray()
+        vtxIds = OM.MIntArray()
+        fvIds = OM.MIntArray()
+        faceIds = OM.MIntArray()
+        compDagPath = OM.MDagPath()
+
         selectionIter = OM.MItSelectionList(selectionList)
-
         while not selectionIter.isDone():
+            # Gather full mesh data to compare selection against
             selDagPath = selectionIter.getDagPath()
-            MFnMesh = OM.MFnMesh(selDagPath)
+            mesh = OM.MFnMesh(selDagPath)
+            fvColors.clear()
+            fvColors = mesh.getFaceVertexColors(colorSet=layer)
+            selLen = len(fvColors)
+            vtxIds.setLength(selLen)
+            fvIds.setLength(selLen)
+            faceIds.setLength(selLen)
+            #print 'selLen', selLen
+            #print fvColors
+            #print 'selDagPath', selDagPath
 
-            fvColors = OM.MColorArray()
-            fvColors = MFnMesh.getFaceVertexColors(colorSet=layer)
-
-            vtxIds = OM.MIntArray()
-            fvIds = OM.MIntArray()
-            faceIds = OM.MIntArray()
-
-            lenSel = len(fvColors)
-            faceIds.setLength(lenSel)
-            fvIds.setLength(lenSel)
-            vtxIds.setLength(lenSel)
-
-            fvIt = OM.MItMeshFaceVertex(selDagPath)
-
-            k = 0
-            while not fvIt.isDone():
-                faceIds[k] = fvIt.faceId()
-                fvIds[k] = fvIt.faceVertexId()
-                vtxIds[k] = fvIt.vertexId()
-                k += 1
-                fvIt.next()
+            meshIter = OM.MItMeshFaceVertex(selDagPath)
+            i = 0
+            while not meshIter.isDone():
+                vtxIds[i] = meshIter.vertexId()
+                faceIds[i] = meshIter.faceId()
+                fvIds[i] = meshIter.faceVertexId()
+                i += 1
+                meshIter.next()
 
             if selectionIter.hasComponents():
-                # Convert component selection to face verts, fill matching vert ids with color
-                components = maya.cmds.ls(
-                    maya.cmds.polyListComponentConversion(
-                        sxglobals.settings.componentArray, tvf=True), fl=True)
-                #maya.cmds.ConvertSelectionToVertexFaces()
-
-                selection = OM.MSelectionList()
-                for component in components:
-                    selection.add(component)
-                #selectionList = OM.MGlobal.getActiveSelectionList()
-
-                selDag = OM.MDagPath()
-                fVert = OM.MObject()
-
-                # Match component selection with components of full mesh and modify fvColors array
-                (selDag, fVert) = selectionIter.getComponent()
-                MFnMesh = OM.MFnMesh(selDag)
-                fvIt = OM.MItMeshFaceVertex(selDag, fVert)
+                (compDagPath, fVert) = selectionIter.getComponent()
+                # Iterate through selected vertices on current selection
+                fvIt = OM.MItMeshFaceVertex(selDagPath, fVert)
+                k = 0
                 while not fvIt.isDone():
                     faceId = fvIt.faceId()
                     fvId = fvIt.faceVertexId()
                     vtxId = fvIt.vertexId()
-                    for idx in xrange(lenSel):
-                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and selDag == selDagPath:
+                    for idx in xrange(selLen):
+                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and compDagPath == selDagPath:
                             if (overwriteAlpha is True):
                                 fvColors[idx] = fillColor
                             elif (overwriteAlpha is False) and (sxglobals.settings.layerAlphaMax == 0):
@@ -788,24 +785,31 @@ class ToolActions(object):
                                 fvColors[idx].b = fillColor.b
                             else:
                                 fvColors[idx] = fillColor
-                            continue
+                            break
+                    k += 1
                     fvIt.next()
+                print 'k', k
             else:
                 if (overwriteAlpha is True):
-                    fvColors = [fillColor] * lenSel
+                    for idx in xrange(selLen):
+                        fvColors[idx] = fillColor
                 elif (overwriteAlpha is False) and (sxglobals.settings.layerAlphaMax == 0):
-                    fvColors = [fillColor] * lenSel
+                    for idx in xrange(selLen):
+                        fvColors[idx] = fillColor
                 elif (overwriteAlpha is False) and (sxglobals.settings.layerAlphaMax != 0):
-                    for idx in xrange(lenSel):
+                    for idx in xrange(selLen):
                         fvColors[idx].r = fillColor.r
                         fvColors[idx].g = fillColor.g
                         fvColors[idx].b = fillColor.b
                 else:
-                    fvColors = [fillColor] * lenSel
+                    fvColors = [fillColor] * selLen
 
-            MFnMesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
             mod.doIt()
             selectionIter.next()
+
+            if sxglobals.settings.tools['noiseValue'] > 0:
+                self.colorNoise()
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
@@ -813,45 +817,97 @@ class ToolActions(object):
         sxglobals.layers.refreshLayerList()
         sxglobals.layers.refreshSelectedItem()
 
-    def colorNoise(self, objects):
-        for object in objects:
-            mono = sxglobals.settings.tools['noiseMonochrome']
-            color = sxglobals.settings.tools['noiseColor']
-            value = max(color[0], color[1], color[2])
-            layer = sxglobals.layers.getSelectedLayer()
+    def colorNoise(self):
+        mono = sxglobals.settings.tools['noiseMonochrome']
+        color = sxglobals.settings.currentColor
+        value = sxglobals.settings.tools['noiseValue']
+        layer = sxglobals.layers.getSelectedLayer()
 
-            selectionList = OM.MSelectionList()
-            selectionList.add(object)
-            nodeDagPath = OM.MDagPath()
-            nodeDagPath = selectionList.getDagPath(0)
-            MFnMesh = OM.MFnMesh(nodeDagPath)
+        if len(sxglobals.settings.componentArray) > 0:
+            # Convert component selection to vertices, fill position-matching verts with color
+            selection = maya.cmds.polyListComponentConversion(
+                    sxglobals.settings.selectionArray, tv=True, internal=True)
+        else:
+            selection = sxglobals.settings.shapeArray
 
-            vtxColors = OM.MColorArray()
-            vtxColors = MFnMesh.getVertexColors(colorSet=layer)
-            vtxIds = OM.MIntArray()
+        selectionList = OM.MSelectionList()
+        for sl in selection:
+            selectionList.add(sl)
+        # selectionList = OM.MGlobal.getActiveSelectionList()
+        selDagPath = OM.MDagPath()
+        vert = OM.MObject()
+        vtxColors = OM.MColorArray()
+        vtxPosArray = OM.MPointArray()
+        vtxIds = OM.MIntArray()
+        compDagPath = OM.MDagPath()
 
-            lenSel = len(vtxColors)
-            vtxIds.setLength(lenSel)
+        selectionIter = OM.MItSelectionList(selectionList)
+        while not selectionIter.isDone():
+            # Gather full mesh data to compare selection against
+            selDagPath = selectionIter.getDagPath()
+            mesh = OM.MFnMesh(selDagPath)
+            vtxColors.clear()
+            vtxColors = mesh.getVertexColors(colorSet=layer)
+            selLen = len(vtxColors)
+            vtxIds.setLength(selLen)
+            vtxPosArray.setLength(selLen)
+            changedCols = OM.MColorArray()
+            changedIds = OM.MIntArray()
 
-            vtxIt = OM.MItMeshVertex(nodeDagPath)
+            meshIter = OM.MItMeshVertex(selDagPath)
+            while not meshIter.isDone():
+                i = meshIter.index()
+                vtxIds[i] = meshIter.index()
+                vtxPosArray[i] = meshIter.position()
+                meshIter.next()
 
-            while not vtxIt.isDone():
-                i = vtxIt.index()
-                vtxIds[i] = vtxIt.index()
+            if selectionIter.hasComponents():
+                (compDagPath, vert) = selectionIter.getComponent()
+                # Iterate through selected vertices on current selection
+                vtxIt = OM.MItMeshVertex(selDagPath, vert)
+                while not vtxIt.isDone():
+                    vtxPos = vtxIt.position()
+                    for idx in xrange(selLen):
+                        if vtxPos == vtxPosArray[idx] and compDagPath == selDagPath:
+                            if mono is True:
+                                offset = 1 - random.uniform(0, value)
+                                vtxColors[idx].r += offset
+                                vtxColors[idx].g += offset
+                                vtxColors[idx].b += offset
+                            else:
+                                vtxColors[idx].r += random.uniform(-color[0]*value, color[0]*value)
+                                vtxColors[idx].g += random.uniform(-color[1]*value, color[1]*value)
+                                vtxColors[idx].b += random.uniform(-color[2]*value, color[2]*value)
+                            changedCols.append(vtxColors[idx])
+                            changedIds.append(idx)
+                            break
+                    vtxIt.next()
+                mesh.setVertexColors(changedCols, changedIds)
+                selectionIter.next()
+            else:
+                vtxColors = OM.MColorArray()
+                vtxColors = mesh.getVertexColors(colorSet=layer)
+                vtxIds = OM.MIntArray()
 
-                if mono is True:
-                    randomOffset = random.uniform(-value, value)
-                    vtxColors[i].r += randomOffset
-                    vtxColors[i].g += randomOffset
-                    vtxColors[i].b += randomOffset
-                else:
-                    vtxColors[i].r += random.uniform(-color[0], color[0])
-                    vtxColors[i].g += random.uniform(-color[1], color[1])
-                    vtxColors[i].b += random.uniform(-color[2], color[2])
+                lenSel = len(vtxColors)
+                vtxIds.setLength(lenSel)
 
-                vtxIt.next()
-
-            MFnMesh.setVertexColors(vtxColors, vtxIds)
+                vtxIt = OM.MItMeshVertex(selDagPath)
+                while not vtxIt.isDone():
+                    idx = vtxIt.index()
+                    vtxIds[idx] = vtxIt.index()
+                    if mono is True:
+                        randomOffset = 1 - random.uniform(0, value)
+                        vtxColors[idx].r *= randomOffset
+                        vtxColors[idx].g *= randomOffset
+                        vtxColors[idx].b *= randomOffset
+                    else:
+                        vtxColors[idx].r += random.uniform(-color[0]*value, color[0]*value)
+                        vtxColors[idx].g += random.uniform(-color[1]*value, color[1]*value)
+                        vtxColors[idx].b += random.uniform(-color[2]*value, color[2]*value)
+                    vtxIt.next()
+                mesh.setVertexColors(vtxColors, vtxIds)
+                selectionIter.next()
 
     def remapRamp(self, objects):
         for object in objects:
@@ -1842,3 +1898,98 @@ class ToolActions(object):
             maya.cmds.setAttr(obj+'.subdivisionLevel', flag)
             objShape = maya.cmds.listRelatives(obj, shapes=True)[0]
             maya.cmds.setAttr(objShape+'.smoothLevel', flag)
+
+'''
+                    vtxPos = vtxIt.position()
+                    while not shapeIter.isDone():
+                        #print 'testing dags'
+                        #print selDag, nodeDagPath
+                        if selDag == nodeDagPath:
+                            for idx in xrange(lenSel):
+                                if vtxPos == vtxPosArray[idx]:
+                                    print 'pos match', idx, k
+                                    print componentIds[k], vtxIds[idx]
+                                    componentIds[k] = vtxIds[idx]
+                                    componentColor = vtxIt.getColor()
+                                    if mono is True:
+                                        offset = random.uniform(-value, value)
+                                        componentColors[k].r = componentColor.r + offset
+                                        componentColors[k].g = componentColor.g + offset
+                                        componentColors[k].b = componentColor.b + offset
+                                        componentColors[k].a = componentColor.a
+                                    else:
+                                        componentColors[k].r = componentColor.r + random.uniform(-color[0]*value, color[0]*value)
+                                        componentColors[k].g = componentColor.g + random.uniform(-color[1]*value, color[1]*value)
+                                        componentColors[k].b = componentColor.b + random.uniform(-color[2]*value, color[2]*value)
+                                        componentColors[k].a = componentColor.a
+                                    k += 1
+                                    vtxIt.next()
+                                    break
+                        else:
+                            'not this dag'
+                            shapeIter.next()
+                    print 'next vert'
+                    vtxIt.next()
+                print 'vtxId Done'
+                print componentColors
+                print componentIds
+                print len(componentColors), len(componentIds)
+                MFnMesh.setVertexColors(componentColors, componentIds)
+                print 'Components vtxcolored, going to next'
+                selectionIter.next()
+
+
+
+
+
+
+
+
+
+
+
+            vtxPosArray = OM.MPointArray()
+            vtxPosArray.setLength(lenSel)
+
+            if len(components) == 0:
+                print('SX Tools: Selection area too small for adding noise')
+                return
+
+
+
+
+
+
+
+
+
+
+            print 'vtxIds: ', vtxIds
+
+
+
+                componentList = OM.MSelectionList()
+                for component in components:
+                    componentList.add(component)
+                componentIter = OM.MItSelectionList(componentList)
+                print 'noiseList: ', len(components)
+
+                componentColors = OM.MColorArray()
+                componentColors.setLength(len(components))
+                componentIds = OM.MIntArray()
+                componentIds.setLength(len(components))
+                componentColor = OM.MColor()
+                dagArray = OM.MDagPathArray()
+                vertArray = OM.MObjectArray()
+
+                i = 0
+                while not componentIter.isDone():
+                    (dagArray[i], vertArray[i]) = componentIter.getComponent()
+                    i += 1
+                    componentIter.next()
+
+
+            else:
+
+        print 'All done'
+'''

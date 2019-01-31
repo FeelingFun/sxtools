@@ -249,7 +249,6 @@ class Core(object):
             sxglobals.ui.layerViewUI()
             sxglobals.ui.applyColorToolUI()
             sxglobals.ui.gradientToolUI()
-            sxglobals.ui.colorNoiseToolUI()
             sxglobals.ui.bakeOcclusionToolUI()
             sxglobals.ui.masterPaletteToolUI()
             sxglobals.ui.copyLayerToolUI()

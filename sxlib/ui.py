@@ -802,21 +802,16 @@ class UI(object):
             "applyColorRowColumns",
             parent="applyColorFrame",
             numberOfColumns=2,
-            columnWidth=((1, 80), (2, 160)),
+            columnWidth=((1, 100), (2, 140)),
             columnAttach=[(1, "right", 0), (2, "both", 5)],
             rowSpacing=(1, 5))
-        maya.cmds.text('overwriteAlphaLabel', label='Overwrite Alpha:')
-        maya.cmds.checkBox(
-            'overwriteAlpha',
-            label='',
-            value=sxglobals.settings.tools['overwriteAlpha'],
-            changeCommand=(
-                'sxtools.sxglobals.settings.tools["overwriteAlpha"] = ('
-                'maya.cmds.checkBox('
-                '"overwriteAlpha", query=True, value=True))'))
-        maya.cmds.text('recentPaletteLabel', label="Recent Colors:")
+        maya.cmds.text(
+            'recentPaletteLabel',
+            parent='applyColorRowColumns',
+            label="Recent Colors:")
         maya.cmds.palettePort(
             'recentPalette',
+            parent='applyColorRowColumns',
             dimensions=(8, 1),
             width=120,
             height=10,
@@ -825,22 +820,63 @@ class UI(object):
             colorEditable=False,
             scc=sxglobals.settings.tools['recentPaletteIndex'],
             changeCommand='sxtools.sxglobals.tools.setApplyColor()')
-
+        maya.cmds.text(
+            'applyColorLabel',
+            parent='applyColorRowColumns',
+            label='Color:')
         maya.cmds.colorSliderGrp(
             'sxApplyColor',
-            parent='applyColorFrame',
-            label='Color:',
+            parent='applyColorRowColumns',
+            label='',
             rgb=sxglobals.settings.currentColor,
-            columnWidth3=(80, 20, 60),
+            columnWidth3=(0, 20, 120),
             adjustableColumn3=3,
-            columnAlign3=('right', 'left', 'left'),
+            columnAlign3=('right', 'left', 'both'),
             changeCommand=(
                 "sxtools.sxglobals.settings.currentColor = ("
                 "maya.cmds.colorSliderGrp("
-                "'sxApplyColor', query=True, rgbValue=True))")
-        )
-        maya.cmds.setParent('applyColorFrame')
-
+                "'sxApplyColor', query=True, rgbValue=True))"))
+        maya.cmds.text(
+            'noiseValueLabel',
+            parent='applyColorRowColumns',
+            label='Noise Intensity:')
+        maya.cmds.floatSlider(
+            'noiseSlider',
+            parent='applyColorRowColumns',
+            step=0.2,
+            min=0.0,
+            max=1.0,
+            width=100,
+            value=sxglobals.settings.tools['noiseValue'],
+            changeCommand=(
+                "sxtools.sxglobals.settings.tools['noiseValue'] = ("
+                "maya.cmds.floatSlider("
+                "'noiseSlider', query=True, value=True))"))
+        maya.cmds.text(
+            'monoLabel',
+            parent='applyColorRowColumns',
+            label='Monochromatic:')
+        maya.cmds.checkBox(
+            'mono',
+            parent='applyColorRowColumns',
+            label='',
+            value=sxglobals.settings.tools['noiseMonochrome'],
+            changeCommand=(
+                "sxtools.sxglobals.settings.tools['noiseMonochrome'] = ("
+                "maya.cmds.checkBox('mono', query=True, value=True))"))
+        maya.cmds.text(
+            'overwriteAlphaLabel',
+            parent='applyColorRowColumns',
+            label='Overwrite Alpha:')
+        maya.cmds.checkBox(
+            'overwriteAlpha',
+            parent='applyColorRowColumns',
+            label='',
+            value=sxglobals.settings.tools['overwriteAlpha'],
+            changeCommand=(
+                'sxtools.sxglobals.settings.tools["overwriteAlpha"] = ('
+                'maya.cmds.checkBox('
+                '"overwriteAlpha", query=True, value=True))'))
         maya.cmds.button(
             label='Apply Color',
             parent='applyColorFrame',
@@ -992,62 +1028,6 @@ class UI(object):
                 "sxtools.sxglobals.tools.gradientToolManager("
                 "maya.cmds.optionMenu('rampDirection', "
                 "query=True, select=True))"))
-        maya.cmds.setParent('canvas')
-
-    def colorNoiseToolUI(self):
-        maya.cmds.frameLayout(
-            'noiseFrame',
-            parent='canvas',
-            label='Color Noise',
-            width=250,
-            marginWidth=5,
-            marginHeight=2,
-            collapsable=True,
-            collapse=sxglobals.settings.frames['noiseCollapse'],
-            collapseCommand=(
-                "sxtools.sxglobals.settings.frames['noiseCollapse']=True"),
-            expandCommand=(
-                "sxtools.sxglobals.settings.frames['noiseCollapse']=False"),
-            borderVisible=False)
-        maya.cmds.colorSliderGrp(
-            'sxNoiseColor',
-            parent='noiseFrame',
-            label='Filter Color:',
-            rgb=sxglobals.settings.tools['noiseColor'],
-            columnWidth3=(100, 20, 120),
-            adjustableColumn3=3,
-            columnAlign3=('right', 'left', 'left'),
-            changeCommand=(
-                "sxtools.sxglobals.settings.tools['noiseColor'] = ("
-                "maya.cmds.colorSliderGrp("
-                "'sxNoiseColor', query=True, rgbValue=True))"))
-        maya.cmds.rowColumnLayout(
-            'noiseRowColumns',
-            parent='noiseFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
-            rowSpacing=(1, 2))
-        maya.cmds.text('monoLabel', label='Monochromatic:')
-        maya.cmds.checkBox(
-            'mono',
-            label='',
-            value=sxglobals.settings.tools['noiseMonochrome'],
-            changeCommand=(
-                "sxtools.sxglobals.settings.tools['noiseMonochrome'] = ("
-                "maya.cmds.checkBox('mono', query=True, value=True))"
-            ))
-        maya.cmds.button(
-            label='Apply Noise',
-            parent='noiseFrame',
-            height=30,
-            width=100,
-            command="sxtools.sxglobals.tools.colorNoise(sxtools.sxglobals.settings.objectArray)\n"
-            "maya.cmds.floatSlider("
-            "'layerOpacitySlider', edit=True, value=1.0)\n"
-            "sxtools.sxglobals.tools.setLayerOpacity()\n"
-            "sxtools.sxglobals.layers.refreshLayerList()\n"
-            "sxtools.sxglobals.layers.refreshSelectedItem()")
         maya.cmds.setParent('canvas')
 
     def bakeOcclusionToolUI(self):
