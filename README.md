@@ -171,14 +171,13 @@ When layer opacity is below the ‘Alpha-to-mask limit’ specified in the proje
 
 ## The Tool List
 
-### Apply Color
+### Apply Color (and Noise)
 Applies selected color to selected layer or components. The tool respects layer opacity value and writes values only at the max opacity value of the layer. In case of an empty layer, writes with full opacity. If you want to flood a layer with solid color, check the "Overwrite Alpha" checkbox.
+
+Noise can be added with the Noise Intensity slider.
 
 ### Gradient Fill
 Allows for a custom ramp texture to be applied to the object or objects. Different modes under the "Direction" pull-down menu are gradient along XYZ, remapping an existing layer’s luminance to a gradient, or applying a ramp according to the curvature of the mesh. Saving a preset does not currently support the alpha gradient, only color.
-
-### Color Noise
-At value 1 creates noise between 0 and 1, so typically values below 0.1 will yield subtle results.
 
 ### Bake Occlusion
 SX Tools has a built-in ambient occlusion renderer.
