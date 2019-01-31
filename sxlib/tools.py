@@ -327,7 +327,8 @@ class ToolActions(object):
                 colorSet='occlusion')
             sxglobals.settings.globalOcclusionDict[shape] = globalColorArray
 
-        sxglobals.settings.tools['blendSlider'] = 1.0
+        sxglobals.settings.tools['blendSlider'] = 0.5
+        self.blendOcclusion()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Occlusion baking time: ' + str(totalTime))
 
@@ -861,10 +862,10 @@ class ToolActions(object):
                     for idx in xrange(selLen):
                         if vtxPos == vtxPosArray[idx] and compDagPath == selDagPath:
                             if mono is True:
-                                offset = 1 - random.uniform(0, value)
-                                vtxColors[idx].r += offset
-                                vtxColors[idx].g += offset
-                                vtxColors[idx].b += offset
+                                randomOffset = 1 - random.uniform(0, value)
+                                vtxColors[idx].r *= randomOffset
+                                vtxColors[idx].g *= randomOffset
+                                vtxColors[idx].b *= randomOffset
                             else:
                                 vtxColors[idx].r += random.uniform(-color[0]*value, color[0]*value)
                                 vtxColors[idx].g += random.uniform(-color[1]*value, color[1]*value)
