@@ -3,24 +3,6 @@
 #   (c) 2017-2019  Jani Kahrama / Secret Exit Ltd
 #   Released under MIT license
 #
-#   Curvature calculation method based on work by Stepan Jirka
-#   http://www.stepanjirka.com/maya-api-curvature-shader/
-#
-#   ShaderFX network generation based on work by Steve Theodore
-#   https://github.com/theodox/sfx
-#
-#   Functionality summary:
-#   SX Tools simplifies artist workflow in painting vertex colors
-#   by presenting color sets in a layer-style interface.
-#
-#   Users can edit vertex color values for both an arbitrary
-#   number of albedo layers, and for a set of material
-#   properties.
-#
-#   Viewport visualization of layered vertex colors is accomplished
-#   with a custom ShaderFX shader. This material is automatically
-#   generated when not present in the scene.
-#
 #   The tool includes an export function that flattens color
 #   layers but preserves selected alpha values as "layer masks"
 #   that are written into the UV channels of the mesh.
@@ -32,22 +14,6 @@
 #   to a layer mask, or if it is only used to flatten layer colors.
 #
 #   Technical notes:
-#   updateSXTools()       - the main function called by a scriptJob
-#                           monitoring selection changes
-#   createSXShader()      - creates the necessary materials to view
-#                           the color-layered object. Separate
-#                           functions for export preview.
-#   setPreferences()      - called to set and store the color sets
-#                           needed for the project, writes the defaults
-#                           to settings dictionary
-#   setPrimVars()         - sets the object-specific primitive
-#                           variables used for shading and exporting
-#   layerToUV()           - performs the conversion of color set
-#                           alpha values to "color masks" stored
-#                           in mesh UV values
-#   colorToUV()           - stores material properties to UV channels,
-#                           note that "emission" is exported as
-#                           a single-channel value
 #   processObjects()      - the main export function, goes through
 #                           the steps of calling the other functions
 #

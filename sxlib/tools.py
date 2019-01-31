@@ -170,7 +170,6 @@ class ToolActions(object):
                     bbx = maya.cmds.exactWorldBoundingBox(newObj)
                     if sxglobals.settings.tools['bakeGroundPlane'] is True:
                         if (math.fabs(bbx[3] - bbx[0]) == sxglobals.settings.tools['bakeGroundScale']) and (bbx[1] - bbx[4]) == 0:
-                            #print 'hey groundplane', newObj, bbx
                             maya.cmds.delete(newObj)
                             newObjs.remove(newObj)
                             continue
@@ -353,8 +352,6 @@ class ToolActions(object):
             lenSel = len(layerColorArray)
             faceIds.setLength(lenSel)
             vtxIds.setLength(lenSel)
-
-            #print bake, len(localColorArray), len(globalColorArray)
 
             fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
@@ -603,9 +600,6 @@ class ToolActions(object):
             vtxIds.setLength(selLen)
             fvIds.setLength(selLen)
             faceIds.setLength(selLen)
-            #print 'selLen', selLen
-            #print fvColors
-            #print 'selDagPath', selDagPath
 
             meshIter = OM.MItMeshFaceVertex(selDagPath)
             i = 0
@@ -618,7 +612,7 @@ class ToolActions(object):
 
             if selectionIter.hasComponents():
                 (compDagPath, fVert) = selectionIter.getComponent()
-                # Iterate through selected vertices on current selection
+                # Iterate through selected face vertices on current selection
                 fvIt = OM.MItMeshFaceVertex(selDagPath, fVert)
                 while not fvIt.isDone():
                     faceId = fvIt.faceId()
@@ -751,9 +745,6 @@ class ToolActions(object):
             vtxIds.setLength(selLen)
             fvIds.setLength(selLen)
             faceIds.setLength(selLen)
-            #print 'selLen', selLen
-            #print fvColors
-            #print 'selDagPath', selDagPath
 
             meshIter = OM.MItMeshFaceVertex(selDagPath)
             i = 0
@@ -947,9 +938,6 @@ class ToolActions(object):
             vtxIds.setLength(selLen)
             fvIds.setLength(selLen)
             faceIds.setLength(selLen)
-            #print 'selLen', selLen
-            #print fvColors
-            #print 'selDagPath', selDagPath
 
             meshIter = OM.MItMeshFaceVertex(selDagPath)
             i = 0
@@ -1962,98 +1950,3 @@ class ToolActions(object):
             maya.cmds.setAttr(obj+'.subdivisionLevel', flag)
             objShape = maya.cmds.listRelatives(obj, shapes=True)[0]
             maya.cmds.setAttr(objShape+'.smoothLevel', flag)
-
-'''
-                    vtxPos = vtxIt.position()
-                    while not shapeIter.isDone():
-                        #print 'testing dags'
-                        #print selDag, nodeDagPath
-                        if selDag == nodeDagPath:
-                            for idx in xrange(lenSel):
-                                if vtxPos == vtxPosArray[idx]:
-                                    print 'pos match', idx, k
-                                    print componentIds[k], vtxIds[idx]
-                                    componentIds[k] = vtxIds[idx]
-                                    componentColor = vtxIt.getColor()
-                                    if mono is True:
-                                        offset = random.uniform(-value, value)
-                                        componentColors[k].r = componentColor.r + offset
-                                        componentColors[k].g = componentColor.g + offset
-                                        componentColors[k].b = componentColor.b + offset
-                                        componentColors[k].a = componentColor.a
-                                    else:
-                                        componentColors[k].r = componentColor.r + random.uniform(-color[0]*value, color[0]*value)
-                                        componentColors[k].g = componentColor.g + random.uniform(-color[1]*value, color[1]*value)
-                                        componentColors[k].b = componentColor.b + random.uniform(-color[2]*value, color[2]*value)
-                                        componentColors[k].a = componentColor.a
-                                    k += 1
-                                    vtxIt.next()
-                                    break
-                        else:
-                            'not this dag'
-                            shapeIter.next()
-                    print 'next vert'
-                    vtxIt.next()
-                print 'vtxId Done'
-                print componentColors
-                print componentIds
-                print len(componentColors), len(componentIds)
-                MFnMesh.setVertexColors(componentColors, componentIds)
-                print 'Components vtxcolored, going to next'
-                selectionIter.next()
-
-
-
-
-
-
-
-
-
-
-
-            vtxPosArray = OM.MPointArray()
-            vtxPosArray.setLength(lenSel)
-
-            if len(components) == 0:
-                print('SX Tools: Selection area too small for adding noise')
-                return
-
-
-
-
-
-
-
-
-
-
-            print 'vtxIds: ', vtxIds
-
-
-
-                componentList = OM.MSelectionList()
-                for component in components:
-                    componentList.add(component)
-                componentIter = OM.MItSelectionList(componentList)
-                print 'noiseList: ', len(components)
-
-                componentColors = OM.MColorArray()
-                componentColors.setLength(len(components))
-                componentIds = OM.MIntArray()
-                componentIds.setLength(len(components))
-                componentColor = OM.MColor()
-                dagArray = OM.MDagPathArray()
-                vertArray = OM.MObjectArray()
-
-                i = 0
-                while not componentIter.isDone():
-                    (dagArray[i], vertArray[i]) = componentIter.getComponent()
-                    i += 1
-                    componentIter.next()
-
-
-            else:
-
-        print 'All done'
-'''
