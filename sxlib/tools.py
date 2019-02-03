@@ -31,11 +31,16 @@ class ToolActions(object):
                 sxglobals.settings.componentArray, sm=31) is not None) or
             (maya.cmds.filterExpand(
                 sxglobals.settings.componentArray, sm=32) is not None)):
-
             for set in creaseSets:
                 if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
                     maya.cmds.sets(sxglobals.settings.componentArray, remove=set)
             maya.cmds.sets(sxglobals.settings.componentArray, forceElement=setName)
+        elif len(sxglobals.settings.componentArray) == 0:
+            edgeList = maya.cmds.ls(maya.cmds.polyListComponentConversion(
+                sxglobals.settings.objectArray, te=True), fl=True)
+            for set in creaseSets:
+                if maya.cmds.sets(edgeList, isMember=set):
+                    maya.cmds.sets(edgeList, remove=set)
         else:
             edgeList = maya.cmds.polyListComponentConversion(
                 sxglobals.settings.componentArray, te=True)
@@ -43,6 +48,197 @@ class ToolActions(object):
                 if maya.cmds.sets(edgeList, isMember=set):
                     maya.cmds.sets(edgeList, remove=set)
             maya.cmds.sets(edgeList, forceElement=setName)
+
+    def curvatureCrease(self, objects):
+        creaseSets = (
+            'sxCrease0',
+            'sxCrease1',
+            'sxCrease2',
+            'sxCrease3',
+            'sxCrease4')
+        objectList = objects[:]
+        selection = OM.MSelectionList()
+        curvArrays = []
+        compList = maya.cmds.ls(maya.cmds.polyListComponentConversion(objects, te=True), fl=True)
+        maya.cmds.sets(compList, forceElement='sxCrease0')
+        # Generate curvature values per object
+        for obj in objectList:
+            selection.add(obj)
+            curvArrays.append(self.calculateCurvature([obj, ], True))
+        # Remap curvature values
+        vCol = OM.MColor()
+        for array in curvArrays:
+            arrayLength = len(array[1])
+            for k in xrange(arrayLength):
+                vCol = array[1][k]
+                luminance = ((vCol.r +
+                              vCol.r +
+                              vCol.b +
+                              vCol.g +
+                              vCol.g +
+                              vCol.g) / 6)
+                outColor = maya.cmds.colorAtPoint(
+                    'SXCreaseRamp', o='RGBA', u=luminance, v=luminance)
+                array[1][k].r = outColor[0]
+                array[1][k].g = outColor[1]
+                array[1][k].b = outColor[2]
+                array[1][k].a = outColor[3]
+
+        selIter = OM.MItSelectionList(selection)
+        k = 0
+        while not selIter.isDone():
+            #print curvArrays[k][1]
+            vtxValues = OM.MColorArray()
+            dagPath = OM.MDagPath()
+            (dagPath, vtxValues) = curvArrays[k]
+            lengthArray = []
+            compDict = {}
+            compDict['set0'] = OM.MSelectionList()
+            compDict['set1'] = OM.MSelectionList()
+            compDict['set2'] = OM.MSelectionList()
+            compDict['set3'] = OM.MSelectionList()
+            compDict['set4'] = OM.MSelectionList()
+            vtxIter = OM.MItMeshVertex(dagPath)
+            # TODO: Set up adjustment ramp to allow users to edit tolerances for set assignment
+            while not vtxIter.isDone():
+                i = vtxIter.index()
+                # hard edges
+                if (vtxValues[i].r >= 1.0 and
+                    sxglobals.settings.tools['crease4'] is True and
+                    sxglobals.settings.tools['convex'] is True):
+                    compDict['set4'].add((dagPath, vtxIter.currentItem()))
+                elif (vtxValues[i].r <= 0.0 and
+                    sxglobals.settings.tools['crease4'] is True and
+                    sxglobals.settings.tools['concave'] is True):
+                    compDict['set4'].add((dagPath, vtxIter.currentItem()))
+                # tight convex and concave
+                elif ((vtxValues[i].r >= 0.9 and vtxValues[i].r < 1.0) and
+                    sxglobals.settings.tools['crease3'] is True and
+                    sxglobals.settings.tools['convex'] is True):
+                    compDict['set3'].add((dagPath, vtxIter.currentItem()))
+                elif ((vtxValues[i].r > 0.0 and vtxValues[i].r <= 0.1) and
+                    sxglobals.settings.tools['crease3'] is True and
+                    sxglobals.settings.tools['concave'] is True):
+                    compDict['set3'].add((dagPath, vtxIter.currentItem()))
+                # medium convex and concave
+                elif ((vtxValues[i].r >= 0.8 and vtxValues[i].r < 0.9) and
+                    sxglobals.settings.tools['crease2'] is True and
+                    sxglobals.settings.tools['convex'] is True):
+                    compDict['set2'].add((dagPath, vtxIter.currentItem()))
+                elif ((vtxValues[i].r >= 0.1 and vtxValues[i].r < 0.2) and
+                    sxglobals.settings.tools['crease2'] is True and
+                    sxglobals.settings.tools['concave'] is True):
+                    compDict['set2'].add((dagPath, vtxIter.currentItem()))
+                # light angles
+                elif ((vtxValues[i].r >= 0.7 and vtxValues[i].r < 0.8) and
+                    sxglobals.settings.tools['crease1'] is True and
+                    sxglobals.settings.tools['convex'] is True):
+                    compDict['set1'].add((dagPath, vtxIter.currentItem()))
+                elif ((vtxValues[i].r >= 0.2 and vtxValues[i].r < 0.3) and
+                    sxglobals.settings.tools['crease1'] is True and
+                    sxglobals.settings.tools['concave'] is True):
+                    compDict['set1'].add((dagPath, vtxIter.currentItem()))
+                else:
+                    compDict['set0'].add((dagPath, vtxIter.currentItem()))
+                vtxIter.next()
+
+            for j in xrange(5):
+                OM.MGlobal.setActiveSelectionList(compDict['set'+str(j)], listAdjustment=OM.MGlobal.kReplaceList)
+                #OM.MGlobal.selectCommand(compDict['set'+str(j)], listAdjustment=OM.MGlobal.kReplaceList)
+                selList = maya.cmds.ls(maya.cmds.polyListComponentConversion(fv=True, te=True, internal=True), fl=True)
+                #print 'Number of Edges:', len(selList)
+                #print 'selList', len(selList), selList
+                assignList = selList[:]
+                # remove edges based on min length
+                for sel in selList:
+                    #print 'sel', sel
+                    edgeVerts = maya.cmds.ls(maya.cmds.polyListComponentConversion(sel, fe=True, tv=True), fl=True)
+                    #print 'edgeVerts', len(edgeVerts), edgeVerts
+                    points = maya.cmds.xform(edgeVerts, q=True, t=True, ws=True)
+                    #print points
+                    length = math.sqrt(math.pow(points[0]-points[3], 2)+math.pow(points[1]-points[4], 2)+math.pow(points[2]-points[5], 2))
+                    lengthArray.append(length)
+                    #print 'Length:', length
+                    if length < sxglobals.settings.tools['minCreaseLength']:
+                        #print 'Removed'+sel
+                        assignList.remove(sel)
+                        #print 'selLen', len(selList)
+                if len(assignList) > 0:
+                    #print 'assignList', len(assignList), assignList
+                    maya.cmds.sets(assignList, forceElement=creaseSets[j])
+            print('SX Tools:')
+            print('Selection min edge length:' + str(min(lengthArray)))
+            print('Selection max edge length:' + str(max(lengthArray)))
+            selIter.next()
+
+        maya.cmds.select(objectList)
+        sxglobals.core.selectionManager()
+
+    def calculateCurvature(self, objects, returnColors=False):
+        for obj in objects:
+            selectionList = OM.MSelectionList()
+            selectionList.add(obj)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
+
+            vtxPoints = OM.MPointArray()
+            vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
+            numVtx = MFnMesh.numVertices
+
+            vtxNormals = OM.MVectorArray()
+            vtxColors = OM.MColorArray()
+            vtxIds = OM.MIntArray()
+
+            vtxNormals.setLength(numVtx)
+            vtxColors.setLength(numVtx)
+            vtxIds.setLength(numVtx)
+
+            vtxIt = OM.MItMeshVertex(nodeDagPath)
+
+            while not vtxIt.isDone():
+                i = vtxIt.index()
+                vtxIds[i] = vtxIt.index()
+                vtxNormals[i] = vtxIt.getNormal()
+
+                connectedVertices = OM.MIntArray()
+                connectedVertices = vtxIt.getConnectedVertices()
+                numConnected = len(connectedVertices)
+
+                vtxCurvature = 0.0
+
+                for e in range(0, numConnected):
+
+                    edge = OM.MVector
+                    edge = (vtxPoints[connectedVertices[e]] - vtxPoints[i])
+                    angle = math.acos(vtxNormals[i].normal() * edge.normal())
+                    curvature = (angle / math.pi - 0.5) / edge.length()
+                    vtxCurvature += curvature
+
+                vtxCurvature = (vtxCurvature / numConnected + 0.5)
+                if vtxCurvature > 1.0:
+                    vtxCurvature = 1.0
+                outColor = maya.cmds.colorAtPoint(
+                    'SXRamp', o='RGB', u=(0), v=(vtxCurvature))
+                outAlpha = maya.cmds.colorAtPoint(
+                    'SXAlphaRamp', o='A', u=(0), v=(vtxCurvature))
+
+                vtxColors[i].r = outColor[0]
+                vtxColors[i].g = outColor[1]
+                vtxColors[i].b = outColor[2]
+                vtxColors[i].a = outAlpha[0]
+
+                vtxIt.next()
+
+            if returnColors:
+                return (nodeDagPath, vtxColors)
+            MFnMesh.setVertexColors(vtxColors, vtxIds)
+
+        self.getLayerPaletteOpacity(
+            sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
+            sxglobals.layers.getSelectedLayer())
+        sxglobals.layers.refreshLayerList()
+        sxglobals.layers.refreshSelectedItem()
 
     def rayRandomizer(self):
         u1 = random.uniform(0, 1)
@@ -491,70 +687,6 @@ class ToolActions(object):
                         g=color[1],
                         b=color[2],
                         a=color[3])
-
-        self.getLayerPaletteOpacity(
-            sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
-        sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
-
-    def calculateCurvature(self, objects):
-        for object in objects:
-            selectionList = OM.MSelectionList()
-            selectionList.add(object)
-            nodeDagPath = OM.MDagPath()
-            nodeDagPath = selectionList.getDagPath(0)
-            MFnMesh = OM.MFnMesh(nodeDagPath)
-
-            vtxPoints = OM.MPointArray()
-            vtxPoints = MFnMesh.getPoints(OM.MSpace.kWorld)
-            numVtx = MFnMesh.numVertices
-
-            vtxNormals = OM.MVectorArray()
-            vtxColors = OM.MColorArray()
-            vtxIds = OM.MIntArray()
-
-            vtxNormals.setLength(numVtx)
-            vtxColors.setLength(numVtx)
-            vtxIds.setLength(numVtx)
-
-            vtxIt = OM.MItMeshVertex(nodeDagPath)
-
-            while not vtxIt.isDone():
-                i = vtxIt.index()
-                vtxIds[i] = vtxIt.index()
-                vtxNormals[i] = vtxIt.getNormal()
-
-                connectedVertices = OM.MIntArray()
-                connectedVertices = vtxIt.getConnectedVertices()
-                numConnected = len(connectedVertices)
-
-                vtxCurvature = 0.0
-
-                for e in range(0, numConnected):
-
-                    edge = OM.MVector
-                    edge = (vtxPoints[connectedVertices[e]] - vtxPoints[i])
-                    angle = math.acos(vtxNormals[i].normal() * edge.normal())
-                    curvature = (angle / math.pi - 0.5) / edge.length()
-                    vtxCurvature += curvature
-
-                vtxCurvature = (vtxCurvature / numConnected + 0.5)
-                if vtxCurvature > 1.0:
-                    vtxCurvature = 1.0
-                outColor = maya.cmds.colorAtPoint(
-                    'SXRamp', o='RGB', u=(0), v=(vtxCurvature))
-                outAlpha = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(0), v=(vtxCurvature))
-
-                vtxColors[i].r = outColor[0]
-                vtxColors[i].g = outColor[1]
-                vtxColors[i].b = outColor[2]
-                vtxColors[i].a = outAlpha[0]
-
-                vtxIt.next()
-
-            MFnMesh.setVertexColors(vtxColors, vtxIds)
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
@@ -1057,9 +1189,6 @@ class ToolActions(object):
             mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
             mod.doIt()
             selectionIter.next()
-
-        if sxglobals.settings.tools['noiseValue'] > 0:
-            self.colorNoise()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Surface luminance remap task duration: ' + str(totalTime))

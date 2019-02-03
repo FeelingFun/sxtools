@@ -37,6 +37,7 @@ class Settings(object):
             'newPaletteCollapse': True,
             'paletteSettingsCollapse': True,
             'creaseCollapse': True,
+            'autoCreaseCollapse': True,
             'applyColorCollapse': True,
             'gradientCollapse': True,
             'copyLayerCollapse': True,
@@ -59,6 +60,13 @@ class Settings(object):
             'bias': 0.000001,
             'comboOffset': 0.9,
             'maxDistance': 10.0,
+            'minCreaseLength': 0.1,
+            'crease1': True,
+            'crease2': True,
+            'crease3': True,
+            'crease4': True,
+            'convex': True,
+            'concave': True
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',

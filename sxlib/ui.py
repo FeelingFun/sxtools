@@ -1588,6 +1588,15 @@ class UI(object):
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):
+        if maya.cmds.objExists('SXCreaseRamp') is False:
+            maya.cmds.createNode('ramp', name='SXCreaseRamp', skipSelect=True)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].position', 0)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].color', 0, 0, 0)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].position', 0.5)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].color', 0.5, 0.5, 0.5)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].position', 1)
+            maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].color', 1, 1, 1)
+
         maya.cmds.frameLayout(
             'creaseFrame',
             parent='canvas',
@@ -1601,6 +1610,102 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['creaseCollapse']=True"),
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['creaseCollapse']=False"))
+        maya.cmds.frameLayout(
+            'autoCreaseFrame',
+            parent='creaseFrame',
+            label='Auto-Crease',
+            width=240,
+            marginWidth=5,
+            marginHeight=2,
+            collapsable=True,
+            collapse=sxglobals.settings.frames['autoCreaseCollapse'],
+            collapseCommand=(
+                "sxtools.sxglobals.settings.frames['autoCreaseCollapse']=True"),
+            expandCommand=(
+                "sxtools.sxglobals.settings.frames['autoCreaseCollapse']=False"))
+        maya.cmds.text(label='Remap Ramp for Curvature Value')
+        maya.cmds.attrColorSliderGrp(
+            'sxRampCrease',
+            parent='autoCreaseFrame',
+            label='Selected Alpha:',
+            showButton=False,
+            columnWidth4=(80, 20, 140, 0),
+            adjustableColumn4=3,
+            columnAlign4=('right', 'left', 'left', 'left'))
+        maya.cmds.attrEnumOptionMenuGrp(
+            'sxCreaseRampMode',
+            parent='autoCreaseFrame',
+            label='Interpolation:',
+            columnWidth2=(80, 160),
+            columnAttach2=('right', 'left'),
+            columnAlign2=('right', 'left'))
+        maya.cmds.rampColorPort(
+            'sxRampCreaseControl',
+            parent='autoCreaseFrame',
+            height=90,
+            node='SXCreaseRamp',
+            selectedColorControl='sxRampCrease',
+            selectedInterpControl='sxCreaseRampMode')
+        maya.cmds.checkBox(
+            'convexCheck',
+            parent='autoCreaseFrame',
+            label='Convex Enabled',
+            value=sxglobals.settings.tools['convex'],
+            onCommand=('sxtools.sxglobals.settings.tools["convex"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["convex"] = False'))
+        maya.cmds.checkBox(
+            'concaveCheck',
+            parent='autoCreaseFrame',
+            label='Concave Enabled',
+            value=sxglobals.settings.tools['concave'],
+            onCommand=('sxtools.sxglobals.settings.tools["concave"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["concave"] = False'))
+        maya.cmds.checkBox(
+            'crease1Check',
+            parent='autoCreaseFrame',
+            label='25% Auto-Crease Enabled',
+            value=sxglobals.settings.tools['crease1'],
+            onCommand=('sxtools.sxglobals.settings.tools["crease1"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["crease1"] = False'))
+        maya.cmds.checkBox(
+            'crease2Check',
+            parent='autoCreaseFrame',
+            label='50% Auto-Crease Enabled',
+            value=sxglobals.settings.tools['crease2'],
+            onCommand=('sxtools.sxglobals.settings.tools["crease2"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["crease2"] = False'))
+        maya.cmds.checkBox(
+            'crease3Check',
+            parent='autoCreaseFrame',
+            label='75% Auto-Crease Enabled',
+            value=sxglobals.settings.tools['crease3'],
+            onCommand=('sxtools.sxglobals.settings.tools["crease3"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["crease3"] = False'))
+        maya.cmds.checkBox(
+            'crease4Check',
+            parent='autoCreaseFrame',
+            label='100% Auto-Crease Enabled',
+            value=sxglobals.settings.tools['crease4'],
+            onCommand=('sxtools.sxglobals.settings.tools["crease4"] = True'),
+            offCommand=('sxtools.sxglobals.settings.tools["crease4"] = False'))
+        maya.cmds.text(label='Min Edge Length:')
+        maya.cmds.floatField(
+            'minCreaseLength',
+            parent='autoCreaseFrame',
+            value=sxglobals.settings.tools['minCreaseLength'],
+            minValue=0,
+            maxValue=100,
+            precision=3,
+            ann='Edges shorter than this will not be creased.',
+            changeCommand=(
+                "sxtools.sxglobals.settings.tools['minCreaseLength'] = ("
+                "maya.cmds.floatField('minCreaseLength', query=True, value=True))"))
+        maya.cmds.button(
+            parent='autoCreaseFrame',
+            label='Apply Auto-Crease',
+            height=30,
+            width=100,
+            command=("sxtools.sxglobals.tools.curvatureCrease(sxtools.sxglobals.settings.shapeArray)"))
         maya.cmds.radioButtonGrp(
             'creaseSets',
             parent='creaseFrame',
