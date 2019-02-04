@@ -64,7 +64,7 @@ class ToolActions(object):
         # Generate curvature values per object
         for obj in objectList:
             selection.add(obj)
-            curvArrays.append(self.calculateCurvature([obj, ], True))
+            curvArrays.append(self.calculateCurvature([obj, ], True, normalize=True))
         # Remap curvature values
         vCol = OM.MColor()
         for array in curvArrays:
@@ -76,7 +76,7 @@ class ToolActions(object):
                               vCol.b +
                               vCol.g +
                               vCol.g +
-                              vCol.g) / 6)
+                              vCol.g) / float(6.0))
                 outColor = maya.cmds.colorAtPoint(
                     'SXCreaseRamp', o='RGBA', u=luminance, v=luminance)
                 array[1][k].r = outColor[0]
@@ -174,7 +174,11 @@ class ToolActions(object):
         maya.cmds.select(objectList)
         sxglobals.core.selectionManager()
 
-    def calculateCurvature(self, objects, returnColors=False):
+    def calculateCurvature(self, objects, returnColors=False, normalize=False):
+        objCurvatures = []
+        objColors = []
+        objIds = []
+
         for obj in objects:
             selectionList = OM.MSelectionList()
             selectionList.add(obj)
@@ -190,6 +194,8 @@ class ToolActions(object):
             vtxColors = OM.MColorArray()
             vtxIds = OM.MIntArray()
 
+            vtxCurvatures = []
+
             vtxNormals.setLength(numVtx)
             vtxColors.setLength(numVtx)
             vtxIds.setLength(numVtx)
@@ -204,35 +210,86 @@ class ToolActions(object):
                 connectedVertices = OM.MIntArray()
                 connectedVertices = vtxIt.getConnectedVertices()
                 numConnected = len(connectedVertices)
+                edges = OM.MVectorArray()
+                edges.setLength(numConnected)
+                edgeWeights = [None] * numConnected
+                normEdgeWeights = [None] * numConnected
+                angles = [None] * numConnected
+
+                for e in xrange(numConnected):
+                    edges[e] = (vtxPoints[connectedVertices[e]] - vtxPoints[i])
+                    edgeWeights[e] = edges[e].length()
+                    angles[e] = math.acos(vtxNormals[i].normal() * edges[e].normal())
+
+                # normalize edge weights against max
+                normEdgeWeights = [float(i)/max(edgeWeights) for i in edgeWeights]
 
                 vtxCurvature = 0.0
-
-                for e in range(0, numConnected):
-
-                    edge = OM.MVector
-                    edge = (vtxPoints[connectedVertices[e]] - vtxPoints[i])
-                    angle = math.acos(vtxNormals[i].normal() * edge.normal())
-                    curvature = (angle / math.pi - 0.5) / edge.length()
+                for e in xrange(numConnected):
+                    curvature = (angles[e] / math.pi - 0.5)  * normEdgeWeights[e] #/ float(normEdgeWeights[e])
                     vtxCurvature += curvature
 
-                vtxCurvature = (vtxCurvature / numConnected + 0.5)
+                vtxCurvature = (vtxCurvature / float(numConnected)) # + 0.5
                 if vtxCurvature > 1.0:
                     vtxCurvature = 1.0
-                outColor = maya.cmds.colorAtPoint(
-                    'SXRamp', o='RGB', u=(0), v=(vtxCurvature))
-                outAlpha = maya.cmds.colorAtPoint(
-                    'SXAlphaRamp', o='A', u=(0), v=(vtxCurvature))
 
-                vtxColors[i].r = outColor[0]
-                vtxColors[i].g = outColor[1]
-                vtxColors[i].b = outColor[2]
-                vtxColors[i].a = outAlpha[0]
-
+                vtxCurvatures.append(vtxCurvature)
                 vtxIt.next()
 
+            objCurvatures.append(vtxCurvatures)
+            objColors.append(vtxColors)
+            objIds.append(vtxIds)
+
+        # Normalize convex and concave separately to maximize artist ability to crease
+        if normalize:
+            #vtxCurvatures = [float(i)/max(vtxCurvatures) for i in vtxCurvatures]
+            maxArray = []
+            minArray = []
+            for vtxCurvatures in objCurvatures:
+                minArray.append(min(vtxCurvatures))
+                maxArray.append(max(vtxCurvatures))
+            minCurv = min(minArray)
+            maxCurv = max(maxArray)
+
+            for vtxCurvatures in objCurvatures:
+                for k in xrange(len(vtxCurvatures)):
+                    if vtxCurvatures[k] < 0:
+                        vtxCurvatures[k] = (vtxCurvatures[k] / float(minCurv)) * -0.5 + 0.5
+                    else:
+                        vtxCurvatures[k] = (vtxCurvatures[k] / float(maxCurv)) * 0.5 + 0.5
+        else:
+            for vtxCurvatures in objCurvatures:
+                for k in xrange(len(vtxCurvatures)):
+                    vtxCurvatures[k] = (vtxCurvatures[k] + 0.5)
+
+        for idx, obj in enumerate(objects):
+            selectionList = OM.MSelectionList()
+            selectionList.add(obj)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
+
             if returnColors:
-                return (nodeDagPath, vtxColors)
-            MFnMesh.setVertexColors(vtxColors, vtxIds)
+                for i in xrange(len(objCurvatures[idx])):
+                    objColors[idx][i].r = objCurvatures[idx][i]
+                    objColors[idx][i].g = objCurvatures[idx][i]
+                    objColors[idx][i].b = objCurvatures[idx][i]
+                    objColors[idx][i].a = 1.0
+
+                return (nodeDagPath, objColors[idx])
+            else:
+                for i in xrange(len(objCurvatures[idx])):
+                    outColor = maya.cmds.colorAtPoint(
+                        'SXRamp', o='RGB', u=(0), v=(objCurvatures[idx][i]))
+                    outAlpha = maya.cmds.colorAtPoint(
+                        'SXAlphaRamp', o='A', u=(0), v=(objCurvatures[idx][i]))
+
+                    objColors[idx][i].r = outColor[0]
+                    objColors[idx][i].g = outColor[1]
+                    objColors[idx][i].b = outColor[2]
+                    objColors[idx][i].a = outAlpha[0]
+
+                MFnMesh.setVertexColors(objColors[idx], objIds[idx])
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
@@ -665,9 +722,9 @@ class ToolActions(object):
                 if 1 <= color[3] > 0:
                     maya.cmds.polyColorPerVertex(
                         component,
-                        r=color[0] / color[3],
-                        g=color[1] / color[3],
-                        b=color[2] / color[3],
+                        r=color[0] / float(color[3]),
+                        g=color[1] / float(color[3]),
+                        b=color[2] / float(color[3]),
                         a=1)
                 else:
                     maya.cmds.polyColorPerVertex(
@@ -676,9 +733,9 @@ class ToolActions(object):
                 if 1 <= color[3] > 0:
                     maya.cmds.polyColorPerVertex(
                         component,
-                        r=color[0] / color[3],
-                        g=color[1] / color[3],
-                        b=color[2] / color[3],
+                        r=color[0] / float(color[3]),
+                        g=color[1] / float(color[3]),
+                        b=color[2] / float(color[3]),
                         a=color[3])
                 else:
                     maya.cmds.polyColorPerVertex(
@@ -815,15 +872,15 @@ class ToolActions(object):
                             if axis == 1:
                                 ratioRaw = (
                                     (fvPos[0] - objectBoundsXmin) /
-                                    (objectBoundsXmax - objectBoundsXmin))
+                                    float(objectBoundsXmax - objectBoundsXmin))
                             elif axis == 2:
                                 ratioRaw = (
                                     (fvPos[1] - objectBoundsYmin) /
-                                    (objectBoundsYmax - objectBoundsYmin))
+                                    float(objectBoundsYmax - objectBoundsYmin))
                             elif axis == 3:
                                 ratioRaw = (
                                     (fvPos[2] - objectBoundsZmin) /
-                                    (objectBoundsZmax - objectBoundsZmin))
+                                    float(objectBoundsZmax - objectBoundsZmin))
                             ratio = max(min(ratioRaw, 1), 0)
                             outColor = maya.cmds.colorAtPoint(
                                 'SXRamp', o='RGB', u=(ratio), v=(ratio))
@@ -852,15 +909,15 @@ class ToolActions(object):
                     if axis == 1:
                         ratioRaw = (
                             (fvPos[0] - objectBoundsXmin) /
-                            (objectBoundsXmax - objectBoundsXmin))
+                            float(objectBoundsXmax - objectBoundsXmin))
                     elif axis == 2:
                         ratioRaw = (
                             (fvPos[1] - objectBoundsYmin) /
-                            (objectBoundsYmax - objectBoundsYmin))
+                            float(objectBoundsYmax - objectBoundsYmin))
                     elif axis == 3:
                         ratioRaw = (
                             (fvPos[2] - objectBoundsZmin) /
-                            (objectBoundsZmax - objectBoundsZmin))
+                            float(objectBoundsZmax - objectBoundsZmin))
                     ratio = max(min(ratioRaw, 1), 0)
                     outColor = maya.cmds.colorAtPoint(
                         'SXRamp', o='RGB', u=(ratio), v=(ratio))
@@ -1153,7 +1210,7 @@ class ToolActions(object):
                                           fvCol.b +
                                           fvCol.g +
                                           fvCol.g +
-                                          fvCol.g) / 6)
+                                          fvCol.g) / float(6.0))
                             outColor = maya.cmds.colorAtPoint(
                                 'SXRamp', o='RGB', u=luminance, v=luminance)
                             outAlpha = maya.cmds.colorAtPoint(
@@ -1174,7 +1231,7 @@ class ToolActions(object):
                                   fvCol.b +
                                   fvCol.g +
                                   fvCol.g +
-                                  fvCol.g) / 6)
+                                  fvCol.g) / float(6.0))
                     outColor = maya.cmds.colorAtPoint(
                         'SXRamp', o='RGB', u=luminance, v=luminance)
                     outAlpha = maya.cmds.colorAtPoint(
@@ -1851,8 +1908,10 @@ class ToolActions(object):
                 maya.cmds.nodePreset(save=('SXRamp', name))
             elif len(name) == 0:
                 print('SXTools: Invalid preset name!')
+        elif mode == 5 and shift is True:
+            self.calculateCurvature(sxglobals.settings.objectArray, normalize=True)
         elif mode == 5:
-            self.calculateCurvature(sxglobals.settings.objectArray)
+            self.calculateCurvature(sxglobals.settings.objectArray, normalize=False)
         elif mode == 4:
             self.remapRamp()
         else:
