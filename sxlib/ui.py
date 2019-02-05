@@ -872,6 +872,7 @@ class UI(object):
             'overwriteAlpha',
             parent='applyColorRowColumns',
             label='',
+            ann='Component selections always override alpha. When applying color to an entire object, disabling Overwrite Alpha will preserve existing alpha values.',
             value=sxglobals.settings.tools['overwriteAlpha'],
             changeCommand=(
                 'sxtools.sxglobals.settings.tools["overwriteAlpha"] = ('
