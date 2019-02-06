@@ -60,11 +60,7 @@ class Settings(object):
             'bias': 0.000001,
             'comboOffset': 0.9,
             'maxDistance': 10.0,
-            'minCreaseLength': 0.1,
-            'crease1': True,
-            'crease2': True,
-            'crease3': True,
-            'crease4': True,
+            'minCreaseLength': 0.01,
             'convex': True,
             'concave': True
         }

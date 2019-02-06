@@ -67,7 +67,11 @@ class ToolActions(object):
                 maya.cmds.sets(vertList, remove=set)
         maya.cmds.sets(edgeList, forceElement='sxCrease0')
 
-    def curvatureCrease(self, objects):
+    # Apply selected crease value to any convex or concave edge beyond a user-adjusted threshold
+    def curvatureSelect(self, objects):
+        convexThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[2].position')
+        concaveThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[1].position')
+
         creaseSets = (
             'sxCrease0',
             'sxCrease1',
@@ -76,138 +80,57 @@ class ToolActions(object):
             'sxCrease4')
         objectList = objects[:]
         selection = OM.MSelectionList()
+        selEdges = []
         curvArrays = []
         # compList = maya.cmds.ls(maya.cmds.polyListComponentConversion(objects, te=True), fl=True)
-        # maya.cmds.sets(compList, forceElement='sxCrease0')
+        self.clearCreases()
 
         # Generate curvature values per object
         for obj in objectList:
             selection.add(obj)
             curvArrays.append(self.calculateCurvature([obj, ], True, normalize=True))
 
-        # Remap curvature values
-        vCol = OM.MColor()
-        for array in curvArrays:
-            arrayLength = len(array[1])
-            for k in xrange(arrayLength):
-                vCol = array[1][k]
-                luminance = ((vCol.r +
-                              vCol.r +
-                              vCol.b +
-                              vCol.g +
-                              vCol.g +
-                              vCol.g) / float(6.0))
-                outColor = maya.cmds.colorAtPoint(
-                    'SXCreaseRamp', o='RGBA', u=luminance, v=luminance)
-                array[1][k].r = outColor[0]
-                array[1][k].g = outColor[1]
-                array[1][k].b = outColor[2]
-                array[1][k].a = outColor[3]
-
+        maya.cmds.select(clear=True)
         selIter = OM.MItSelectionList(selection)
         k = 0
         while not selIter.isDone():
-            #print curvArrays[k][1]
             vtxValues = OM.MColorArray()
             dagPath = OM.MDagPath()
-            (dagPath, vtxValues) = curvArrays[k]
             lengthArray = []
             compDict = {}
-            compDict['set0'] = OM.MSelectionList()
-            compDict['set1'] = OM.MSelectionList()
-            compDict['set2'] = OM.MSelectionList()
-            compDict['set3'] = OM.MSelectionList()
-            compDict['set4'] = OM.MSelectionList()
+            compDict['convexSet'] = OM.MSelectionList()
+            compDict['concaveSet'] = OM.MSelectionList()
             item = OM.MObject()
+
+            vtxValues = curvArrays[k][1]
+            dagPath = curvArrays[k][0]
 
             vtxIter = OM.MItMeshVertex(dagPath)
             while not vtxIter.isDone():
                 i = vtxIter.index()
                 item = vtxIter.currentItem()
-                # connectedVertices = OM.MIntArray()
-                # connectedVertices = vtxIt.getConnectedVertices()
 
-                # Assign convex verts to sets
+                # Assign convex verts to set
                 if sxglobals.settings.tools['convex']:
-                    if (vtxValues[i].r >= 0.55):
-                        if (vtxValues[i].r >= 0.7):
-                            if (vtxValues[i].r >= 0.85):
-                                if (vtxValues[i].r >= 1.0 and sxglobals.settings.tools['crease4']):
-                                    compDict['set4'].add((dagPath, item))
-                                    print 'set4', vtxValues[i].r
-                                    vtxIter.next()
-                                    print 'hard crease, do we need to continue?'
-                                    continue
-                                if sxglobals.settings.tools['crease3']:
-                                    compDict['set3'].add((dagPath, item))
-                                    print 'set3', vtxValues[i].r
-                                    vtxIter.next()
-                                    print '3 crease, do we need to continue?'
-                                    continue
-                            if sxglobals.settings.tools['crease2']:
-                                compDict['set2'].add((dagPath, item))
-                                print 'set2', vtxValues[i].r
-                                vtxIter.next()
-                                print '2 crease, do we need to continue?'
-                                continue
-                        if sxglobals.settings.tools['crease1']:
-                            compDict['set1'].add((dagPath, item))
-                            print 'set1', vtxValues[i].r
-                            vtxIter.next()
-                            print '1 crease, do we need to continue?'
-                            continue
+                    if (vtxValues[i].r >= convexThreshold):
+                        compDict['convexSet'].add((dagPath, item))
+                        print 'set1', vtxValues[i].r
+                        vtxIter.next()
+                        print '1 crease, do we need to continue?'
+                        continue
 
-                # Assign concave verts to sets
+                # Assign concave verts to set
                 if sxglobals.settings.tools['concave']:
-                    if (vtxValues[i].r <= 0.45):
-                        if (vtxValues[i].r <= 0.3):
-                            if (vtxValues[i].r <= 0.15):
-                                if (vtxValues[i].r <= 0.0 and sxglobals.settings.tools['crease4']):
-                                    compDict['set4'].add((dagPath, item))
-                                    vtxIter.next()
-                                    print 'hard conc crease, do we need to continue?'
-                                    continue
-                                if sxglobals.settings.tools['crease3']:
-                                    compDict['set3'].add((dagPath, item))
-                                    vtxIter.next()
-                                    print '3 conc crease, do we need to continue?'
-                                    continue
-                            if sxglobals.settings.tools['crease2']:
-                                compDict['set2'].add((dagPath, item))
-                                vtxIter.next()
-                                print '2 conc crease, do we need to continue?'
-                                continue
-                        if sxglobals.settings.tools['crease1']:
-                            compDict['set1'].add((dagPath, item))
-                            vtxIter.next()
-                            print '1 conc crease, do we need to continue?'
-                            continue
+                    if (vtxValues[i].r <= concaveThreshold):
+                        compDict['concaveSet'].add((dagPath, item))
+                        vtxIter.next()
+                        print '1 conc crease, do we need to continue?'
+                        continue
 
-                print 'zero set'
-                compDict['set0'].add((dagPath, item))
                 vtxIter.next()
-                
-            # problem: vertices of a single edge may end up in separate buckets
-            # find connected edges in neighboring buckets?
-            # problem: re-running auto-crease overwrites previous creases
-            
-            print compDict['set4'].length(), compDict['set3'].length(), compDict['set2'].length(), compDict['set1'].length(), compDict['set0'].length()
-            print compDict['set4']
-            print compDict['set3']
-            print compDict['set2']
-            print compDict['set1']
-            print compDict['set0']
 
-            for j in reversed(xrange(5)):
-                assignVerts = OM.MSelectionList()
-                for k in reversed(xrange(j)):
-                    selIter = OM.MItSelectionList(compDict['set'+str(k)])
-                    while not selIter.isDone():
-                        item = selIter.getComponent()
-                        assignVerts.add(item)
-                        selIter.next()
-                OM.MGlobal.setActiveSelectionList(assignVerts, listAdjustment=OM.MGlobal.kReplaceList)
-                #OM.MGlobal.selectCommand(compDict['set'+str(j)], listAdjustment=OM.MGlobal.kReplaceList)
+            for key in compDict:
+                OM.MGlobal.setActiveSelectionList(compDict[key], listAdjustment=OM.MGlobal.kReplaceList)
                 selList = maya.cmds.ls(maya.cmds.polyListComponentConversion(fv=True, te=True, internal=True), fl=True)
                 print 'Number of Edges:', len(selList)
                 print 'selList', len(selList), selList
@@ -227,14 +150,15 @@ class ToolActions(object):
                         assignList.remove(sel)
                         #print 'selLen', len(selList)
                 if len(assignList) > 0:
+                    selEdges.extend(assignList)
                     print 'assignList', len(assignList), assignList
-                    maya.cmds.sets(assignList, forceElement=creaseSets[j])
             print('SX Tools:')
-            print('Selection min edge length:' + str(min(lengthArray)))
-            print('Selection max edge length:' + str(max(lengthArray)))
+            print(objects[k] + ' min edge length:' + str(min(lengthArray)))
+            print(objects[k] + ' max edge length:' + str(max(lengthArray)))
+            k+=1
             selIter.next()
 
-        maya.cmds.select(objectList)
+        maya.cmds.select(selEdges)
         sxglobals.core.selectionManager()
 
     def calculateCurvature(self, objects, returnColors=False, normalize=False):
