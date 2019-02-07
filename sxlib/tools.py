@@ -72,17 +72,11 @@ class ToolActions(object):
         convexThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[2].position')
         concaveThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[1].position')
 
-        creaseSets = (
-            'sxCrease0',
-            'sxCrease1',
-            'sxCrease2',
-            'sxCrease3',
-            'sxCrease4')
         objectList = objects[:]
         selection = OM.MSelectionList()
         selEdges = []
         curvArrays = []
-        # compList = maya.cmds.ls(maya.cmds.polyListComponentConversion(objects, te=True), fl=True)
+
         self.clearCreases()
 
         # Generate curvature values per object
@@ -114,9 +108,7 @@ class ToolActions(object):
                 if sxglobals.settings.tools['convex']:
                     if (vtxValues[i].r >= convexThreshold):
                         compDict['convexSet'].add((dagPath, item))
-                        print 'set1', vtxValues[i].r
                         vtxIter.next()
-                        print '1 crease, do we need to continue?'
                         continue
 
                 # Assign concave verts to set
@@ -124,7 +116,6 @@ class ToolActions(object):
                     if (vtxValues[i].r <= concaveThreshold):
                         compDict['concaveSet'].add((dagPath, item))
                         vtxIter.next()
-                        print '1 conc crease, do we need to continue?'
                         continue
 
                 vtxIter.next()
@@ -132,26 +123,17 @@ class ToolActions(object):
             for key in compDict:
                 OM.MGlobal.setActiveSelectionList(compDict[key], listAdjustment=OM.MGlobal.kReplaceList)
                 selList = maya.cmds.ls(maya.cmds.polyListComponentConversion(fv=True, te=True, internal=True), fl=True)
-                print 'Number of Edges:', len(selList)
-                print 'selList', len(selList), selList
                 assignList = selList[:]
                 # remove edges based on min length
                 for sel in selList:
-                    #print 'sel', sel
                     edgeVerts = maya.cmds.ls(maya.cmds.polyListComponentConversion(sel, fe=True, tv=True), fl=True)
-                    #print 'edgeVerts', len(edgeVerts), edgeVerts
                     points = maya.cmds.xform(edgeVerts, q=True, t=True, ws=True)
-                    #print points
                     length = math.sqrt(math.pow(points[0]-points[3], 2)+math.pow(points[1]-points[4], 2)+math.pow(points[2]-points[5], 2))
                     lengthArray.append(length)
-                    #print 'Length:', length
                     if length < sxglobals.settings.tools['minCreaseLength']:
-                        #print 'Removed'+sel
                         assignList.remove(sel)
-                        #print 'selLen', len(selList)
                 if len(assignList) > 0:
                     selEdges.extend(assignList)
-                    print 'assignList', len(assignList), assignList
             print('SX Tools:')
             print(objects[k] + ' min edge length:' + str(min(lengthArray)))
             print(objects[k] + ' max edge length:' + str(max(lengthArray)))

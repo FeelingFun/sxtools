@@ -1189,7 +1189,9 @@ class UI(object):
             parent='occlusionFrame',
             height=30,
             width=100,
-            command='sxtools.sxglobals.tools.bakeBlendOcclusion()')
+            command=(
+                'sxtools.sxglobals.tools.bakeBlendOcclusion()\n'
+                'sxtools.sxglobals.settings.savePreferences()'))
 
         plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
         if 'Mayatomr' in plugList:
@@ -1592,13 +1594,13 @@ class UI(object):
         if maya.cmds.objExists('SXCreaseRamp') is False:
             maya.cmds.createNode('ramp', name='SXCreaseRamp', skipSelect=True)
 
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].position', 0)
+        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].position', sxglobals.settings.tools['creaseThresholds'][0])
         maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].color', 0, 0, 0)
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].position', 0.4)
+        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].position', sxglobals.settings.tools['creaseThresholds'][1])
         maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].color', 0.5, 0.5, 0.5)
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].position', 0.6)
+        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].position', sxglobals.settings.tools['creaseThresholds'][2])
         maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].color', 1, 1, 1)
-        maya.cmds.setAttr('SXCreaseRamp.interpolation', 0)            
+        maya.cmds.setAttr('SXCreaseRamp.interpolation', 0)
 
         maya.cmds.frameLayout(
             'creaseFrame',
