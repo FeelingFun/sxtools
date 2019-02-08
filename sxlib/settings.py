@@ -57,6 +57,7 @@ class Settings(object):
             'blendSlider': 0.0,
             'categoryPreset': None,
             'gradientDirection': 1,
+            'gradientPreset': 1,
             'rayCount': 250,
             'bias': 0.000001,
             'comboOffset': 0.9,

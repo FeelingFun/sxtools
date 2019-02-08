@@ -143,9 +143,6 @@ class Core(object):
                 sxglobals.settings.shapeArray,
                 parent=True,
                 fullPath=True))))
-        # sxglobals.settings.componentArray = (
-        #    list(set(maya.cmds.ls(sl=True, o=False)) -
-        #    set(maya.cmds.ls(sl=True, o=True))))
         sxglobals.settings.componentArray = maya.cmds.filterExpand(
             sxglobals.settings.selectionArray, sm=(31, 32, 34, 70))
 
@@ -267,21 +264,7 @@ class Core(object):
             sxglobals.ui.assignCreaseToolUI()
             sxglobals.ui.createSkinMeshUI()
             sxglobals.ui.exportFlagsUI()
-
-            maya.cmds.text(label=' ', parent='canvas')
-            maya.cmds.button(
-                label='Create Export Objects',
-                parent='canvas',
-                width=250,
-                command=(
-                    "sxtools.sxglobals.tools.setShadingMode(0)\n"
-                    "maya.cmds.polyOptions(activeObjects=True,"
-                    "colorMaterialChannel='ambientDiffuse',"
-                    "colorShadedDisplay=True)\n"
-                    "maya.mel.eval('DisplayLight;')\n"
-                    "sxtools.sxglobals.export.processObjects("
-                    "sxtools.sxglobals.settings.selectionArray)"))
-            maya.cmds.setParent('canvas')
+            sxglobals.ui.exportButtonUI()
 
             # Make sure selected things are using the correct material
             maya.cmds.sets(
@@ -294,11 +277,13 @@ class Core(object):
                 mel.eval('DisplayLight;')
                 maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
 
-            if maya.cmds.getAttr(sxglobals.settings.objectArray[0]+'.subdivisionLevel') > 0:
-                sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0]+'.subdivisionLevel')
-                maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
-                maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
-                maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+            # Adjust crease levels based on
+            # the subdivision level of the selected object
+            if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
+                sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
+                maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
                 maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
 
         maya.cmds.setFocus('MayaWindow')

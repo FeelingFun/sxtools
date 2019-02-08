@@ -1935,20 +1935,32 @@ class ToolActions(object):
 
         if mode == 'load':
             self.clearRamp('SXRamp')
+            self.clearRamp('SXAlphaRamp')
             name = maya.cmds.optionMenu('rampPresets', query=True, value=True)
+            alphaName = maya.cmds.optionMenu('rampPresets', query=True, value=True) + '_Alpha'
             maya.cmds.nodePreset(load=('SXRamp', name))
+            maya.cmds.nodePreset(load=('SXAlphaRamp', alphaName))
         elif mode == 'preset' and shift is True:
             presetNameArray = maya.cmds.nodePreset(list='SXRamp')
             if len(presetNameArray) > 0:
                 maya.cmds.nodePreset(delete=('SXRamp', maya.cmds.optionMenu(
                     'rampPresets', query=True, value=True)))
+                maya.cmds.nodePreset(delete=('SXAlphaRamp', maya.cmds.optionMenu(
+                    'rampPresets', query=True, value=True) + '_Alpha'))
+                if len(presetNameArray) > 1:
+                    sxglobals.settings.tools['gradientPreset'] = 1
+                else:
+                    sxglobals.settings.tools['gradientPreset'] = 0
             elif len(presetNameArray) == 0:
                 print('SXTools: Preset list empty!')
         elif mode == 'preset' and shift is False:
             name = maya.cmds.textField(
                 'presetName', query=True, text=True).replace(' ', '_')
+            alphaName = maya.cmds.textField(
+                'presetName', query=True, text=True).replace(' ', '_') + '_Alpha'
             if len(name) > 0:
                 maya.cmds.nodePreset(save=('SXRamp', name))
+                maya.cmds.nodePreset(save=('SXAlphaRamp', alphaName))
             elif len(name) == 0:
                 print('SXTools: Invalid preset name!')
         elif mode == 5 and shift is True:

@@ -915,15 +915,25 @@ class UI(object):
         maya.cmds.menuItem(label='Surface Luminance', parent='rampDirection')
         maya.cmds.menuItem(label='Surface Curvature', parent='rampDirection')
 
-        presetNameArray = maya.cmds.nodePreset(list='SXRamp')
-        if presetNameArray != 0:
+        presetNames = maya.cmds.nodePreset(list='SXRamp')
+        presetNameArray = []
+        for preset in presetNames:
+            if '_Alpha' not in preset:
+                presetNameArray.append(preset)
+
+        if len(presetNameArray) > 0:
             for presetName in presetNameArray:
                 maya.cmds.menuItem(label=presetName, parent='rampPresets')
 
-        maya.cmds.optionMenu(
-            'rampDirection',
-            edit=True,
-            select=sxglobals.settings.tools['gradientDirection'])
+            maya.cmds.optionMenu(
+                'rampDirection',
+                edit=True,
+                select=sxglobals.settings.tools['gradientDirection'])
+
+            maya.cmds.optionMenu(
+                'rampPresets',
+                edit=True,
+                select=sxglobals.settings.tools['gradientPreset'])
 
     def gradientToolUI(self):
         # ramp nodes for gradient tool
@@ -971,7 +981,10 @@ class UI(object):
         maya.cmds.optionMenu(
             'rampPresets',
             parent='gradientRowColumns',
-            changeCommand="sxtools.sxglobals.tools.gradientToolManager('load')")
+            changeCommand=(
+                'sxtools.sxglobals.settings.tools["gradientPreset"]='
+                'maya.cmds.optionMenu("rampPresets", query=True, select=True)\n'
+                'sxtools.sxglobals.tools.gradientToolManager("load")'))
         self.refreshRampMenu()
 
         maya.cmds.button(
@@ -1909,4 +1922,20 @@ class UI(object):
                 'maya.cmds.intField("smoothSteps",'
                 ' query=True, value=True))'))
         maya.cmds.setParent('exportFlagsFrame')
+        maya.cmds.setParent('canvas')
+
+    def exportButtonUI(self):
+        maya.cmds.text(label=' ', parent='canvas')
+        maya.cmds.button(
+            label='Create Export Objects',
+            parent='canvas',
+            width=250,
+            command=(
+                "sxtools.sxglobals.tools.setShadingMode(0)\n"
+                "maya.cmds.polyOptions(activeObjects=True,"
+                "colorMaterialChannel='ambientDiffuse',"
+                "colorShadedDisplay=True)\n"
+                "maya.mel.eval('DisplayLight;')\n"
+                "sxtools.sxglobals.export.processObjects("
+                "sxtools.sxglobals.settings.selectionArray)"))
         maya.cmds.setParent('canvas')
