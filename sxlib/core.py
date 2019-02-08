@@ -259,7 +259,6 @@ class Core(object):
             sxglobals.ui.gradientToolUI()
             sxglobals.ui.bakeOcclusionToolUI()
             sxglobals.ui.masterPaletteToolUI()
-            sxglobals.ui.copyLayerToolUI()
             sxglobals.ui.swapLayerSetsUI()
             sxglobals.ui.assignCreaseToolUI()
             sxglobals.ui.createSkinMeshUI()

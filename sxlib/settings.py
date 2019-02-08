@@ -65,7 +65,9 @@ class Settings(object):
             'minCreaseLength': 0.01,
             'convex': True,
             'concave': True,
-            'creaseThresholds': (0, 0.4, 0.6)
+            'creaseThresholds': (0, 0.4, 0.6),
+            'sourceLayer': None,
+            'targetLayer': None
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',

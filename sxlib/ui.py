@@ -656,6 +656,43 @@ class UI(object):
                 '(A) - adjustment layer'))
         sxglobals.layers.refreshLayerList()
 
+        maya.cmds.popupMenu(
+            'layerPopUp',
+            parent='layerList')
+        maya.cmds.menuItem(
+            'copyLayerMenuItem',
+            parent='layerPopUp',
+            label='Copy Layer',
+            command=(
+                'sxtools.sxglobals.settings.tools["sourceLayer"] = '
+                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'maya.cmds.menuItem("sourceNameMenuItem", edit=True,'
+                'label="Source: " + '
+                'str(sxtools.sxglobals.settings.tools["sourceLayer"]))'))
+        maya.cmds.menuItem(
+            'pasteLayerMenuItem',
+            parent='layerPopUp',
+            label='Paste Layer',
+            command=(
+                'sxtools.sxglobals.settings.tools["targetLayer"] = '
+                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'sxtools.sxglobals.tools.copyLayer('
+                'sxtools.sxglobals.settings.objectArray)'))
+        maya.cmds.menuItem(
+            'swapLayerMenuItem',
+            parent='layerPopUp',
+            label='Swap Layer',
+            command=(
+                'sxtools.sxglobals.settings.tools["targetLayer"] = '
+                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'sxtools.sxglobals.tools.swapLayers('
+                'sxtools.sxglobals.settings.shapeArray)'))
+        maya.cmds.menuItem(
+            'sourceNameMenuItem',
+            parent='layerPopUp',
+            label='Source: ' + str(sxglobals.settings.tools["sourceLayer"]),
+            enable=False)
+
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
             parent='layerFrame',
@@ -1569,61 +1606,6 @@ class UI(object):
                 "'masterTarget5', query=True, text=True), 5)\n"
                 "maya.cmds.setFocus('MayaWindow')"),
             placeholderText='layer5')
-        maya.cmds.setParent('canvas')
-
-    def copyLayerToolUI(self):
-        maya.cmds.frameLayout(
-            'copyLayerFrame',
-            parent='canvas',
-            label='Copy / Swap Layers',
-            width=250,
-            marginWidth=5,
-            marginHeight=5,
-            collapsable=True,
-            collapse=sxglobals.settings.frames['copyLayerCollapse'],
-            collapseCommand=(
-                "sxtools.sxglobals.settings.frames['copyLayerCollapse']=True"),
-            expandCommand=(
-                "sxtools.sxglobals.settings.frames['copyLayerCollapse']=False"))
-        maya.cmds.rowColumnLayout(
-            'copyLayerRowColumns',
-            parent='copyLayerFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 100), (2, 140)),
-            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
-            rowSpacing=(1, 0))
-        maya.cmds.text('source layer', label='Source Layer:')
-        maya.cmds.textField(
-            'layersrc',
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='Source Layer Name')
-        maya.cmds.text('target layer', label='Target Layer:')
-        maya.cmds.textField(
-            'layertgt',
-            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
-            placeholderText='Target Layer Name')
-        maya.cmds.setParent('copyLayerFrame')
-        maya.cmds.rowColumnLayout(
-            'copySwapRowColumns',
-            parent='copyLayerFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 120), (2, 120)),
-            columnSpacing=([1, 0], [2, 5]),
-            rowSpacing=(1, 5))
-        maya.cmds.button(
-            label='Copy Layer',
-            parent='copySwapRowColumns',
-            height=30,
-            command=(
-                'sxtools.sxglobals.tools.copyLayer('
-                'sxtools.sxglobals.settings.objectArray)'))
-        maya.cmds.button(
-            label='Swap Layers',
-            parent='copySwapRowColumns',
-            height=30,
-            command=(
-                'sxtools.sxglobals.tools.swapLayers('
-                'sxtools.sxglobals.settings.shapeArray)'))
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):

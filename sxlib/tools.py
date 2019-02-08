@@ -1300,8 +1300,8 @@ class ToolActions(object):
         refLayers = sxglobals.layers.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
 
-        layerA = maya.cmds.textField('layersrc', query=True, text=True)
-        layerB = maya.cmds.textField('layertgt', query=True, text=True)
+        layerA = sxglobals.settings.tools['sourceLayer']
+        layerB = sxglobals.settings.tools['targetLayer']
 
         for shape in shapes:
             # selected = str(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
@@ -1363,8 +1363,8 @@ class ToolActions(object):
         refLayers = sxglobals.layers.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
 
-        layerA = maya.cmds.textField('layersrc', query=True, text=True)
-        layerB = maya.cmds.textField('layertgt', query=True, text=True)
+        layerA = sxglobals.settings.tools['sourceLayer']
+        layerB = sxglobals.settings.tools['targetLayer']
 
         if (layerA in refLayers) and (layerB in refLayers):
             for idx, obj in enumerate(objects):
