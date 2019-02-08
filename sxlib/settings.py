@@ -8,6 +8,7 @@ import maya.cmds
 import json
 import sxglobals
 
+
 class Settings(object):
     def __init__(self):
         self.selectionArray = []
@@ -155,8 +156,9 @@ class Settings(object):
 
         maya.cmds.select(clear=True)
 
-    # this method is used to create a new sxglobals.settings.project dict from the setup
-    # screen, alternate source for the same dict is to read a saved one
+    # this method is used to create a new sxglobals.settings.project dict
+    # from the setup screen, alternate source for the same dict
+    # is to read a saved one
     def createPreferences(self):
         self.project['LayerData'] = {}
         self.project['RefNames'] = []
@@ -360,7 +362,7 @@ class Settings(object):
                 dialogStyle=2,
                 fm=0)
             if filePath is not None:
-                print('SX Tools: Palettes file set to '+ filePath[0])
+                print('SX Tools: Palettes file set to ' + filePath[0])
                 maya.cmds.optionVar(
                     stringValue=('SXToolsPalettesFile', filePath[0]))
             else:

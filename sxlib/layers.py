@@ -8,6 +8,7 @@ import maya.cmds
 import maya.api.OpenMaya as OM
 import sxglobals
 
+
 class LayerManagement(object):
     def __init__(self):
         return None
@@ -287,7 +288,8 @@ class LayerManagement(object):
             print('SX Tools: Maximum layer sets added!')
             return
 
-        refLayers = self.sortLayers(sxglobals.settings.project['LayerData'].keys())
+        refLayers = self.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
         targetLayers = []
         var = varIdx
 
@@ -363,7 +365,8 @@ class LayerManagement(object):
     # Called when the user hides or shows
     # all vertex color layers in the tool UI
     def toggleAllLayers(self):
-        layers = self.sortLayers(sxglobals.settings.project['LayerData'].keys())
+        layers = self.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
         for layer in layers:
             self.toggleLayer(layer)
 
@@ -383,7 +386,8 @@ class LayerManagement(object):
         if maya.cmds.textScrollList('layerList', exists=True):
             maya.cmds.textScrollList('layerList', edit=True, removeAll=True)
 
-        layers = self.sortLayers(sxglobals.settings.project['LayerData'].keys())
+        layers = self.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
         states = []
         for layer in layers:
             states.append(self.verifyLayerState(layer))
@@ -442,13 +446,16 @@ class LayerManagement(object):
 
         maya.cmds.text(
             'layerBlendModeLabel',
-            edit=True, label=str(sxglobals.layers.getSelectedLayer()) + ' Blend Mode:')
+            edit=True,
+            label=str(sxglobals.layers.getSelectedLayer()) + ' Blend Mode:')
         maya.cmds.text(
             'layerColorLabel',
-            edit=True, label=str(sxglobals.layers.getSelectedLayer()) + ' Colors:')
+            edit=True,
+            label=str(sxglobals.layers.getSelectedLayer()) + ' Colors:')
         maya.cmds.text(
             'layerOpacityLabel',
-            edit=True, label=str(sxglobals.layers.getSelectedLayer()) + ' Opacity:')
+            edit=True,
+            label=str(sxglobals.layers.getSelectedLayer()) + ' Opacity:')
 
     def sortLayers(self, layers):
         sortedLayers = []

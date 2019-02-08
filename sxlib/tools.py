@@ -13,6 +13,7 @@ import math
 import random
 import sxglobals
 
+
 class ToolActions(object):
     def __init__(self):
         return None
@@ -33,8 +34,10 @@ class ToolActions(object):
                 sxglobals.settings.componentArray, sm=32) is not None)):
             for set in creaseSets:
                 if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
-                    maya.cmds.sets(sxglobals.settings.componentArray, remove=set)
-            maya.cmds.sets(sxglobals.settings.componentArray, forceElement=setName)
+                    maya.cmds.sets(
+                        sxglobals.settings.componentArray, remove=set)
+            maya.cmds.sets(
+                sxglobals.settings.componentArray, forceElement=setName)
         elif len(sxglobals.settings.componentArray) == 0:
             edgeList = maya.cmds.ls(maya.cmds.polyListComponentConversion(
                 sxglobals.settings.objectArray, te=True), fl=True)
@@ -67,10 +70,13 @@ class ToolActions(object):
                 maya.cmds.sets(vertList, remove=set)
         maya.cmds.sets(edgeList, forceElement='sxCrease0')
 
-    # Apply selected crease value to any convex or concave edge beyond a user-adjusted threshold
+    # Apply selected crease value to any convex or concave edge
+    # beyond a user-adjusted threshold
     def curvatureSelect(self, objects):
-        convexThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[2].position')
-        concaveThreshold = maya.cmds.getAttr('SXCreaseRamp.colorEntryList[1].position')
+        convexThreshold = maya.cmds.getAttr(
+            'SXCreaseRamp.colorEntryList[2].position')
+        concaveThreshold = maya.cmds.getAttr(
+            'SXCreaseRamp.colorEntryList[1].position')
 
         objectList = objects[:]
         selection = OM.MSelectionList()
@@ -82,7 +88,10 @@ class ToolActions(object):
         # Generate curvature values per object
         for obj in objectList:
             selection.add(obj)
-            curvArrays.append(self.calculateCurvature([obj, ], True, normalize=True))
+            curvArrays.append(
+                self.calculateCurvature([obj, ],
+                True,
+                normalize=True))
 
         maya.cmds.select(clear=True)
         selIter = OM.MItSelectionList(selection)
@@ -122,13 +131,23 @@ class ToolActions(object):
 
             for key in compDict:
                 OM.MGlobal.setActiveSelectionList(compDict[key], listAdjustment=OM.MGlobal.kReplaceList)
-                selList = maya.cmds.ls(maya.cmds.polyListComponentConversion(fv=True, te=True, internal=True), fl=True)
+                selList = maya.cmds.ls(
+                    maya.cmds.polyListComponentConversion(
+                        fv=True, te=True, internal=True),
+                    fl=True)
                 assignList = selList[:]
                 # remove edges based on min length
                 for sel in selList:
-                    edgeVerts = maya.cmds.ls(maya.cmds.polyListComponentConversion(sel, fe=True, tv=True), fl=True)
-                    points = maya.cmds.xform(edgeVerts, q=True, t=True, ws=True)
-                    length = math.sqrt(math.pow(points[0]-points[3], 2)+math.pow(points[1]-points[4], 2)+math.pow(points[2]-points[5], 2))
+                    edgeVerts = maya.cmds.ls(
+                        maya.cmds.polyListComponentConversion(
+                            sel, fe=True, tv=True),
+                        fl=True)
+                    points = maya.cmds.xform(
+                        edgeVerts, q=True, t=True, ws=True)
+                    length = math.sqrt(
+                        math.pow(points[0] - points[3], 2) +
+                        math.pow(points[1] - points[4], 2) +
+                        math.pow(points[2] - points[5], 2))
                     lengthArray.append(length)
                     if length < sxglobals.settings.tools['minCreaseLength']:
                         assignList.remove(sel)
@@ -137,7 +156,7 @@ class ToolActions(object):
             print('SX Tools:')
             print(objects[k] + ' min edge length:' + str(min(lengthArray)))
             print(objects[k] + ' max edge length:' + str(max(lengthArray)))
-            k+=1
+            k += 1
             selIter.next()
 
         maya.cmds.select(selEdges)
@@ -195,10 +214,10 @@ class ToolActions(object):
 
                 vtxCurvature = 0.0
                 for e in xrange(numConnected):
-                    curvature = (angles[e] / math.pi - 0.5)#  * normEdgeWeights[e] #/ float(normEdgeWeights[e])
+                    curvature = (angles[e] / math.pi - 0.5)  #  * or / float(normEdgeWeights[e])
                     vtxCurvature += curvature
 
-                vtxCurvature = (vtxCurvature / float(numConnected)) # + 0.5
+                vtxCurvature = (vtxCurvature / float(numConnected))  # + 0.5
                 if vtxCurvature > 1.0:
                     vtxCurvature = 1.0
 
@@ -209,7 +228,8 @@ class ToolActions(object):
             objColors.append(vtxColors)
             objIds.append(vtxIds)
 
-        # Normalize convex and concave separately to maximize artist ability to crease
+        # Normalize convex and concave separately
+        # to maximize artist ability to crease
         if normalize:
             #vtxCurvatures = [float(i)/max(vtxCurvatures) for i in vtxCurvatures]
             maxArray = []
@@ -289,7 +309,9 @@ class ToolActions(object):
             sxglobals.layers.setColorSet('occlusion')
             layer = 'occlusion'
 
-        # track merged and separated meshes that may have been parts of a combo mesh by adding a temp colorset
+        # track merged and separated meshes
+        # that may have been parts of a combo mesh
+        # by adding a temp colorset
         for bake in sxglobals.settings.bakeSet:
             setName = 'AO_'+str(bake)
             maya.cmds.polyColorSet(
@@ -304,12 +326,21 @@ class ToolActions(object):
 
         # generate global pass combo mesh
         if len(sxglobals.settings.bakeSet) > 1:
-            globalMesh = maya.cmds.polyUnite(maya.cmds.duplicate(sxglobals.settings.bakeSet, renameChildren=True), ch=False, name='comboOcclusionObject')
-            maya.cmds.polyMoveFacet(globalMesh, lsx=comboOffset, lsy=comboOffset, lsz=comboOffset)
+            globalMesh = maya.cmds.polyUnite(
+                maya.cmds.duplicate(sxglobals.settings.bakeSet, renameChildren=True),
+                ch=False,
+                name='comboOcclusionObject')
+            maya.cmds.polyMoveFacet(
+                globalMesh,
+                lsx=comboOffset,
+                lsy=comboOffset,
+                lsz=comboOffset)
             if sxglobals.settings.tools['bakeGroundPlane'] is False:
                 sxglobals.settings.bakeSet.append(globalMesh[0])
         else:
-            globalMesh = maya.cmds.duplicate(sxglobals.settings.bakeSet[0], name='comboOcclusionObject')
+            globalMesh = maya.cmds.duplicate(
+                sxglobals.settings.bakeSet[0],
+                name='comboOcclusionObject')
             if sxglobals.settings.tools['bakeGroundPlane'] is False:
                 sxglobals.settings.bakeSet.append(globalMesh[0])
 
@@ -338,7 +369,10 @@ class ToolActions(object):
                 (bbox[1] - sxglobals.settings.tools['bakeGroundOffset']))
             maya.cmds.setAttr('sxGroundPlane.translateZ', groundPos[2])
 
-            globalMesh = maya.cmds.polyUnite(('comboOcclusionObject', 'sxGroundPlane'), ch=False, name='comboOcclusionObject')
+            globalMesh = maya.cmds.polyUnite(
+                ('comboOcclusionObject', 'sxGroundPlane'),
+                ch=False,
+                name='comboOcclusionObject')
             sxglobals.settings.bakeSet.append(globalMesh[0])
 
         for bake in sxglobals.settings.bakeSet:
@@ -380,9 +414,17 @@ class ToolActions(object):
                 sampleRays.setLength(rayCount)
 
                 for e in xrange(rayCount):
-                    sampleRays[e] = OM.MFloatVector(hemiSphere[e].rotateBy(rotQuat))
+                    sampleRays[e] = OM.MFloatVector(
+                        hemiSphere[e].rotateBy(rotQuat))
                 for e in xrange(rayCount):
-                    result = MFnMesh.anyIntersection(point, sampleRays[e], OM.MSpace.kWorld, max, False, accelParams=accelGrid, tolerance=0.001)
+                    result = MFnMesh.anyIntersection(
+                        point,
+                        sampleRays[e],
+                        OM.MSpace.kWorld,
+                        max,
+                        False,
+                        accelParams=accelGrid,
+                        tolerance=0.001)
                     if result[2] != -1:
                         occValue = occValue - contribution
 
@@ -403,7 +445,10 @@ class ToolActions(object):
                 if len(sxglobals.settings.bakeSet) > 1 or sxglobals.settings.tools['bakeGroundPlane'] is True:
                     newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
                     # merge objects that were combined before bake
-                    allSets = maya.cmds.polyColorSet(newObjs[0], query=True, allColorSets=True)
+                    allSets = maya.cmds.polyColorSet(
+                        newObjs[0],
+                        query=True,
+                        allColorSets=True)
                     AOSets = []
                     for colorSet in allSets:
                         if 'AO_' in colorSet:
@@ -445,9 +490,15 @@ class ToolActions(object):
                         # ignore groundplane
                         if (math.fabs(bbx[3] - bbx[0]) == sxglobals.settings.tools['bakeGroundScale']) and (bbx[1] - bbx[4]) == 0:
                             continue
-                    bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
-                    bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
-                    newBboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], newObj))
+                    bbSize = math.fabs(
+                        (bbx[3]-bbx[0]) *
+                        (bbx[4]-bbx[1]) *
+                        (bbx[5]-bbx[3]))
+                    bbId = (
+                        bbx[0] + 10 * bbx[1] + 100 * bbx[2] +
+                        bbx[3] + 10 * bbx[4] + 100 * bbx[5])
+                    newBboxCoords.append(
+                        (bbId, bbSize, bbx[0], bbx[1], bbx[2], newObj))
 
                 newBboxCoords.sort()
 
@@ -467,16 +518,28 @@ class ToolActions(object):
                 sxglobals.settings.localOcclusionDict[bake] = localColorArray
                 # calculate bounding box and use it to sort shapes
                 bbx = maya.cmds.exactWorldBoundingBox(bake)
-                bbSize = math.fabs((bbx[3]-bbx[0])*(bbx[4]-bbx[1])*(bbx[5]-bbx[3]))
-                bbId = (bbx[0]+10*bbx[1]+100*bbx[2]+bbx[3]+10*bbx[4]+100*bbx[5])
-                bboxCoords.append((bbId, bbSize, bbx[0], bbx[1], bbx[2], bake))
+                bbSize = math.fabs(
+                    (bbx[3] - bbx[0]) *
+                    (bbx[4] - bbx[1]) *
+                    (bbx[5]-bbx[3]))
+                bbId = (
+                    bbx[0] + 10 * bbx[1] + 100 * bbx[2] +
+                    bbx[3] + 10 * bbx[4] + 100 * bbx[5])
+                bboxCoords.append(
+                    (bbId, bbSize, bbx[0], bbx[1], bbx[2], bake))
 
         # remove redundant tracker colorsets
         for bake in sxglobals.settings.bakeSet:
-            objSets = maya.cmds.polyColorSet(bake, query=True, allColorSets=True)
+            objSets = maya.cmds.polyColorSet(
+                bake,
+                query=True,
+                allColorSets=True)
             for AOSet in AOSets:
                 if AOSet in objSets:
-                    maya.cmds.polyColorSet(bake, delete=True, colorSet=AOSet)
+                    maya.cmds.polyColorSet(
+                        bake,
+                        delete=True,
+                        colorSet=AOSet)
 
         maya.cmds.select(sxglobals.settings.bakeSet)
         sxglobals.core.selectionManager()
@@ -564,7 +627,12 @@ class ToolActions(object):
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Baking ambient occlusion')
-        self.bakeOcclusion(sxglobals.settings.tools['rayCount'], sxglobals.settings.tools['bias'], sxglobals.settings.tools['maxDistance'], True, sxglobals.settings.tools['comboOffset'])
+        self.bakeOcclusion(
+            sxglobals.settings.tools['rayCount'],
+            sxglobals.settings.tools['bias'],
+            sxglobals.settings.tools['maxDistance'],
+            True,
+            sxglobals.settings.tools['comboOffset'])
         sxglobals.settings.tools['blendSlider'] = 0.5
         self.blendOcclusion()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
@@ -657,7 +725,6 @@ class ToolActions(object):
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
             sxglobals.layers.getSelectedLayer())
-
 
     def applyTexture(self, texture, uvSetName, applyAlpha):
         colors = []
@@ -768,9 +835,9 @@ class ToolActions(object):
         colorRep = OM.MFnMesh.kRGBA
         space = OM.MSpace.kWorld
 
-
         if len(sxglobals.settings.componentArray) > 0:
-            # Convert component selection to face vertices, fill position-matching verts with color
+            # Convert component selection to face vertices,
+            # fill position-matching verts with color
             selection = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
                     sxglobals.settings.selectionArray, tvf=True), fl=True)
@@ -791,7 +858,6 @@ class ToolActions(object):
         objectBoundsYmax = objectBounds[1][1]
         objectBoundsZmin = objectBounds[2][0]
         objectBoundsZmax = objectBounds[2][1]
-
 
         selectionList = OM.MSelectionList()
         for sl in selection:
@@ -834,7 +900,10 @@ class ToolActions(object):
                     fvId = fvIt.faceVertexId()
                     vtxId = fvIt.vertexId()
                     for idx in xrange(selLen):
-                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and compDagPath == selDagPath:
+                        if (faceId == faceIds[idx] and
+                           fvId == fvIds[idx] and
+                           vtxId == vtxIds[idx] and
+                           compDagPath == selDagPath):
                             ratioRaw = None
                             ratio = None
                             fvPos = fvIt.position(space)
@@ -931,7 +1000,8 @@ class ToolActions(object):
         fillColor.a = 1.0
 
         if len(sxglobals.settings.componentArray) > 0:
-            # Convert component selection to face vertices, fill position-matching verts with color
+            # Convert component selection to face vertices,
+            # fill position-matching verts with color
             selection = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
                     sxglobals.settings.selectionArray, tvf=True), fl=True)
@@ -979,7 +1049,10 @@ class ToolActions(object):
                     fvId = fvIt.faceVertexId()
                     vtxId = fvIt.vertexId()
                     for idx in xrange(selLen):
-                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and compDagPath == selDagPath:
+                        if (faceId == faceIds[idx] and
+                           fvId == fvIds[idx] and
+                           vtxId == vtxIds[idx] and
+                           compDagPath == selDagPath):
                             fvColors[idx] = fillColor
                             break
                     fvIt.next()
@@ -1021,7 +1094,8 @@ class ToolActions(object):
         layer = sxglobals.layers.getSelectedLayer()
 
         if len(sxglobals.settings.componentArray) > 0:
-            # Convert component selection to vertices, fill position-matching verts with color
+            # Convert component selection to vertices,
+            # fill position-matching verts with color
             selection = maya.cmds.polyListComponentConversion(
                     sxglobals.settings.selectionArray, tv=True, internal=True)
         else:
@@ -1065,7 +1139,8 @@ class ToolActions(object):
                 while not vtxIt.isDone():
                     vtxPos = vtxIt.position()
                     for idx in xrange(selLen):
-                        if vtxPos == vtxPosArray[idx] and compDagPath == selDagPath:
+                        if (vtxPos == vtxPosArray[idx] and
+                           compDagPath == selDagPath):
                             if mono is True:
                                 randomOffset = 1 - random.uniform(0, value)
                                 vtxColors[idx].r *= randomOffset
@@ -1115,7 +1190,8 @@ class ToolActions(object):
         colorRep = OM.MFnMesh.kRGBA
 
         if len(sxglobals.settings.componentArray) > 0:
-            # Convert component selection to face vertices, fill position-matching verts with color
+            # Convert component selection to face vertices,
+            # fill position-matching verts with color
             selection = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
                     sxglobals.settings.selectionArray, tvf=True), fl=True)
@@ -1163,7 +1239,10 @@ class ToolActions(object):
                     fvId = fvIt.faceVertexId()
                     vtxId = fvIt.vertexId()
                     for idx in xrange(selLen):
-                        if faceId == faceIds[idx] and fvId == fvIds[idx] and vtxId == vtxIds[idx] and compDagPath == selDagPath:
+                        if (faceId == faceIds[idx] and
+                           fvId == fvIds[idx] and
+                           vtxId == vtxIds[idx] and
+                           compDagPath == selDagPath):
                             fvCol = fvColors[idx]
                             luminance = ((fvCol.r +
                                           fvCol.r +
@@ -1208,7 +1287,8 @@ class ToolActions(object):
             selectionIter.next()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Surface luminance remap task duration: ' + str(totalTime))
+        print(
+            'SX Tools: Surface luminance remap task duration: ' + str(totalTime))
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
@@ -1411,7 +1491,8 @@ class ToolActions(object):
         shift = bool((modifiers & 1) > 0)
         if shift is True:
             sxglobals.layers.clearLayer(
-                sxglobals.layers.sortLayers(sxglobals.settings.project['LayerData'].keys()),
+                sxglobals.layers.sortLayers(
+                    sxglobals.settings.project['LayerData'].keys()),
                 sxglobals.settings.shapeArray)
         elif shift is False:
             if len(sxglobals.settings.componentArray) > 0:
@@ -1627,7 +1708,9 @@ class ToolActions(object):
         sxglobals.settings.currentColor = maya.cmds.palettePort(
             'recentPalette', query=True, rgb=True)
         maya.cmds.colorSliderGrp(
-            'sxApplyColor', edit=True, rgbValue=sxglobals.settings.currentColor)
+            'sxApplyColor',
+            edit=True,
+            rgbValue=sxglobals.settings.currentColor)
 
     def updateRecentPalette(self):
         addedColor = maya.cmds.colorSliderGrp(
@@ -1869,9 +1952,13 @@ class ToolActions(object):
             elif len(name) == 0:
                 print('SXTools: Invalid preset name!')
         elif mode == 5 and shift is True:
-            self.calculateCurvature(sxglobals.settings.objectArray, normalize=True)
+            self.calculateCurvature(
+                sxglobals.settings.objectArray,
+                normalize=True)
         elif mode == 5:
-            self.calculateCurvature(sxglobals.settings.objectArray, normalize=False)
+            self.calculateCurvature(
+                sxglobals.settings.objectArray,
+                normalize=False)
         elif mode == 4:
             self.remapRamp()
         else:
@@ -1902,7 +1989,8 @@ class ToolActions(object):
         if (targetSet > sxglobals.layers.getLayerSet(objects[0])) or (targetSet < 0):
             print('SX Tools Error: Selected layer set does not exist!')
             return
-        refLayers = sxglobals.layers.sortLayers(sxglobals.settings.project['LayerData'].keys())
+        refLayers = sxglobals.layers.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
 
         for object in objects:
             attr = '.activeLayerSet'
@@ -1949,7 +2037,8 @@ class ToolActions(object):
         if shift is True:
             sxglobals.layers.clearLayerSets()
         else:
-            refLayers = sxglobals.layers.sortLayers(sxglobals.settings.project['LayerData'].keys())
+            refLayers = sxglobals.layers.sortLayers(
+                sxglobals.settings.project['LayerData'].keys())
             actives = []
             numSets = []
             active = None
@@ -2078,9 +2167,11 @@ class ToolActions(object):
                 maya.cmds.deleteAttr(skinMesh[0]+'.staticVertexColors')
             if maya.cmds.attributeQuery('subdivisionLevel', node=skinMesh[0], exists=True):
                 maya.cmds.deleteAttr(skinMesh[0]+'.subdivisionLevel')
-            maya.cmds.addAttr(skinMesh,
+            maya.cmds.addAttr(
+                skinMesh,
                 ln='skinnedMesh',
-                at='bool', dv=True)
+                at='bool',
+                dv=True)
             colSets = maya.cmds.polyColorSet(
                 skinMesh,
                 query=True, allColorSets=True)
@@ -2115,12 +2206,15 @@ class ToolActions(object):
                 skinMesh,
                 lm=0, pb=0, ibd=1, cm=0, l=3,
                 sc=1, o=0, p=6, ps=0.2, ws=0)
-            maya.cmds.setAttr(skinMesh[0] + '.outlinerColor', 0.75,0.25,1)
+            maya.cmds.setAttr(skinMesh[0] + '.outlinerColor', 0.75, 0.25, 1)
             maya.cmds.setAttr(skinMesh[0] + '.useOutlinerColor', True)
             skinMeshArray.append(skinMesh[0])
 
         maya.cmds.delete(skinMeshArray, ch=True)
-        maya.cmds.sets(skinMeshArray, e=True, forceElement='initialShadingGroup')
+        maya.cmds.sets(
+            skinMeshArray,
+            e=True,
+            forceElement='initialShadingGroup')
         maya.cmds.editDisplayLayerMembers(
             'skinMeshLayer',
             skinMeshArray)

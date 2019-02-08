@@ -36,6 +36,7 @@
 import maya.cmds
 import sxglobals
 
+
 def start():
     # Check if SX Tools UI exists
     if maya.cmds.workspaceControl('SXToolsUI', exists=True):

@@ -24,6 +24,7 @@ import maya.mel as mel
 import maya.api.OpenMaya as OM
 import sxglobals
 
+
 class Export(object):
     def __init__(self):
         return None
@@ -48,7 +49,8 @@ class Export(object):
         if numLayers > 1:
             for i in range(1, numLayers):
                 sourceLayer = 'layer' + str(i + 1)
-                sxglobals.layers.mergeLayers(selected, sourceLayer, 'layer1', True)
+                sxglobals.layers.mergeLayers(
+                    selected, sourceLayer, 'layer1', True)
 
     def dataToUV(self,
                  shape,
@@ -256,12 +258,12 @@ class Export(object):
         if maya.cmds.objExists('_staticExports'):
             maya.cmds.delete('_staticExports')
         maya.cmds.group(empty=True, name='_staticExports')
-        maya.cmds.setAttr('_staticExports.outlinerColor', 0.25,0.75,.25)
+        maya.cmds.setAttr('_staticExports.outlinerColor', 0.25, 0.75, 0.25)
         maya.cmds.setAttr('_staticExports.useOutlinerColor', True)
         if maya.cmds.objExists('_ignore'):
             maya.cmds.delete('_ignore')
         maya.cmds.group(empty=True, name='_ignore')
-        maya.cmds.setAttr('_ignore.outlinerColor', 0.25,0.75,.25)
+        maya.cmds.setAttr('_ignore.outlinerColor', 0.25, 0.75, 0.25)
         maya.cmds.setAttr('_ignore.useOutlinerColor', True)
         rootObjs = maya.cmds.ls(assemblies=True)
         for obj in rootObjs:
@@ -312,14 +314,16 @@ class Export(object):
                 sxglobals.tools.swapLayerSets([variant, ], x)
                 varParent = maya.cmds.listRelatives(
                     exportShape, parent=True)[0]
-                if (varParent != '_staticExports') and (maya.cmds.objExists(varParent+'_var'+str(x)) is False):
+                if ((varParent != '_staticExports') and
+                   (maya.cmds.objExists(varParent+'_var'+str(x)) is False)):
                     maya.cmds.group(
                         empty=True,
                         name=varParent+'_var'+str(x),
                         parent='_staticExports')
                     varParent = varParent+'_var'+str(x)
                     maya.cmds.parent(variant, varParent)
-                elif (varParent != '_staticExports') and (maya.cmds.objExists(varParent+'_var'+str(x))):
+                elif ((varParent != '_staticExports') and
+                   (maya.cmds.objExists(varParent+'_var'+str(x)))):
                     varParent = varParent+'_var'+str(x)
                     maya.cmds.parent(variant, varParent)
 
@@ -342,7 +346,7 @@ class Export(object):
                 '_staticExports', ad=True, type='mesh', fullPath=True))
 
         for exportShape in exportShapeArray:
-            maya.cmds.setAttr(exportShape + '.outlinerColor', 0.25,0.75,.25)
+            maya.cmds.setAttr(exportShape + '.outlinerColor', 0.25, 0.75, 0.25)
             maya.cmds.setAttr(exportShape + '.useOutlinerColor', True)
             # Check for existing additional UV sets and delete them,
             # create default UVs to UV0
@@ -432,23 +436,46 @@ class Export(object):
                 currentColorSet=True, colorSet='layer1')
             maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
 
-            # Check for skinned meshes, copy replace processed meshes when appropriate
+            # Check for skinned meshes,
+            # copy replace processed meshes when appropriate
             if maya.cmds.objExists(str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'):
                 skinnedMesh = str(exportShape).split('|')[-1].split('_var')[0] + '_skinned'
-                skinTarget = maya.cmds.duplicate(skinnedMesh, rr=True, un=True, name=str(exportShape).split('|')[-1]+'Root')[0]
-                maya.cmds.setAttr(skinTarget + '.outlinerColor', 0.25,0.75,.25)
+                skinTarget = maya.cmds.duplicate(
+                    skinnedMesh,
+                    rr=True,
+                    un=True,
+                    name=str(exportShape).split('|')[-1]+'Root')[0]
+                maya.cmds.setAttr(skinTarget + '.outlinerColor', 0.25, 0.75, 0.25)
                 maya.cmds.setAttr(skinTarget + '.useOutlinerColor', True)
                 maya.cmds.editDisplayLayerMembers('exportsLayer', skinTarget)
-                maya.cmds.addAttr(skinTarget, ln='exportMesh', at='bool', dv=True)
-                maya.cmds.addAttr(skinTarget, ln='staticVertexColors', at='bool', dv=maya.cmds.getAttr(exportShape+'.staticVertexColors'))
+                maya.cmds.addAttr(
+                    skinTarget,
+                    ln='exportMesh',
+                    at='bool',
+                    dv=True)
+                maya.cmds.addAttr(
+                    skinTarget,
+                    ln='staticVertexColors',
+                    at='bool',
+                    dv=maya.cmds.getAttr(exportShape+'.staticVertexColors'))
                 if maya.cmds.attributeQuery('subdivisionLevel', node=skinTarget, exists=True):
-                    maya.cmds.setAttr(skinTarget + '.subdivisionLevel', maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
+                    maya.cmds.setAttr(
+                        skinTarget + '.subdivisionLevel',
+                        maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 else:
-                    maya.cmds.addAttr(skinTarget, ln='subdivisionLevel', at='byte', min=0, max=5, dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
+                    maya.cmds.addAttr(
+                        skinTarget,
+                        ln='subdivisionLevel',
+                        at='byte',
+                        min=0,
+                        max=5,
+                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')
                 maya.cmds.sets(skinTarget, e=True, forceElement='SXPBShaderSG')
-                # Apply optional smoothing to original for accurate attribute transfer
-                # TODO: See if attributes could be transferred to the OrigShape of skinTarget
+                # Apply optional smoothing to original
+                # for accurate attribute transfer
+                # TODO: See if attributes could be transferred
+                # to the OrigShape of skinTarget
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
                     sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
@@ -458,34 +485,50 @@ class Export(object):
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
-                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'), bnr=1,
-                        c=1, kb=1, ksb=1, khe=0,
+                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'),
+                        bnr=1, c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
                 maya.cmds.editDisplayLayerMembers(
                     'exportsLayer', exportShape)
                 maya.cmds.hide(exportShape)
                 maya.cmds.parent(exportShape, '_ignore')
-                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
-                maya.cmds.transferAttributes('|_ignore|'+str(exportShape).split('|')[-1], skinTarget, frontOfChain=True, transferUVs=2, transferColors=2, sampleSpace=4, colorBorders=1)
+                maya.cmds.bakePartialHistory(
+                    skinTarget,
+                    prePostDeformers=True,
+                    postSmooth=False)
+                maya.cmds.transferAttributes(
+                    '|_ignore|'+str(exportShape).split('|')[-1],
+                    skinTarget,
+                    frontOfChain=True,
+                    transferUVs=2,
+                    transferColors=2,
+                    sampleSpace=4,
+                    colorBorders=1)
 
-                # Set the joints on the mesh to be exported to bindPose, move to same root
+                # Set the joints on the mesh to be exported to bindPose,
+                # move to same root
                 skinMeshHistory = maya.cmds.listHistory(skinTarget, pdo=True)
                 skinCluster = maya.cmds.ls(skinMeshHistory, type='skinCluster')
                 if len(skinCluster) > 0:
-                    skinInfluences = maya.cmds.skinCluster(skinCluster[0], query=True, weightedInfluence=True)
+                    skinInfluences = maya.cmds.skinCluster(
+                        skinCluster[0], query=True, weightedInfluence=True)
                     skinJoints = []
                     for influence in skinInfluences:
                         if maya.cmds.nodeType(influence) == 'joint':
                             skinJoints.append(influence)
-                    bindPose = maya.cmds.dagPose(skinJoints[0], query=True, bindPose=True)
+                    bindPose = maya.cmds.dagPose(
+                        skinJoints[0], query=True, bindPose=True)
                     maya.cmds.dagPose(skinJoints, bindPose, restore=True)
                     maya.cmds.parent(skinJoints[0], skinTarget)
                 
                     # Rename the root joint of the mesh to be exported
-                    skinnedMeshHistory = maya.cmds.listHistory(skinnedMesh, pdo=True)
-                    skinnedCluster = maya.cmds.ls(skinnedMeshHistory, type='skinCluster')
-                    skinnedInfluences = maya.cmds.skinCluster(skinnedCluster[0], query=True, weightedInfluence=True)
+                    skinnedMeshHistory = maya.cmds.listHistory(
+                        skinnedMesh, pdo=True)
+                    skinnedCluster = maya.cmds.ls(
+                        skinnedMeshHistory, type='skinCluster')
+                    skinnedInfluences = maya.cmds.skinCluster(
+                        skinnedCluster[0], query=True, weightedInfluence=True)
                     skinnedJoints = []
                     for influence in skinnedInfluences:
                         if maya.cmds.nodeType(influence) == 'joint':
@@ -502,12 +545,15 @@ class Export(object):
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
-                        dv=maya.cmds.getAttr(skinTarget+'.subdivisionLevel'), bnr=1,
-                        c=1, kb=1, ksb=1, khe=0,
+                        dv=maya.cmds.getAttr(skinTarget+'.subdivisionLevel'),
+                        bnr=1, c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
-                maya.cmds.bakePartialHistory(skinTarget, prePostDeformers=True, postSmooth=False)
+                maya.cmds.bakePartialHistory(
+                    skinTarget,
+                    prePostDeformers=True,
+                    postSmooth=False)
 
             # For non-skinned meshes: move to origin, freeze transformations
             else:
@@ -542,8 +588,8 @@ class Export(object):
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
-                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'), bnr=1,
-                        c=1, kb=1, ksb=1, khe=0,
+                        dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'),
+                        bnr=1, c=1, kb=1, ksb=1, khe=0,
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
@@ -596,23 +642,46 @@ class Export(object):
             print('SX Tools: Writing deforming object FBX files')
             maya.cmds.sets(exportArray, n='deformingExportSet')
             mel.eval('gameFbxExporter;')
-            maya.cmds.setAttr('gameExporterPreset1.exportSetIndex', 3)
-            maya.cmds.setAttr('gameExporterPreset1.selectionSetName', 'deformingExportSet', type='string')
-            maya.cmds.setAttr('gameExporterPreset1.modelFileMode', 2)
-            maya.cmds.setAttr('gameExporterPreset1.smoothingGroups', 0)
-            maya.cmds.setAttr('gameExporterPreset1.smoothMesh', 0)
-            maya.cmds.setAttr('gameExporterPreset1.splitVertexNormals', 0)
-            maya.cmds.setAttr('gameExporterPreset1.triangulate', 0)
-            maya.cmds.setAttr('gameExporterPreset1.tangentsBinormals', 1)
-            maya.cmds.setAttr('gameExporterPreset1.skinning', 1)
-            maya.cmds.setAttr('gameExporterPreset1.blendshapes', 1)
-            maya.cmds.setAttr('gameExporterPreset1.moveToOrigin', 0)
-            maya.cmds.setAttr('gameExporterPreset1.exportAnimation', 1)
-            maya.cmds.setAttr('gameExporterPreset1.inputConnections', 0)
-            maya.cmds.setAttr('gameExporterPreset1.embedMedia', 0)
-            maya.cmds.setAttr('gameExporterPreset1.viewInFBXReview', 0)
-            maya.cmds.setAttr('gameExporterPreset1.exportPath', exportPath, type='string')
-            maya.cmds.setAttr('gameExporterPreset1.exportFilename', '', type='string')
+            maya.cmds.setAttr(
+                'gameExporterPreset1.exportSetIndex', 3)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.selectionSetName',
+                'deformingExportSet',
+                type='string')
+            maya.cmds.setAttr(
+                'gameExporterPreset1.modelFileMode', 2)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.smoothingGroups', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.smoothMesh', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.splitVertexNormals', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.triangulate', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.tangentsBinormals', 1)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.skinning', 1)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.blendshapes', 1)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.moveToOrigin', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.exportAnimation', 1)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.inputConnections', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.embedMedia', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.viewInFBXReview', 0)
+            maya.cmds.setAttr(
+                'gameExporterPreset1.exportPath',
+                exportPath,
+                type='string')
+            maya.cmds.setAttr(
+                'gameExporterPreset1.exportFilename',
+                '',
+                type='string')
             mel.eval('gameExp_DoExport();')
             maya.cmds.deleteUI('gameExporterWindow')
 
@@ -629,7 +698,12 @@ class Export(object):
         maya.cmds.setAttr('exportsLayer.visibility', 1)
         maya.cmds.setAttr('skinMeshLayer.visibility', 0)
         maya.cmds.setAttr('assetsLayer.visibility', 0)
-        maya.cmds.displaySmoothness(divisionsU=0, divisionsV=0, pointsWire=4, pointsShaded=1, polygonObject=1)
+        maya.cmds.displaySmoothness(
+            divisionsU=0,
+            divisionsV=0,
+            pointsWire=4,
+            pointsShaded=1,
+            polygonObject=1)
         maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
         # hacky hack to refresh the layer editor
         maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
@@ -662,7 +736,9 @@ class Export(object):
         # Composite
         if buttonState1 == 1:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXPBShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXPBShaderSG')
             maya.cmds.polyOptions(
                 activeObjects=True,
                 colorMaterialChannel='ambientDiffuse',
@@ -672,7 +748,9 @@ class Export(object):
         # Albedo
         elif buttonState1 == 2:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['layer1'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -685,7 +763,9 @@ class Export(object):
         # Layer Masks
         elif buttonState1 == 3:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['layer1'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -698,7 +778,9 @@ class Export(object):
         # Occlusion
         elif buttonState2 == 1:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['occlusion'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -711,7 +793,9 @@ class Export(object):
         # Specular
         elif buttonState2 == 2:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['specular'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -724,7 +808,9 @@ class Export(object):
         # Transmission
         elif buttonState2 == 3:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['transmission'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -737,7 +823,9 @@ class Export(object):
         # Emission
         elif buttonState2 == 4:
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData']['emission'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -754,7 +842,9 @@ class Export(object):
                 if value[3] == 1:
                     overlay = key
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData'][overlay][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
@@ -771,7 +861,9 @@ class Export(object):
                 if value[3] == 2:
                     overlay = key
             maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXExportShaderSG')
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
             chanID = sxglobals.settings.project['LayerData'][overlay][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]

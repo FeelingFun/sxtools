@@ -5,7 +5,7 @@
 #
 #   Technical notes:
 #   settings              - an instance containing the user's active
-#                           object or component selections, 
+#                           object or component selections,
 #                           the project configuration, and
 #                           methods for saving and loading prefs
 #   setup                 - creates the necessary materials and shaders
@@ -19,11 +19,12 @@
 #                           such as occlusion baking, applying gradients etc.
 #   layers                - methods required for working with
 #                           vertex color layers
-#   ui                    - the layouts of the SX Tool UI elements and 
+#   ui                    - the layouts of the SX Tool UI elements and
 #                           context-sensitive selection modes
 #   core                  - the core loop, filters user input and refreshes
 #                           the user interface
 # ----------------------------------------------------------------------------
+
 
 def initialize():
     from sxlib.settings import Settings

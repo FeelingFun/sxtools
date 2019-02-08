@@ -8,6 +8,7 @@ import maya.cmds
 import maya.mel as mel
 import sxglobals
 
+
 class UI(object):
     def __init__(self):
         self.history = False
@@ -520,7 +521,8 @@ class UI(object):
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
     def emptyObjectsUI(self):
-        sxglobals.settings.patchArray = sxglobals.layers.verifyObjectLayers(sxglobals.settings.shapeArray)[1]
+        sxglobals.settings.patchArray = sxglobals.layers.verifyObjectLayers(
+            sxglobals.settings.shapeArray)[1]
         patchLabel = 'Objects with no layers: ' + str(len(sxglobals.settings.patchArray))
         maya.cmds.frameLayout(
             'patchFrame',
@@ -541,14 +543,16 @@ class UI(object):
             maya.cmds.button(
                 label='Add missing color sets',
                 command=(
-                    'sxtools.sxglobals.layers.patchLayers(sxtools.sxglobals.settings.patchArray)'))
+                    'sxtools.sxglobals.layers.patchLayers('
+                    'sxtools.sxglobals.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
         maya.cmds.workspaceControl(
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
     def mismatchingObjectsUI(self):
-        sxglobals.settings.patchArray = sxglobals.layers.verifyObjectLayers(sxglobals.settings.shapeArray)[1]
+        sxglobals.settings.patchArray = sxglobals.layers.verifyObjectLayers(
+            sxglobals.settings.shapeArray)[1]
         patchLabel = 'Objects with nonstandard layers: ' + str(
             len(sxglobals.settings.patchArray))
         maya.cmds.frameLayout(
@@ -578,7 +582,8 @@ class UI(object):
             maya.cmds.button(
                 label='Add missing color sets',
                 command=(
-                    'sxtools.sxglobals.layers.patchLayers(sxtools.sxglobals.settings.patchArray)'))
+                    'sxtools.sxglobals.layers.patchLayers('
+                    'sxtools.sxglobals.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
         maya.cmds.workspaceControl(
@@ -597,7 +602,9 @@ class UI(object):
             label=(
                 "Create skeletons and edit skin weights on meshes with _skinned suffix.\n\n"
                 "Blend shapes are also supported.\n\n"
-                "Select non-skinned meshes in the Outliner."), align='left', ww=True)
+                "Select non-skinned meshes in the Outliner."),
+                align='left',
+                ww=True)
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('canvas')
         maya.cmds.workspaceControl(
@@ -690,7 +697,8 @@ class UI(object):
             changeCommand=(
                 'sxtools.sxglobals.settings.currentColor = maya.cmds.palettePort('
                 '\"layerPalette\", query=True, rgb=True)\n'
-                'sxtools.sxglobals.tools.setPaintColor(sxtools.sxglobals.settings.currentColor)'))
+                'sxtools.sxglobals.tools.setPaintColor('
+                'sxtools.sxglobals.settings.currentColor)'))
 
         maya.cmds.text(
             'layerOpacityLabel',
@@ -872,7 +880,11 @@ class UI(object):
             'overwriteAlpha',
             parent='applyColorRowColumns',
             label='',
-            ann='Component selections always override alpha. When applying color to an entire object, disabling Overwrite Alpha will preserve existing alpha values.',
+            ann=(
+                'Component selections always override alpha. '
+                'When applying color to an entire object, '
+                'disabling Overwrite Alpha will preserve '
+                'existing alpha values.'),
             value=sxglobals.settings.tools['overwriteAlpha'],
             changeCommand=(
                 'sxtools.sxglobals.settings.tools["overwriteAlpha"] = ('
@@ -1065,7 +1077,9 @@ class UI(object):
         maya.cmds.intField(
             'rayCount',
             value=sxglobals.settings.tools['rayCount'],
-            ann='The number of rays to fire from each vertex on the selection. Lower ray counts are faster but more noisy.',
+            ann=(
+                'The number of rays to fire from each vertex on the selection. '
+                'Lower ray counts are faster but more noisy.'),
             minValue=1,
             maxValue=2000,
             changeCommand=(
@@ -1103,7 +1117,9 @@ class UI(object):
         maya.cmds.floatField(
             'bias',
             value=sxglobals.settings.tools['bias'],
-            ann='Offsets the ray starting point from the mesh surface to avoid self-collision.',
+            ann=(
+                'Offsets the ray starting point from the mesh surface '
+                'to avoid self-collision.'),
             precision=6,
             minValue=0.0,
             maxValue=10.0,
@@ -1135,9 +1151,12 @@ class UI(object):
 
         maya.cmds.text(label='Groundplane:')
         maya.cmds.checkBox(
-            'ground', label='', value=sxglobals.settings.tools['bakeGroundPlane'],
-            changeCommand=("sxtools.sxglobals.settings.tools['bakeGroundPlane'] = ("
-            "maya.cmds.checkBox('ground', query=True, value=True))") )
+            'ground',
+            label='',
+            value=sxglobals.settings.tools['bakeGroundPlane'],
+            changeCommand=(
+                "sxtools.sxglobals.settings.tools['bakeGroundPlane'] = ("
+                "maya.cmds.checkBox('ground', query=True, value=True))"))
         maya.cmds.floatField(
             'groundScale',
             value=sxglobals.settings.tools['bakeGroundScale'],
@@ -1582,25 +1601,39 @@ class UI(object):
             label='Copy Layer',
             parent='copySwapRowColumns',
             height=30,
-            command=('sxtools.sxglobals.tools.copyLayer(sxtools.sxglobals.settings.objectArray)'))
+            command=(
+                'sxtools.sxglobals.tools.copyLayer('
+                'sxtools.sxglobals.settings.objectArray)'))
         maya.cmds.button(
             label='Swap Layers',
             parent='copySwapRowColumns',
             height=30,
-            command=('sxtools.sxglobals.tools.swapLayers(sxtools.sxglobals.settings.shapeArray)'))
+            command=(
+                'sxtools.sxglobals.tools.swapLayers('
+                'sxtools.sxglobals.settings.shapeArray)'))
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):
         if maya.cmds.objExists('SXCreaseRamp') is False:
             maya.cmds.createNode('ramp', name='SXCreaseRamp', skipSelect=True)
 
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].position', sxglobals.settings.tools['creaseThresholds'][0])
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[0].color', 0, 0, 0)
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].position', sxglobals.settings.tools['creaseThresholds'][1])
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[1].color', 0.5, 0.5, 0.5)
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].position', sxglobals.settings.tools['creaseThresholds'][2])
-        maya.cmds.setAttr('SXCreaseRamp.colorEntryList[2].color', 1, 1, 1)
-        maya.cmds.setAttr('SXCreaseRamp.interpolation', 0)
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[0].position',
+            sxglobals.settings.tools['creaseThresholds'][0])
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[0].color', 0, 0, 0)
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[1].position',
+            sxglobals.settings.tools['creaseThresholds'][1])
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[1].color', 0.5, 0.5, 0.5)
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[2].position',
+            sxglobals.settings.tools['creaseThresholds'][2])
+        maya.cmds.setAttr(
+            'SXCreaseRamp.colorEntryList[2].color', 1, 1, 1)
+        maya.cmds.setAttr(
+            'SXCreaseRamp.interpolation', 0)
 
         maya.cmds.frameLayout(
             'creaseFrame',
@@ -1628,7 +1661,11 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['autoCreaseCollapse']=True"),
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['autoCreaseCollapse']=False"))
-        maya.cmds.text(label='Drag gray and white colors to adjust creasing thresholds. Black is concave, white is convex.', ww=True)
+        maya.cmds.text(
+            label=(
+                'Drag gray and white colors to adjust creasing thresholds. '
+                'Black is concave, white is convex.'),
+            ww=True)
         maya.cmds.rampColorPort(
             'sxRampCreaseControl',
             parent='autoCreaseFrame',
@@ -1665,7 +1702,9 @@ class UI(object):
             label='Auto-Select Edges',
             height=30,
             width=100,
-            command=("sxtools.sxglobals.tools.curvatureSelect(sxtools.sxglobals.settings.shapeArray)"))
+            command=(
+                "sxtools.sxglobals.tools.curvatureSelect("
+                "sxtools.sxglobals.settings.shapeArray)"))
         maya.cmds.radioButtonGrp(
             'creaseSets',
             parent='creaseFrame',
@@ -1732,9 +1771,11 @@ class UI(object):
                     'layerSetLabel',
                     label=(
                         'Current Layer Set: ' +
-                        str(int(maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) +
+                        str(int(maya.cmds.getAttr(
+                            str(sxglobals.settings.shapeArray[0]) +
                             '.activeLayerSet'))+1) + '/' +
-                            str(sxglobals.layers.getLayerSet(sxglobals.settings.shapeArray[0])+1)))
+                        str(sxglobals.layers.getLayerSet(
+                            sxglobals.settings.shapeArray[0])+1)))
                 maya.cmds.intSliderGrp(
                     'layerSetSlider',
                     field=True,
@@ -1747,13 +1788,16 @@ class UI(object):
                         (3, 'both', 0)],
                     minValue=1,
                     maxValue=(
-                        sxglobals.layers.getLayerSet(sxglobals.settings.shapeArray[0])+1),
+                        sxglobals.layers.getLayerSet(
+                            sxglobals.settings.shapeArray[0])+1),
                     fieldMinValue=0,
                     fieldMaxValue=(
-                        sxglobals.layers.getLayerSet(sxglobals.settings.shapeArray[0])+1),
+                        sxglobals.layers.getLayerSet(
+                            sxglobals.settings.shapeArray[0])+1),
                     value=(
-                        maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) +
-                                          '.activeLayerSet')+1),
+                        maya.cmds.getAttr(
+                            str(sxglobals.settings.shapeArray[0]) +
+                            '.activeLayerSet')+1),
                     changeCommand=(
                         'sxtools.sxglobals.tools.swapLayerSets('
                         'sxtools.sxglobals.settings.objectArray,'
@@ -1776,7 +1820,8 @@ class UI(object):
             )
         maya.cmds.setParent('canvas')
 
-    # TODO: create visibility management buttons, assign joints to skinMeshLayer
+    # TODO: create visibility management buttons,
+    # assign joints to skinMeshLayer
     def createSkinMeshUI(self):
         maya.cmds.frameLayout(
             'skinMeshFrame',
@@ -1795,14 +1840,18 @@ class UI(object):
         if maya.cmds.objExists(str(sxglobals.settings.objectArray[0]).split('|')[-1].split('_var')[0] + '_skinned'):
             maya.cmds.text(
                 parent='skinMeshFrame',
-                label=('Skinning Mesh already exists for '+str(sxglobals.settings.objectArray[0]).split('|')[-1]),
+                label=(
+                    'Skinning Mesh already exists for ' +
+                    str(sxglobals.settings.objectArray[0]).split('|')[-1]),
                 ww=True)
         else:
             maya.cmds.button(
                 label='Create Skinning Mesh',
                 parent='skinMeshFrame',
                 height=30,
-                command=('sxtools.sxglobals.tools.createSkinMesh(sxtools.sxglobals.settings.objectArray)'))
+                command=(
+                    'sxtools.sxglobals.tools.createSkinMesh('
+                    'sxtools.sxglobals.settings.objectArray)'))
         maya.cmds.setParent('canvas')
 
     def exportFlagsUI(self):
@@ -1830,24 +1879,30 @@ class UI(object):
         maya.cmds.checkBox(
             'staticPaletteCheckbox',
             label='',
-            ann='If enabled, the object vertex colors remain exactly as applied in Maya.',
+            ann=(
+                'If enabled, the object vertex colors '
+                'remain exactly as applied in Maya.'),
             value=(
-                maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.staticVertexColors')),
+                maya.cmds.getAttr(
+                    sxglobals.settings.objectArray[0]+'.staticVertexColors')),
             onCommand=(
                 'sxtools.sxglobals.tools.setExportFlags('
                 'sxtools.sxglobals.settings.objectArray, True)'),
             offCommand=(
                 'sxtools.sxglobals.tools.setExportFlags('
                 'sxtools.sxglobals.settings.objectArray, False)'))
-        maya.cmds.text('smoothStepsLabel', label='Export Subdivision Level:')
+        maya.cmds.text(
+            'smoothStepsLabel',
+            label='Export Subdivision Level:')
         maya.cmds.intField(
             'smoothSteps',
             min=0,
             max=5,
             step=1,
             value=(
-                maya.cmds.getAttr(str(sxglobals.settings.objectArray[0]) +
-                                  '.subdivisionLevel')),
+                maya.cmds.getAttr(
+                    str(sxglobals.settings.objectArray[0]) +
+                    '.subdivisionLevel')),
             changeCommand=(
                 'sxtools.sxglobals.tools.setSubdivisionFlag('
                 'sxtools.sxglobals.settings.objectArray,'

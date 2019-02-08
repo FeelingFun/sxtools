@@ -8,6 +8,7 @@ import maya.cmds
 import maya.mel as mel
 import sxglobals
 
+
 class Core(object):
     def __init__(self):
         return None
@@ -22,8 +23,11 @@ class Core(object):
             displayScalingValue = maya.cmds.mayaDpiSetting(
                 query=True, realScaleValue=True)
             if maya.cmds.optionVar(query='vp2RenderingEngine') != 'DirectX11':
-                maya.cmds.optionVar(stringValue=('vp2RenderingEngine', 'DirectX11'))
-                print('SX Tools: ViewPort 2.0 is currently not in DirectX11 mode. The correct mode has been set. Please restart Maya.')
+                maya.cmds.optionVar(
+                    stringValue=('vp2RenderingEngine', 'DirectX11'))
+                print(
+                    'SX Tools: ViewPort 2.0 is not in DirectX11 mode.\n'
+                    'The correct mode has been set. Please restart Maya.')
                 self.exitSXTools()
         else:
             displayScalingValue = 1.0
@@ -46,37 +50,43 @@ class Core(object):
         if 'updateSXTools' not in maya.cmds.scriptJob(listJobs=True):
             self.job1ID = maya.cmds.scriptJob(
                 parent=sxglobals.dockID,
-                event=['SelectionChanged',
-                'sxtools.sxglobals.core.updateSXTools()'])
+                event=[
+                    'SelectionChanged',
+                    'sxtools.sxglobals.core.updateSXTools()'])
             self.job2ID = maya.cmds.scriptJob(
                 parent=sxglobals.dockID,
-                event=['Undo',
-                'sxtools.sxglobals.core.updateSXTools()'])
+                event=[
+                    'Undo',
+                    'sxtools.sxglobals.core.updateSXTools()'])
             self.job3ID = maya.cmds.scriptJob(
                 parent=sxglobals.dockID,
-                event=['NameChanged',
-                'sxtools.sxglobals.core.updateSXTools()'])
+                event=[
+                    'NameChanged',
+                    'sxtools.sxglobals.core.updateSXTools()'])
             self.job4ID = maya.cmds.scriptJob(
                 parent=sxglobals.dockID,
-                event=['SceneOpened',
-                'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
-                'sxtools.sxglobals.settings.setPreferences()\n'
-                'sxtools.sxglobals.core.updateSXTools()'
-            ])
+                event=[
+                    'SceneOpened',
+                    'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
+                    'sxtools.sxglobals.settings.setPreferences()\n'
+                    'sxtools.sxglobals.core.updateSXTools()'])
             self.job5ID = maya.cmds.scriptJob(
                 parent=sxglobals.dockID,
-                event=['NewSceneOpened',
-                'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
-                'sxtools.sxglobals.settings.setPreferences()\n'
-                'sxtools.sxglobals.core.updateSXTools()'
-            ])
+                event=[
+                    'NewSceneOpened',
+                    'sxtools.sxglobals.settings.frames["setupCollapse"]=False\n'
+                    'sxtools.sxglobals.settings.setPreferences()\n'
+                    'sxtools.sxglobals.core.updateSXTools()'])
         maya.cmds.scriptJob(
             runOnce=True,
-            uiDeleted=[sxglobals.dockID, 'sxtools.sxglobals.core.exitSXTools()'])
+            uiDeleted=[
+                sxglobals.dockID,
+                'sxtools.sxglobals.core.exitSXTools()'])
         maya.cmds.scriptJob(
             runOnce=True,
-            event=['quitApplication',
-            'maya.cmds.workspaceControl("SXToolsUI", edit=True, close=True)'])
+            event=[
+                'quitApplication',
+                'maya.cmds.workspaceControl("SXToolsUI", edit=True, close=True)'])
 
         # Set correct lighting and shading mode at start
         mel.eval('DisplayShadedAndTextured;')
@@ -128,10 +138,11 @@ class Core(object):
             type='mesh',
             allDescendents=True,
             fullPath=True)
-        sxglobals.settings.objectArray = list(set(maya.cmds.ls(maya.cmds.listRelatives(
-            sxglobals.settings.shapeArray,
-            parent=True,
-            fullPath=True))))
+        sxglobals.settings.objectArray = list(set(maya.cmds.ls(
+            maya.cmds.listRelatives(
+                sxglobals.settings.shapeArray,
+                parent=True,
+                fullPath=True))))
         # sxglobals.settings.componentArray = (
         #    list(set(maya.cmds.ls(sl=True, o=False)) -
         #    set(maya.cmds.ls(sl=True, o=True))))

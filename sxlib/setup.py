@@ -14,6 +14,7 @@ import sfx.sfxnodes as sfxnodes
 import sfx.pbsnodes as pbsnodes
 import sxglobals
 
+
 class SceneSetup(object):
     def __init__(self):
         return None
