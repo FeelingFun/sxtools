@@ -168,6 +168,8 @@ Shift-clicking will clear ALL layers.
 A typical layer has fully opaque components that mask the elements below. These are marked with (M).
 When layer opacity is below the ‘Alpha-to-mask limit’ specified in the project defaults, the layer is marked as an Adjustment layer (A). When exported, Adjustment layers only contribute their color to the final vertex color, but their alpha is discarded from any masks.
 
+### Copy / Swap Layers
+Right-click on the layer list to get a pop-up menu. From there it is possible to copy the contents and the blend mode of a layer to another layer, or swap two layers and their blend modes.
 
 ## The Tool List
 
@@ -207,9 +209,6 @@ The palette is a json file that can be shared among multiple artists working on 
 For palettes, check out:
 https://color.adobe.com/explore/
 
-### Copy / Swap Layers
-Copies the contents and the blend mode of a layer to another layer, or swaps two layers and their blend modes.
-
 ### Manage Layer Sets
 Create and switch between parallel layer stacks. Allows for creation of color variants that are more extensive than simple Master Palette swaps. Whereas a the Master Palette allows for the object to have color variations, Layer Sets allow for a single object to additionally have multiple layer masks and different material channels. 
 
@@ -240,12 +239,14 @@ The following files, nodes, and attributes are created by the project setup phas
 * preferences json file in a user-selected location
 * palettes json file in a user-selected location
 * sxCreaseSet0-4
-* sxVertexBakeSet (when occlusion is baked)
+* sxVertexBakeSet (when occlusion is baked with Mental Ray)
 * Maya OptionVars starting with ‘SXTools’
 * defaultSXDirectionalLight, defaultSXAmbientLight
 * ‘SXRamp’ and ‘SXAlphaRamp’ ramp nodes for Gradient Tool
-* ‘SXShader’ , ‘SXExportShader’ and ‘SXPBShader’ materials with their respective shading groups
-* primVars in the shape node of very edited object
+* ‘SXCreaseRamp’ ramp node for Crease Tool edge auto-selector
+* ‘SXShader’ , ‘SXExportShader’, ‘SXExportOverlayShader’ and ‘SXPBShader’ materials with their respective shading groups
+* primVars in the shape node of every edited object
+* primVars in the transform nodes of objects with export flags
 * multiple color sets per every edited object
 
 To remove all optionVars created by SX Tools:
