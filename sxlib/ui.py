@@ -651,6 +651,7 @@ class UI(object):
             allowMultiSelection=False,
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
+                'Shift + doubleclick to hide/unhide unselected layers\n'
                 '(H) - hidden layer\n'
                 '(M) - mask layer\n'
                 '(A) - adjustment layer'))
@@ -818,16 +819,6 @@ class UI(object):
                     "sxtools.sxglobals.layers.getSelectedLayer())\n"
                     "sxtools.sxglobals.layers.refreshLayerList()\n"
                     "sxtools.sxglobals.layers.refreshSelectedItem()"))
-        maya.cmds.button(
-            label='Paint Vertex Colors',
-            width=100,
-            height=20,
-            command="sxtools.sxglobals.ui.openSXPaintTool()")
-        maya.cmds.button(
-            width=100,
-            height=20,
-            label='Toggle all layers',
-            command='sxtools.sxglobals.layers.toggleAllLayers()')
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(
@@ -843,6 +834,12 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['applyColorCollapse']=True"),
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['applyColorCollapse']=False"))
+        maya.cmds.button(
+            parent='applyColorFrame',
+            label='Paint Vertex Colors',
+            width=100,
+            height=20,
+            command="sxtools.sxglobals.ui.openSXPaintTool()")
         maya.cmds.rowColumnLayout(
             "applyColorRowColumns",
             parent="applyColorFrame",

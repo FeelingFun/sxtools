@@ -344,7 +344,6 @@ class LayerManagement(object):
         if maya.cmds.objExists('SXShader'):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
-    # Called when the user double-clicks a layer in the tool UI
     def toggleLayer(self, layer):
         object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
         checkState = maya.cmds.getAttr(
@@ -362,17 +361,23 @@ class LayerManagement(object):
         maya.cmds.textScrollList(
             'layerList', edit=True, selectIndexedItem=layerIndex)
 
-    # Called when the user hides or shows
-    # all vertex color layers in the tool UI
-    def toggleAllLayers(self):
-        layers = self.sortLayers(
-            sxglobals.settings.project['LayerData'].keys())
-        for layer in layers:
-            self.toggleLayer(layer)
+    # Called when the user double-clicks a layer in the tool UI
+    def toggleAllLayers(self, selLayer):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
 
-        self.refreshLayerList()
-        self.refreshSelectedItem()
-        maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        if shift is True:
+            layers = self.sortLayers(
+                sxglobals.settings.project['LayerData'].keys())
+            for layer in layers:
+                if layer != selLayer:
+                    self.toggleLayer(layer)
+
+            self.refreshLayerList()
+            self.refreshSelectedItem()
+            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        elif shift is False:
+            self.toggleLayer(selLayer)
 
     # Updates the tool UI to highlight the current color set
     def setColorSet(self, highlightedLayer):
@@ -421,7 +426,7 @@ class LayerManagement(object):
                 "label=str(sxtools.sxglobals.layers.getSelectedLayer())"
                 "+' Colors:')"),
             doubleClickCommand=(
-                "sxtools.sxglobals.layers.toggleLayer("
+                "sxtools.sxglobals.layers.toggleAllLayers("
                 "sxtools.sxglobals.layers.getSelectedLayer())\n"
                 "maya.cmds.shaderfx(sfxnode='SXShader', update=True)"))
 
