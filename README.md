@@ -153,9 +153,6 @@ Allows the user to pick an existing layer color as both the **Apply Color** tool
 ### The layer opacity slider
 Always displays the maximum opacity value found in a layer. Layers may still have other values below the max. Dragging the slider directly manipulates the alpha values of the components in the layer. This means that if the slider is dragged to 0, any variance in the values is lost - dragging the slider back up will set all component alpha values to the same constant. Alpha variance is preserved when the slider is otherwise adjusted.
 
-### Merge Layer Up / Merge Layer Down buttons
-Do exactly that. Blend modes are respected.
-
 ### Select Layer Mask
 Allows for new colors to be applied only to the currently masked areas. The selection is made as Face Vertex component type.
 Shift-clicking will provide inverted selection.
@@ -168,8 +165,13 @@ Shift-clicking will clear ALL layers.
 A typical layer has fully opaque components that mask the elements below. These are marked with (M).
 When layer opacity is below the ‘Alpha-to-mask limit’ specified in the project defaults, the layer is marked as an Adjustment layer (A). When exported, Adjustment layers only contribute their color to the final vertex color, but their alpha is discarded from any masks.
 
+## Layer View Pop-Up Menu
+
 ### Copy / Swap Layers
 Right-click on the layer list to get a pop-up menu. From there it is possible to copy the contents and the blend mode of a layer to another layer, or swap two layers and their blend modes.
+
+### Merge Layer Up / Merge Layer Down buttons
+Do exactly that. Blend modes are respected.
 
 ## The Tool List
 
