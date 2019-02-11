@@ -689,10 +689,79 @@ class UI(object):
                 'sxtools.sxglobals.tools.swapLayers('
                 'sxtools.sxglobals.settings.shapeArray)'))
         maya.cmds.menuItem(
+            parent='layerPopUp',
+            divider=True)
+        maya.cmds.menuItem(
+            'mergeUpMenuItem',
+            parent='layerPopUp',
+            label='Merge Layer Up',
+            command=(
+                "sxtools.sxglobals.layers.mergeLayerDirection("
+                "sxtools.sxglobals.settings.shapeArray, True)"))
+        maya.cmds.menuItem(
+            'mergeDownMenuItem',
+            parent='layerPopUp',
+            label='Merge Layer Down',
+            command=(
+                "sxtools.sxglobals.layers.mergeLayerDirection("
+                "sxtools.sxglobals.settings.shapeArray, False)"))
+        maya.cmds.menuItem(
+            parent='layerPopUp',
+            divider=True)
+        maya.cmds.menuItem(
             'sourceNameMenuItem',
             parent='layerPopUp',
-            label='Source: ' + str(sxglobals.settings.tools["sourceLayer"]),
+            label='Source Layer: ' + str(sxglobals.settings.tools["sourceLayer"]),
             enable=False)
+
+        maya.cmds.rowColumnLayout(
+            'layerSelectRowColumns',
+            parent='layerFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 120), (2, 120)),
+            columnSpacing=([1, 0], [2, 5]),
+            rowSpacing=(1, 5))
+
+        maya.cmds.button(
+            label='Select Layer Mask',
+            width=100,
+            height=20,
+            statusBarMessage='Shift-click button to invert selection',
+            command="maya.cmds.select(sxtools.sxglobals.tools.getLayerMask())")
+        if len(sxglobals.settings.componentArray) > 0:
+            maya.cmds.button(
+                'clearButton',
+                label='Clear Selected',
+                statusBarMessage=(
+                    'Shift-click button to clear'
+                    'all layers on selected components'),
+                width=100,
+                height=20,
+                command=(
+                    "sxtools.sxglobals.tools.clearSelector()\n"
+                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
+                    "sxtools.sxglobals.settings.shapeArray["
+                    "len(sxtools.sxglobals.settings.shapeArray)-1],"
+                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                    "sxtools.sxglobals.layers.refreshLayerList()\n"
+                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
+        else:
+            maya.cmds.button(
+                'clearButton',
+                label='Clear Layer',
+                statusBarMessage=(
+                    'Shift-click button to clear'
+                    'all layers on selected objects'),
+                width=100,
+                height=20,
+                command=(
+                    "sxtools.sxglobals.tools.clearSelector()\n"
+                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
+                    "sxtools.sxglobals.settings.shapeArray["
+                    "len(sxtools.sxglobals.settings.shapeArray)-1], "
+                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                    "sxtools.sxglobals.layers.refreshLayerList()\n"
+                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
 
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
@@ -753,72 +822,6 @@ class UI(object):
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
             sxglobals.layers.getSelectedLayer())
         sxglobals.layers.refreshSelectedItem()
-
-        maya.cmds.rowColumnLayout(
-            'layerSelectRowColumns',
-            parent='layerFrame',
-            numberOfColumns=2,
-            columnWidth=((1, 120), (2, 120)),
-            columnSpacing=([1, 0], [2, 5]),
-            rowSpacing=(1, 5))
-        maya.cmds.button(
-            'mergeLayerUp',
-            label='Merge Layer Up',
-            parent='layerSelectRowColumns',
-            width=100,
-            height=20,
-            command=(
-                "sxtools.sxglobals.layers.mergeLayerDirection("
-                "sxtools.sxglobals.settings.shapeArray, True)"))
-        maya.cmds.button(
-            'mergeLayerDown',
-            label='Merge Layer Down',
-            parent='layerSelectRowColumns',
-            width=100,
-            height=20,
-            command=(
-                "sxtools.sxglobals.layers.mergeLayerDirection("
-                "sxtools.sxglobals.settings.shapeArray, False)"))
-        maya.cmds.button(
-            label='Select Layer Mask',
-            width=100,
-            height=20,
-            statusBarMessage='Shift-click button to invert selection',
-            command="maya.cmds.select(sxtools.sxglobals.tools.getLayerMask())")
-        if len(sxglobals.settings.componentArray) > 0:
-            maya.cmds.button(
-                'clearButton',
-                label='Clear Selected',
-                statusBarMessage=(
-                    'Shift-click button to clear'
-                    'all layers on selected components'),
-                width=100,
-                height=20,
-                command=(
-                    "sxtools.sxglobals.tools.clearSelector()\n"
-                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
-                    "sxtools.sxglobals.settings.shapeArray["
-                    "len(sxtools.sxglobals.settings.shapeArray)-1],"
-                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
-                    "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
-        else:
-            maya.cmds.button(
-                'clearButton',
-                label='Clear Layer',
-                statusBarMessage=(
-                    'Shift-click button to clear'
-                    'all layers on selected objects'),
-                width=100,
-                height=20,
-                command=(
-                    "sxtools.sxglobals.tools.clearSelector()\n"
-                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
-                    "sxtools.sxglobals.settings.shapeArray["
-                    "len(sxtools.sxglobals.settings.shapeArray)-1], "
-                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
-                    "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(
