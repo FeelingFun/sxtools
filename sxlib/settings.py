@@ -283,9 +283,9 @@ class Settings(object):
         if (maya.cmds.textField('overlay', query=True, text=True) in
            sxglobals.settings.project['LayerData'].keys()):
             self.project['LayerData'][maya.cmds.textField(
-                'overlay', query=True, text=True)][2] = (
-                str(maya.cmds.textField(
-                    'overlayExport', query=True, text=True)).split(','))
+                'overlay', query=True, text=True)][2] = [
+                    x.strip() for x in str(maya.cmds.textField(
+                        'overlayExport', query=True, text=True)).split(',')]
             self.project['LayerData'][maya.cmds.textField(
                 'overlay', query=True, text=True)][4] = True
 
