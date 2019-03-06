@@ -18,10 +18,21 @@ class UI(object):
     def __del__(self):
         print('SX Tools: Exiting UI')
 
+    def calculateDivision(self):
+        paneHeight = maya.cmds.workspaceControl(sxglobals.dockID, query=True, height=True)
+        if sxglobals.settings.frames['paneDivision'] == 0:
+            layerHeight = (sxglobals.settings.project['LayerCount'] + sxglobals.settings.project['ChannelCount']) * 14 + 170
+        else:
+            layerHeight = maya.cmds.layout('topCanvas', query=True, height=True)
+        division = int(float(layerHeight) / float(paneHeight) * 100)
+        if division > 100:
+            division = 100
+        sxglobals.settings.frames['paneDivision'] = division
+
     def historyUI(self):
         maya.cmds.frameLayout(
             'historyWarningFrame',
-            parent='canvas',
+            parent='topCanvas',
             label='WARNING: Construction history detected!',
             backgroundColor=(0.35, 0.1, 0),
             width=250,
@@ -39,7 +50,7 @@ class UI(object):
     def multiShapesUI(self):
         maya.cmds.frameLayout(
             'shapeWarningFrame',
-            parent='canvas',
+            parent='topCanvas',
             label='WARNING: Multiple shapes in one object!',
             backgroundColor=(0.6, 0.3, 0),
             width=250,
@@ -64,14 +75,14 @@ class UI(object):
         maya.cmds.frameLayout(
             'emptyFrame',
             label='No mesh objects selected',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=10,
             marginHeight=5)
 
         maya.cmds.frameLayout(
             'prefsFrame',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             label='Tool Preferences',
             marginWidth=5,
@@ -112,9 +123,18 @@ class UI(object):
             onCommand='maya.cmds.constructionHistory(toggle=True)',
             offCommand='maya.cmds.constructionHistory(toggle=False)')
 
+        maya.cmds.button(
+            'resetButton',
+            label='Reset SX Tools',
+            ann='Clear all optionVars',
+            parent='prefsFrame',
+            height=30,
+            width=100,
+            command=('sxtools.sxglobals.core.resetSXTools()'))
+
         maya.cmds.frameLayout(
             'setupFrame',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             label='Project Setup',
             marginWidth=5,
@@ -275,7 +295,7 @@ class UI(object):
                 if value[3] == 2:
                     alpha2 = key
                     alpha2Export = value[2]
-                if value[4] is True:
+                if value[4]:
                     overlay = key
                     overlayExport = ', '.join(value[2])
             maya.cmds.textField(
@@ -435,7 +455,7 @@ class UI(object):
         maya.cmds.frameLayout(
             'exportObjFrame',
             label=str(len(sxglobals.settings.objectArray)) + ' export objects selected',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=10,
             marginHeight=2)
@@ -460,7 +480,6 @@ class UI(object):
             columnWidth3=(80, 80, 80),
             columnAttach3=('left', 'left', 'left'),
             labelArray3=['Composite', 'Albedo', 'Layer Masks'],
-            select=1,
             numberOfRadioButtons=3,
             onCommand1=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
@@ -484,13 +503,14 @@ class UI(object):
             parent='exportObjFrame',
             vertical=True,
             shareCollection='exportShadingButtons1',
-            columnWidth3=(80, 80, 80),
-            columnAttach3=('left', 'left', 'left'),
-            labelArray3=['Alpha Overlay 1', 'Alpha Overlay 2', 'Overlay'],
-            numberOfRadioButtons=3,
+            columnWidth4=(80, 80, 80, 80),
+            columnAttach4=('left', 'left', 'left', 'left'),
+            labelArray4=['Alpha Overlay 1', 'Alpha Overlay 2', 'Overlay', 'Sub-Meshes'],
+            numberOfRadioButtons=4,
             onCommand1=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
-            onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"))
+            onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"),
+            onCommand4=("sxtools.sxglobals.export.viewExportedMaterial()"))
 
         maya.cmds.button(
             label='Choose Export Path',
@@ -516,7 +536,7 @@ class UI(object):
             maya.cmds.text(label='No export folder selected!')
 
         maya.cmds.setParent('exportObjFrame')
-        maya.cmds.setParent('canvas')
+        maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
@@ -527,7 +547,7 @@ class UI(object):
         maya.cmds.frameLayout(
             'patchFrame',
             label=patchLabel,
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=10,
             marginHeight=5)
@@ -546,7 +566,7 @@ class UI(object):
                     'sxtools.sxglobals.layers.patchLayers('
                     'sxtools.sxglobals.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
-        maya.cmds.setParent('canvas')
+        maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
@@ -558,7 +578,7 @@ class UI(object):
         maya.cmds.frameLayout(
             'patchFrame',
             label=patchLabel,
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=10,
             marginHeight=5)
@@ -585,7 +605,7 @@ class UI(object):
                     'sxtools.sxglobals.layers.patchLayers('
                     'sxtools.sxglobals.settings.patchArray)'))
         maya.cmds.setParent('patchFrame')
-        maya.cmds.setParent('canvas')
+        maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
@@ -593,7 +613,7 @@ class UI(object):
         maya.cmds.frameLayout(
             'patchFrame',
             label='Skinning Mesh Selected',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=10,
             marginHeight=0)
@@ -606,14 +626,14 @@ class UI(object):
                 align='left',
                 ww=True)
         maya.cmds.setParent('patchFrame')
-        maya.cmds.setParent('canvas')
+        maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
             sxglobals.dockID, edit=True, resizeHeight=5, resizeWidth=250)
 
     def layerViewUI(self):
         maya.cmds.frameLayout(
             'layerFrame',
-            parent='canvas',
+            parent='topCanvas',
             width=250,
             marginWidth=5,
             marginHeight=2)
@@ -647,7 +667,6 @@ class UI(object):
 
         maya.cmds.textScrollList(
             'layerList',
-            height=200,
             allowMultiSelection=False,
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
@@ -718,7 +737,7 @@ class UI(object):
             'layerSelectRowColumns',
             parent='layerFrame',
             numberOfColumns=2,
-            columnWidth=((1, 120), (2, 120)),
+            columnWidth=((1, 115), (2, 115)),
             columnSpacing=([1, 0], [2, 5]),
             rowSpacing=(1, 5))
 
@@ -952,6 +971,11 @@ class UI(object):
         maya.cmds.menuItem(label='Surface Luminance', parent='rampDirection')
         maya.cmds.menuItem(label='Surface Curvature', parent='rampDirection')
 
+        maya.cmds.optionMenu(
+            'rampDirection',
+            edit=True,
+            select=sxglobals.settings.tools['gradientDirection'])
+
         presetNames = maya.cmds.nodePreset(list='SXRamp')
         presetNameArray = []
         for preset in presetNames:
@@ -963,21 +987,16 @@ class UI(object):
                 maya.cmds.menuItem(label=presetName, parent='rampPresets')
 
             maya.cmds.optionMenu(
-                'rampDirection',
-                edit=True,
-                select=sxglobals.settings.tools['gradientDirection'])
-
-            maya.cmds.optionMenu(
                 'rampPresets',
                 edit=True,
                 select=sxglobals.settings.tools['gradientPreset'])
 
     def gradientToolUI(self):
         # ramp nodes for gradient tool
-        if maya.cmds.objExists('SXRamp') is False:
+        if not maya.cmds.objExists('SXRamp'):
             maya.cmds.createNode('ramp', name='SXRamp', skipSelect=True)
 
-        if maya.cmds.objExists('SXAlphaRamp') is False:
+        if not maya.cmds.objExists('SXAlphaRamp'):
             maya.cmds.createNode('ramp', name='SXAlphaRamp', skipSelect=True)
             maya.cmds.setAttr('SXAlphaRamp.colorEntryList[0].position', 1)
             maya.cmds.setAttr('SXAlphaRamp.colorEntryList[0].color', 1, 1, 1)
@@ -1609,7 +1628,7 @@ class UI(object):
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):
-        if maya.cmds.objExists('SXCreaseRamp') is False:
+        if not maya.cmds.objExists('SXCreaseRamp'):
             maya.cmds.createNode('ramp', name='SXCreaseRamp', skipSelect=True)
 
         maya.cmds.setAttr(
@@ -1700,25 +1719,42 @@ class UI(object):
             command=(
                 "sxtools.sxglobals.tools.curvatureSelect("
                 "sxtools.sxglobals.settings.shapeArray)"))
-        maya.cmds.radioButtonGrp(
-            'creaseSets',
+
+        maya.cmds.rowColumnLayout(
+            'creaseRowColumns',
             parent='creaseFrame',
-            columnWidth4=(50, 50, 50, 50),
-            columnAttach4=('left', 'left', 'left', 'left'),
-            labelArray4=['25%', '50%', '75%', 'Hard'],
-            numberOfRadioButtons=4,
-            onCommand1="sxtools.sxglobals.tools.assignToCreaseSet('sxCrease1')",
-            onCommand2="sxtools.sxglobals.tools.assignToCreaseSet('sxCrease2')",
-            onCommand3="sxtools.sxglobals.tools.assignToCreaseSet('sxCrease3')",
-            onCommand4="sxtools.sxglobals.tools.assignToCreaseSet('sxCrease4')")
-        maya.cmds.setParent('creaseFrame')
+            numberOfColumns=4,
+            columnWidth=((1, 60), (2, 60), (3, 60), (4, 60)),
+            columnAttach=[(1, 'both', 5), (2, 'both', 5), (3, 'both', 5), (4, 'both', 5)],
+            rowSpacing=(1, 5))
+        maya.cmds.button(
+            label='25%',
+            parent='creaseRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease1')"))
+        maya.cmds.button(
+            label='50%',
+            parent='creaseRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease2')"))
+        maya.cmds.button(
+            label='75%',
+            parent='creaseRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease3')"))
+        maya.cmds.button(
+            label='Hard',
+            parent='creaseRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease4')"))
+
         maya.cmds.button(
             label='Uncrease Selection',
             parent='creaseFrame',
+            ann='Shift-click to clear all creases on all selected objects',
             height=30,
             width=100,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease0')"))
-        maya.cmds.setParent('canvas')
 
     def swapLayerSetsUI(self):
         maya.cmds.frameLayout(
@@ -1854,7 +1890,6 @@ class UI(object):
             'exportFlagsFrame',
             parent='canvas',
             label='Export Flags',
-            width=250,
             marginWidth=5,
             marginHeight=0,
             collapsable=True,
@@ -1863,16 +1898,50 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['exportFlagsCollapse']=True"),
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['exportFlagsCollapse']=False"))
+        maya.cmds.radioButtonGrp(
+            'subMeshSets',
+            parent='exportFlagsFrame',
+            columnWidth3=(80, 80, 80),
+            columnAttach3=('left', 'left', 'left'),
+            labelArray3=['SubMesh0', 'SubMesh1', 'SubMesh2'],
+            numberOfRadioButtons=3,
+            onCommand1="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh0')",
+            onCommand2="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh1')",
+            onCommand3="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh2')")
         maya.cmds.rowColumnLayout(
             'exportFlagsRowColumns',
             parent='exportFlagsFrame',
             numberOfColumns=2,
-            columnWidth=((1, 140), (2, 100)),
+            columnWidth=((1, 140), (2, 90)),
             columnAttach=[(1, 'right', 0), (2, 'both', 5)],
-            rowSpacing=(1, 0))
-        maya.cmds.text('staticPaletteLabel', label='Static Vertex Colors:')
+            rowSpacing=(1, 5))
+        maya.cmds.text(
+            'subMeshLabel',
+            parent='exportFlagsRowColumns',
+            label='Contains Sub-Meshes:')
+        maya.cmds.checkBox(
+            'subMeshCheckbox',
+            parent='exportFlagsRowColumns',
+            label='',
+            ann=(
+                'If enabled, up to three different materials'
+                'can be assigned to the object.'),
+            value=(
+                maya.cmds.getAttr(
+                    sxglobals.settings.objectArray[0]+'.subMeshes')),
+            onCommand=(
+                'sxtools.sxglobals.tools.setSubMeshFlags('
+                'sxtools.sxglobals.settings.objectArray, True)'),
+            offCommand=(
+                'sxtools.sxglobals.tools.setSubMeshFlags('
+                'sxtools.sxglobals.settings.objectArray, False)'))
+        maya.cmds.text(
+            'staticPaletteLabel',
+            parent='exportFlagsRowColumns',
+            label='Static Vertex Colors:')
         maya.cmds.checkBox(
             'staticPaletteCheckbox',
+            parent='exportFlagsRowColumns',
             label='',
             ann=(
                 'If enabled, the object vertex colors '
@@ -1888,9 +1957,11 @@ class UI(object):
                 'sxtools.sxglobals.settings.objectArray, False)'))
         maya.cmds.text(
             'smoothStepsLabel',
+            parent='exportFlagsRowColumns',
             label='Export Subdivision Level:')
         maya.cmds.intField(
             'smoothSteps',
+            parent='exportFlagsRowColumns',
             min=0,
             max=5,
             step=1,
@@ -1903,15 +1974,13 @@ class UI(object):
                 'sxtools.sxglobals.settings.objectArray,'
                 'maya.cmds.intField("smoothSteps",'
                 ' query=True, value=True))'))
-        maya.cmds.setParent('exportFlagsFrame')
-        maya.cmds.setParent('canvas')
 
     def exportButtonUI(self):
         maya.cmds.text(label=' ', parent='canvas')
         maya.cmds.button(
             label='Create Export Objects',
             parent='canvas',
-            width=250,
+            width=230,
             command=(
                 "sxtools.sxglobals.tools.setShadingMode(0)\n"
                 "maya.cmds.polyOptions(activeObjects=True,"
@@ -1919,5 +1988,4 @@ class UI(object):
                 "colorShadedDisplay=True)\n"
                 "maya.mel.eval('DisplayLight;')\n"
                 "sxtools.sxglobals.export.processObjects("
-                "sxtools.sxglobals.settings.selectionArray)"))
-        maya.cmds.setParent('canvas')
+                "sxtools.sxglobals.settings.objectArray)"))

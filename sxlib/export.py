@@ -202,13 +202,28 @@ class Export(object):
         materials = []
         materialUVArray = []
         exportBlocks = []
+        subMeshes = False
+
+        # Check for sub-meshes, assign materials
+        maya.cmds.select('sxSubMesh0')
+        if len(maya.cmds.ls(selection=True)) > 0:
+            subMeshes = True
+            maya.cmds.sets(e=True, forceElement='sxSubMeshShader1SG')
+        maya.cmds.select('sxSubMesh1')
+        if len(maya.cmds.ls(selection=True)) > 0:
+            subMeshes = True
+            maya.cmds.sets(e=True, forceElement='sxSubMeshShader2SG')
+        maya.cmds.select('sxSubMesh2')
+        if len(maya.cmds.ls(selection=True)) > 0:
+            subMeshes = True
+            maya.cmds.sets(e=True, forceElement='sxSubMeshShader3SG')
 
         for key, value in sxglobals.settings.project['LayerData'].iteritems():
             # UV channel for palette masks
             if key == 'layer1':
                 maskExport = value[2]
             # Material channels
-            elif value[5] is True:
+            elif value[5]:
                 materials.append(key)
                 materialUVArray.append(value[2])
             # UV channels for alpha overlays
@@ -220,7 +235,7 @@ class Export(object):
                     alphaOverlayArray[1] = key
                     alphaOverlayUVArray[1] = value[2]
             # UV channels for overlay
-            elif value[4] is True:
+            elif value[4]:
                 overlay.append(key)
                 overlayUVArray.append(value[2])
       
@@ -315,7 +330,7 @@ class Export(object):
                 varParent = maya.cmds.listRelatives(
                     exportShape, parent=True)[0]
                 if ((varParent != '_staticExports') and
-                   (maya.cmds.objExists(varParent+'_var'+str(x)) is False)):
+                   not (maya.cmds.objExists(varParent+'_var'+str(x)))):
                     maya.cmds.group(
                         empty=True,
                         name=varParent+'_var'+str(x),
@@ -335,7 +350,7 @@ class Export(object):
         for exportShape in exportShapeArray:
             if maya.cmds.getAttr(str(exportShape) + '.transparency') == 1:
                 exportName = str(exportShape).split('|')[-1] + '_transparent'
-            elif sxglobals.settings.project['ExportSuffix'] is True:
+            elif sxglobals.settings.project['ExportSuffix']:
                 exportName = str(exportShape).split('|')[-1] + '_paletted'
             else:
                 exportName = str(exportShape).split('|')[-1]
@@ -434,7 +449,7 @@ class Export(object):
             maya.cmds.polyColorSet(
                 exportShape,
                 currentColorSet=True, colorSet='layer1')
-            maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
+            # maya.cmds.sets(exportShape, e=True, forceElement='SXPBShaderSG')
 
             # Check for skinned meshes,
             # copy replace processed meshes when appropriate
@@ -471,16 +486,16 @@ class Export(object):
                         max=5,
                         dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'))
                 maya.cmds.deleteAttr(skinTarget + '.skinnedMesh')
-                maya.cmds.sets(skinTarget, e=True, forceElement='SXPBShaderSG')
+                # maya.cmds.sets(skinTarget, e=True, forceElement='SXPBShaderSG')
                 # Apply optional smoothing to original
                 # for accurate attribute transfer
                 # TODO: See if attributes could be transferred
                 # to the OrigShape of skinTarget
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
                     sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
-                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
-                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
-                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
                     maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
@@ -538,9 +553,9 @@ class Export(object):
                 # Apply smoothing if set in export flags
                 if maya.cmds.getAttr(skinTarget+'.subdivisionLevel') > 0:
                     sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
-                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
-                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
-                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
                     maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
@@ -581,9 +596,9 @@ class Export(object):
             if maya.cmds.objExists(exportShape):
                 if maya.cmds.getAttr(exportShape+'.subdivisionLevel') > 0:
                     sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
-                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl*.25)
-                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl*.5)
-                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl*.75)
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
                     maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
@@ -726,12 +741,17 @@ class Export(object):
             return False
 
     def viewExportedMaterial(self):
-        buttonState1 = maya.cmds.radioButtonGrp(
-            'exportShadingButtons1', query=True, select=True)
-        buttonState2 = maya.cmds.radioButtonGrp(
-            'exportShadingButtons2', query=True, select=True)
-        buttonState3 = maya.cmds.radioButtonGrp(
-            'exportShadingButtons3', query=True, select=True)
+        if maya.cmds.getAttr(str(sxglobals.settings.objectArray[0]) + '.subMeshes'):
+            buttonState1 = False
+            buttonState2 = False
+            buttonState3 = 4
+        else:
+            buttonState1 = maya.cmds.radioButtonGrp(
+                'exportShadingButtons1', query=True, select=True)
+            buttonState2 = maya.cmds.radioButtonGrp(
+                'exportShadingButtons2', query=True, select=True)
+            buttonState3 = maya.cmds.radioButtonGrp(
+                'exportShadingButtons3', query=True, select=True)
 
         # Composite
         if buttonState1 == 1:
@@ -878,6 +898,10 @@ class Export(object):
             maya.cmds.sets(
                 sxglobals.settings.shapeArray,
                 e=True, forceElement='SXExportOverlayShaderSG')
+
+        # Sub-Meshes
+        elif buttonState3 == 4:
+            pass
 
         if (buttonState1 != 1) and (buttonState3 != 3):
             maya.cmds.shaderfx(

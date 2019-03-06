@@ -151,7 +151,7 @@ class Core(object):
         for selection in sxglobals.settings.selectionArray:
             if 'Shape' not in str(selection):
                 onlyShapes = False
-        if onlyShapes is True:
+        if onlyShapes:
             sxglobals.settings.shapeArray = sxglobals.settings.selectionArray
             sxglobals.settings.objectArray = maya.cmds.listRelatives(
                 sxglobals.settings.shapeArray, parent=True, fullPath=True)
@@ -182,34 +182,46 @@ class Core(object):
 
         sxglobals.tools.checkHistory(sxglobals.settings.objectArray)
 
-    # The main function of the tool,
-    # updates the UI dynamically for different selection types.
+    # Re-draws the UI dynamically for different selection types
     def refreshSXTools(self):
         sxglobals.setup.createDefaultLights()
         sxglobals.setup.createCreaseSets()
+        sxglobals.setup.createSubMeshSets()
         sxglobals.setup.createDisplayLayers()
 
-        # base canvas for all SX Tools UI
-        if maya.cmds.scrollLayout('canvas', exists=True):
+        # base canvases for all SX Tools UI
+        if maya.cmds.layout('canvasPanes', exists=True):
+            maya.cmds.deleteUI('canvasPanes')
+
+        if maya.cmds.layout('topCanvas', exists=True):
+            maya.cmds.deleteUI('topCanvas', lay=True)
+
+        if maya.cmds.layout('canvas', exists=True):
             maya.cmds.deleteUI('canvas', lay=True)
 
-        maya.cmds.scrollLayout(
-            'canvas',
-            minChildWidth=250,
-            childResizable=True,
+        maya.cmds.paneLayout(
+            'canvasPanes',
             parent=sxglobals.dockID,
+            width=250,
+            configuration='horizontal2')
+
+        maya.cmds.scrollLayout(
+            'topCanvas',
+            childResizable=True,
+            parent='canvasPanes',
+            height=10,
             horizontalScrollBarThickness=16,
             verticalScrollBarThickness=16,
             verticalScrollBarAlwaysVisible=False)
 
         # If nothing selected, or defaults not set, construct setup view
         if ((len(sxglobals.settings.shapeArray) == 0) or
-           (maya.cmds.optionVar(exists='SXToolsPrefsFile') is False) or
+           not (maya.cmds.optionVar(exists='SXToolsPrefsFile')) or
            ('LayerData' not in sxglobals.settings.project)):
             sxglobals.ui.setupProjectUI()
 
         # If exported objects selected, construct message
-        elif sxglobals.export.checkExported(sxglobals.settings.objectArray) is True:
+        elif sxglobals.export.checkExported(sxglobals.settings.objectArray):
             maya.cmds.setAttr('exportsLayer.visibility', 1)
             maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
@@ -219,7 +231,7 @@ class Core(object):
             sxglobals.ui.exportObjectsUI()
 
         # If skinned meshes are selected, construct message
-        elif sxglobals.tools.checkSkinMesh(sxglobals.settings.objectArray) is True:
+        elif sxglobals.tools.checkSkinMesh(sxglobals.settings.objectArray):
             maya.cmds.setAttr('exportsLayer.visibility', 0)
             maya.cmds.setAttr('skinMeshLayer.visibility', 1)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
@@ -238,6 +250,23 @@ class Core(object):
 
         # Construct layer tools window
         else:
+            if sxglobals.settings.frames['paneDivision'] == 0:
+                sxglobals.ui.calculateDivision()
+
+            maya.cmds.paneLayout(
+                'canvasPanes',
+                edit=True,
+                paneSize=(1, 100, sxglobals.settings.frames['paneDivision']),
+                separatorMovedCommand='sxtools.sxglobals.ui.calculateDivision()')
+
+            maya.cmds.scrollLayout(
+                'canvas',
+                childResizable=True,
+                parent='canvasPanes',
+                horizontalScrollBarThickness=16,
+                verticalScrollBarThickness=16,
+                verticalScrollBarAlwaysVisible=False)
+
             maya.cmds.editDisplayLayerMembers(
                 'assetsLayer',
                 sxglobals.settings.objectArray)
@@ -248,10 +277,10 @@ class Core(object):
             # hacky hack to refresh the layer editor
             maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
 
-            if sxglobals.ui.history is True:
+            if sxglobals.ui.history:
                 sxglobals.ui.historyUI()
 
-            if (sxglobals.ui.multiShapes is True) and (sxglobals.ui.history is False):
+            if sxglobals.ui.multiShapes and not sxglobals.ui.history:
                 sxglobals.ui.multiShapesUI()
 
             sxglobals.ui.layerViewUI()

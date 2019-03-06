@@ -17,7 +17,7 @@ class LayerManagement(object):
         print('SX Tools: Exiting layers')
 
     def mergeLayers(self, object, sourceLayer, targetLayer, up):
-        if up is True:
+        if up:
             target = targetLayer
         else:
             target = sourceLayer
@@ -109,7 +109,7 @@ class LayerManagement(object):
                 selected, currentColorSet=True, colorSet=str(target))
             MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
 
-        if up is True:
+        if up:
             maya.cmds.polyColorSet(
                 selected,
                 delete=True,
@@ -168,7 +168,7 @@ class LayerManagement(object):
                                 colorSet='tempColorSet')
                             found = True
 
-                    if found is False:
+                    if not found:
                         maya.cmds.polyColorSet(
                             object,
                             create=True,
@@ -194,13 +194,12 @@ class LayerManagement(object):
     # Resulting blended layer is set to Alpha blending mode
     def mergeLayerDirection(self, shapes, up):
         sourceLayer = self.getSelectedLayer()
-        if ((str(sourceLayer) == 'layer1') and
-           (up is True)):
+        if (str(sourceLayer) == 'layer1') and up:
             print('SX Tools Error: Cannot merge layer1')
             return
         elif ((str(sourceLayer) == 'layer' +
               str(sxglobals.settings.project['LayerCount'])) and
-              (up is False)):
+              (not up)):
             print(
                 'SX Tools Error: Cannot merge ' +
                 'layer'+str(sxglobals.settings.project['LayerCount']))
@@ -213,7 +212,7 @@ class LayerManagement(object):
             return
 
         layerIndex = sxglobals.settings.project['LayerData'][sourceLayer][0]-1
-        if up is True:
+        if up:
             targetLayer = sxglobals.settings.project['RefNames'][layerIndex-1]
         else:
             sourceLayer = sxglobals.settings.project['RefNames'][layerIndex+1]
@@ -226,7 +225,7 @@ class LayerManagement(object):
                 targetLayer, up)
             self.patchLayers([shape, ])
 
-        if up is True:
+        if up:
             maya.cmds.polyColorSet(
                 shapes,
                 currentColorSet=True,
@@ -366,7 +365,7 @@ class LayerManagement(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift is True:
+        if shift:
             layers = self.sortLayers(
                 sxglobals.settings.project['LayerData'].keys())
             for layer in layers:
@@ -376,7 +375,7 @@ class LayerManagement(object):
             self.refreshLayerList()
             self.refreshSelectedItem()
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
-        elif shift is False:
+        elif not shift:
             self.toggleLayer(selLayer)
 
     # Updates the tool UI to highlight the current color set
@@ -403,6 +402,8 @@ class LayerManagement(object):
             numberOfRows=(
                 sxglobals.settings.project['LayerCount'] +
                 sxglobals.settings.project['ChannelCount']),
+            height=(sxglobals.settings.project['LayerCount'] +
+                sxglobals.settings.project['ChannelCount']) * 14,
             selectCommand=(
                 "sxtools.sxglobals.layers.setColorSet("
                 "sxtools.sxglobals.layers.getSelectedLayer())\n"
@@ -494,15 +495,15 @@ class LayerManagement(object):
                   (layerColors[k].a <= 1)):
                 state[1] = True
 
-        if state[0] is False:
+        if not state[0]:
             hidden = '(H)'
         else:
             hidden = ''
-        if state[1] is True:
+        if state[1]:
             mask = '(M)'
         else:
             mask = ''
-        if state[2] is True:
+        if state[2]:
             adj = '(A)'
         else:
             adj = ''
@@ -570,13 +571,13 @@ class LayerManagement(object):
             if testLayers is None:
                 nonStdObjs.append(object)
                 empty = True
-            elif set(refLayers).issubset(testLayers) is False:
+            elif not set(refLayers).issubset(testLayers):
                 nonStdObjs.append(object)
                 empty = False
 
-        if len(nonStdObjs) > 0 and empty is True:
+        if len(nonStdObjs) > 0 and empty:
             return 1, nonStdObjs
-        elif len(nonStdObjs) > 0 and empty is False:
+        elif len(nonStdObjs) > 0 and not empty:
             return 2, nonStdObjs
         else:
             return 0, None

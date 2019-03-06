@@ -22,35 +22,41 @@ class ToolActions(object):
         print('SX Tools: Exiting tools')
 
     def assignToCreaseSet(self, setName):
-        creaseSets = (
-            'sxCrease0',
-            'sxCrease1',
-            'sxCrease2',
-            'sxCrease3',
-            'sxCrease4')
-        if ((maya.cmds.filterExpand(
-                sxglobals.settings.componentArray, sm=31) is not None) or
-            (maya.cmds.filterExpand(
-                sxglobals.settings.componentArray, sm=32) is not None)):
-            for set in creaseSets:
-                if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
-                    maya.cmds.sets(
-                        sxglobals.settings.componentArray, remove=set)
-            maya.cmds.sets(
-                sxglobals.settings.componentArray, forceElement=setName)
-        elif len(sxglobals.settings.componentArray) == 0:
-            edgeList = maya.cmds.ls(maya.cmds.polyListComponentConversion(
-                sxglobals.settings.objectArray, te=True), fl=True)
-            for set in creaseSets:
-                if maya.cmds.sets(edgeList, isMember=set):
-                    maya.cmds.sets(edgeList, remove=set)
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+        
+        if shift:
+            self.clearCreases()
         else:
-            edgeList = maya.cmds.polyListComponentConversion(
-                sxglobals.settings.componentArray, te=True)
-            for set in creaseSets:
-                if maya.cmds.sets(edgeList, isMember=set):
-                    maya.cmds.sets(edgeList, remove=set)
-            maya.cmds.sets(edgeList, forceElement=setName)
+            creaseSets = (
+                'sxCrease0',
+                'sxCrease1',
+                'sxCrease2',
+                'sxCrease3',
+                'sxCrease4')
+            if ((maya.cmds.filterExpand(
+                    sxglobals.settings.componentArray, sm=31) is not None) or
+                (maya.cmds.filterExpand(
+                    sxglobals.settings.componentArray, sm=32) is not None)):
+                for set in creaseSets:
+                    if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
+                        maya.cmds.sets(
+                            sxglobals.settings.componentArray, remove=set)
+                maya.cmds.sets(
+                    sxglobals.settings.componentArray, forceElement=setName)
+            elif len(sxglobals.settings.componentArray) == 0:
+                edgeList = maya.cmds.ls(maya.cmds.polyListComponentConversion(
+                    sxglobals.settings.objectArray, te=True), fl=True)
+                for set in creaseSets:
+                    if maya.cmds.sets(edgeList, isMember=set):
+                        maya.cmds.sets(edgeList, remove=set)
+            else:
+                edgeList = maya.cmds.polyListComponentConversion(
+                    sxglobals.settings.componentArray, te=True)
+                for set in creaseSets:
+                    if maya.cmds.sets(edgeList, isMember=set):
+                        maya.cmds.sets(edgeList, remove=set)
+                maya.cmds.sets(edgeList, forceElement=setName)
 
     def clearCreases(self):
         creaseSets = (
@@ -70,6 +76,22 @@ class ToolActions(object):
                 maya.cmds.sets(vertList, remove=set)
         maya.cmds.sets(edgeList, forceElement='sxCrease0')
 
+    def assignToSubMeshSet(self, setName):
+        subMeshSets = (
+            'sxSubMesh0',
+            'sxSubMesh1',
+            'sxSubMesh2')
+        if (maya.cmds.filterExpand(
+                sxglobals.settings.componentArray, sm=34) is not None):
+            for set in subMeshSets:
+                if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
+                    maya.cmds.sets(
+                        sxglobals.settings.componentArray, remove=set)
+            maya.cmds.sets(
+                sxglobals.settings.componentArray, forceElement=setName)
+        else:
+            print('SX Tools: Only polygon faces can be assigned to submesh sets')
+
     # Apply selected crease value to any convex or concave edge
     # beyond a user-adjusted threshold
     def curvatureSelect(self, objects):
@@ -83,7 +105,7 @@ class ToolActions(object):
         selEdges = []
         curvArrays = []
 
-        self.clearCreases()
+        # self.clearCreases()
 
         # Generate curvature values per object
         for obj in objectList:
@@ -305,7 +327,7 @@ class ToolActions(object):
         sxglobals.settings.bakeSet = sxglobals.settings.shapeArray
         contribution = 1.0/float(rayCount)
 
-        if sxglobals.settings.project['LayerData']['occlusion'][5] is True:
+        if sxglobals.settings.project['LayerData']['occlusion'][5]:
             sxglobals.layers.setColorSet('occlusion')
             layer = 'occlusion'
 
@@ -335,16 +357,16 @@ class ToolActions(object):
                 lsx=comboOffset,
                 lsy=comboOffset,
                 lsz=comboOffset)
-            if sxglobals.settings.tools['bakeGroundPlane'] is False:
+            if not sxglobals.settings.tools['bakeGroundPlane']:
                 sxglobals.settings.bakeSet.append(globalMesh[0])
         else:
             globalMesh = maya.cmds.duplicate(
                 sxglobals.settings.bakeSet[0],
                 name='comboOcclusionObject')
-            if sxglobals.settings.tools['bakeGroundPlane'] is False:
+            if not sxglobals.settings.tools['bakeGroundPlane']:
                 sxglobals.settings.bakeSet.append(globalMesh[0])
 
-        if sxglobals.settings.tools['bakeGroundPlane'] is True:
+        if sxglobals.settings.tools['bakeGroundPlane']:
             bbox = []
             maya.cmds.polyPlane(
                 name='sxGroundPlane',
@@ -442,7 +464,7 @@ class ToolActions(object):
             if bake == globalMesh[0]:
                 sxglobals.settings.bakeSet.remove(bake)
                 bboxCoords.sort()
-                if len(sxglobals.settings.bakeSet) > 1 or sxglobals.settings.tools['bakeGroundPlane'] is True:
+                if len(sxglobals.settings.bakeSet) > 1 or sxglobals.settings.tools['bakeGroundPlane']:
                     newObjs = maya.cmds.polySeparate(globalMesh, ch=False)
                     # merge objects that were combined before bake
                     allSets = maya.cmds.polyColorSet(
@@ -486,7 +508,7 @@ class ToolActions(object):
                     newObjs = (globalMesh[0], )
                 for newObj in newObjs:
                     bbx = maya.cmds.exactWorldBoundingBox(newObj)
-                    if sxglobals.settings.tools['bakeGroundPlane'] is True:
+                    if sxglobals.settings.tools['bakeGroundPlane']:
                         # ignore groundplane
                         if (math.fabs(bbx[3] - bbx[0]) == sxglobals.settings.tools['bakeGroundScale']) and (bbx[1] - bbx[4]) == 0:
                             continue
@@ -548,10 +570,10 @@ class ToolActions(object):
         bbox = []
         sxglobals.settings.bakeSet = sxglobals.settings.shapeArray
 
-        if sxglobals.settings.project['LayerData']['occlusion'][5] is True:
+        if sxglobals.settings.project['LayerData']['occlusion'][5]:
             sxglobals.layers.setColorSet('occlusion')
 
-        if sxglobals.settings.tools['bakeGroundPlane'] is True:
+        if sxglobals.settings.tools['bakeGroundPlane']:
             maya.cmds.polyPlane(
                 name='sxGroundPlane',
                 w=sxglobals.settings.tools['bakeGroundScale'],
@@ -560,7 +582,7 @@ class ToolActions(object):
             maya.cmds.select(sxglobals.settings.bakeSet)
             sxglobals.core.selectionManager()
 
-        if maya.cmds.objExists('sxVertexBakeSet') is False:
+        if not maya.cmds.objExists('sxVertexBakeSet'):
             maya.cmds.createNode(
                 'vertexBakeSet',
                 n='sxVertexBakeSet',
@@ -583,8 +605,8 @@ class ToolActions(object):
             maya.cmds.setAttr('sxVertexBakeSet.occlusionRays', 256)
             maya.cmds.setAttr('sxVertexBakeSet.colorBlending', 0)
 
-        if sxglobals.settings.tools['bakeTogether'] is True:
-            if sxglobals.settings.tools['bakeGroundPlane'] is True:
+        if sxglobals.settings.tools['bakeTogether']:
+            if sxglobals.settings.tools['bakeGroundPlane']:
                 bbox = maya.cmds.exactWorldBoundingBox(sxglobals.settings.bakeSet)
                 maya.cmds.setAttr(
                     'sxGroundPlane.translateY',
@@ -597,7 +619,7 @@ class ToolActions(object):
 
             # bake separately
             for bake in sxglobals.settings.bakeSet:
-                if sxglobals.settings.tools['bakeGroundPlane'] is True:
+                if sxglobals.settings.tools['bakeGroundPlane']:
                     bbox = maya.cmds.exactWorldBoundingBox(bake)
                     bakeTx = sxglobals.export.getTransforms([bake, ])
                     groundPos = maya.cmds.getAttr(
@@ -618,7 +640,7 @@ class ToolActions(object):
             for bake in sxglobals.settings.bakeSet:
                 maya.cmds.setAttr((str(bake) + '.visibility'), True)
 
-        if sxglobals.settings.tools['bakeGroundPlane'] is True:
+        if sxglobals.settings.tools['bakeGroundPlane']:
             maya.cmds.delete('sxGroundPlane')
 
         maya.cmds.select(sxglobals.settings.bakeSet)
@@ -754,7 +776,7 @@ class ToolActions(object):
                 if tmpColor[3] == 1:
                     color = tmpColor
 
-            if applyAlpha is False:
+            if not applyAlpha:
                 if 1 <= color[3] > 0:
                     maya.cmds.polyColorPerVertex(
                         component,
@@ -1057,13 +1079,13 @@ class ToolActions(object):
                             break
                     fvIt.next()
             else:
-                if (overwriteAlpha is True):
+                if overwriteAlpha:
                     for idx in xrange(selLen):
                         fvColors[idx] = fillColor
-                elif (overwriteAlpha is False) and (sxglobals.settings.layerAlphaMax == 0):
+                elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax == 0):
                     for idx in xrange(selLen):
                         fvColors[idx] = fillColor
-                elif (overwriteAlpha is False) and (sxglobals.settings.layerAlphaMax != 0):
+                elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax != 0):
                     for idx in xrange(selLen):
                         fvColors[idx].r = fillColor.r
                         fvColors[idx].g = fillColor.g
@@ -1141,7 +1163,7 @@ class ToolActions(object):
                     for idx in xrange(selLen):
                         if (vtxPos == vtxPosArray[idx] and
                            compDagPath == selDagPath):
-                            if mono is True:
+                            if mono:
                                 randomOffset = 1 - random.uniform(0, value)
                                 vtxColors[idx].r *= randomOffset
                                 vtxColors[idx].g *= randomOffset
@@ -1168,7 +1190,7 @@ class ToolActions(object):
                 while not vtxIt.isDone():
                     idx = vtxIt.index()
                     vtxIds[idx] = vtxIt.index()
-                    if mono is True:
+                    if mono:
                         randomOffset = 1 - random.uniform(0, value)
                         vtxColors[idx].r *= randomOffset
                         vtxColors[idx].g *= randomOffset
@@ -1464,6 +1486,9 @@ class ToolActions(object):
                 if 'sxCrease' in str(hist):
                     histList.remove(hist)
             for hist in reversed(histList):
+                if 'sxSubMesh' in str(hist):
+                    histList.remove(hist)
+            for hist in reversed(histList):
                 if 'set' in str(hist):
                     histList.remove(hist)
             for hist in reversed(histList):
@@ -1489,12 +1514,12 @@ class ToolActions(object):
     def clearSelector(self):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
-        if shift is True:
+        if shift:
             sxglobals.layers.clearLayer(
                 sxglobals.layers.sortLayers(
                     sxglobals.settings.project['LayerData'].keys()),
                 sxglobals.settings.shapeArray)
-        elif shift is False:
+        elif not shift:
             if len(sxglobals.settings.componentArray) > 0:
                 sxglobals.layers.clearLayer(
                     [sxglobals.layers.getSelectedLayer(), ])
@@ -1585,12 +1610,12 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift is True:
+        if shift:
             for vertFace in vertFaceList:
                 if maya.cmds.polyColorPerVertex(
                    vertFace, query=True, a=True)[0] == 0:
                     maskList.append(vertFace)
-        elif shift is False:
+        elif not shift:
             for vertFace in vertFaceList:
                 if maya.cmds.polyColorPerVertex(
                    vertFace, query=True, a=True)[0] > 0:
@@ -1629,7 +1654,7 @@ class ToolActions(object):
                    (layerColorArray[k].b == layerPaletteArray[p].b)):
                     match = True
 
-            if (match is False) and (n < 8):
+            if (not match) and (n < 8):
                 layerPaletteArray[n] = layerColorArray[k]
                 n += 1
 
@@ -1722,7 +1747,7 @@ class ToolActions(object):
             swapColorArray.append(
                 maya.cmds.palettePort('recentPalette', query=True, rgb=True))
 
-        if (addedColor in swapColorArray) is False:
+        if not addedColor in swapColorArray:
             for k in range(7, 0, -1):
                 maya.cmds.palettePort(
                     'recentPalette',
@@ -1826,7 +1851,7 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift is True:
+        if shift:
             category = maya.cmds.optionMenu(
                 'masterCategories',
                 query=True,
@@ -1839,7 +1864,7 @@ class ToolActions(object):
             else:
                 print('SX Tools Error: No category to delete!')
 
-        elif shift is False:
+        elif not shift:
             itemList = maya.cmds.optionMenu(
                 'masterCategories',
                 query=True,
@@ -1874,11 +1899,11 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift is True:
+        if shift:
             self.deletePalette(category, preset)
             maya.cmds.deleteUI(category+preset)
             sxglobals.settings.savePalettes()
-        elif shift is False:
+        elif not shift:
             self.setMasterPalette(category, preset)
             self.applyMasterPalette(sxglobals.settings.objectArray)
 
@@ -1919,7 +1944,7 @@ class ToolActions(object):
         for item in splitList:
             targetList.append(item.strip())
 
-        if set(targetList).issubset(refLayers) is False:
+        if not set(targetList).issubset(refLayers):
             print('SX Tools Error: Invalid layer target!')
             maya.cmds.textField(
                 'masterTarget'+str(index),
@@ -1940,7 +1965,7 @@ class ToolActions(object):
             alphaName = maya.cmds.optionMenu('rampPresets', query=True, value=True) + '_Alpha'
             maya.cmds.nodePreset(load=('SXRamp', name))
             maya.cmds.nodePreset(load=('SXAlphaRamp', alphaName))
-        elif mode == 'preset' and shift is True:
+        elif mode == 'preset' and shift:
             presetNameArray = maya.cmds.nodePreset(list='SXRamp')
             if len(presetNameArray) > 0:
                 maya.cmds.nodePreset(delete=('SXRamp', maya.cmds.optionMenu(
@@ -1953,7 +1978,7 @@ class ToolActions(object):
                     sxglobals.settings.tools['gradientPreset'] = 0
             elif len(presetNameArray) == 0:
                 print('SXTools: Preset list empty!')
-        elif mode == 'preset' and shift is False:
+        elif mode == 'preset' and not shift:
             name = maya.cmds.textField(
                 'presetName', query=True, text=True).replace(' ', '_')
             alphaName = maya.cmds.textField(
@@ -1963,7 +1988,7 @@ class ToolActions(object):
                 maya.cmds.nodePreset(save=('SXAlphaRamp', alphaName))
             elif len(name) == 0:
                 print('SXTools: Invalid preset name!')
-        elif mode == 5 and shift is True:
+        elif mode == 5 and shift:
             self.calculateCurvature(
                 sxglobals.settings.objectArray,
                 normalize=True)
@@ -1996,7 +2021,7 @@ class ToolActions(object):
         sxglobals.layers.getSelectedLayer()
 
     def swapLayerSets(self, objects, targetSet, offset=False):
-        if offset is True:
+        if offset:
             targetSet -= 1
         if (targetSet > sxglobals.layers.getLayerSet(objects[0])) or (targetSet < 0):
             print('SX Tools Error: Selected layer set does not exist!')
@@ -2046,7 +2071,7 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift is True:
+        if shift:
             sxglobals.layers.clearLayerSets()
         else:
             refLayers = sxglobals.layers.sortLayers(
@@ -2062,8 +2087,8 @@ class ToolActions(object):
                     int(maya.cmds.getAttr(object + '.activeLayerSet')))
                 numSets.append(
                     int(maya.cmds.getAttr(object + '.numLayerSets')))
-            if ((all(active == actives[0] for active in actives) is False) or
-               (all(num == numSets[0] for num in numSets) is False)):
+            if (not (all(active == actives[0] for active in actives)) or
+               not (all(num == numSets[0] for num in numSets))):
                 print('SX Tools Error: Selection with mismatching Layer Sets!')
                 return
 
@@ -2249,6 +2274,10 @@ class ToolActions(object):
     def setExportFlags(self, objects, flag):
         for obj in objects:
             maya.cmds.setAttr(obj+'.staticVertexColors', flag)
+
+    def setSubMeshFlags(self, objects, flag):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.subMeshes', flag)
 
     def setSubdivisionFlag(self, objects, flag):
         if flag > 0:

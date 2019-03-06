@@ -1254,7 +1254,7 @@ class SceneSetup(object):
         UV1 = None
         UV2 = None
         for value in sxglobals.settings.project['LayerData'].values():
-            if value[4] is True:
+            if value[4]:
                 UV1 = value[2][0]
                 UV2 = value[2][1]
         if UV1 is None:
@@ -1438,7 +1438,7 @@ class SceneSetup(object):
             getNodeIDByName='black')
 
         for idx, channel in enumerate(channels):
-            if sxglobals.settings.project['LayerData'][channel][5] is True:
+            if sxglobals.settings.project['LayerData'][channel][5]:
                 if int(sxglobals.settings.project['LayerData'][channel][2][1]) == 1:
                     uv_node = pbmat.add(pbsnodes.Texcoord1)
                 elif int(sxglobals.settings.project['LayerData'][channel][2][1]) == 2:
@@ -1587,6 +1587,35 @@ class SceneSetup(object):
     # The pre-vis material depends on lights in the scene
     # to correctly display occlusion
 
+    def createSubMeshMaterials(self):
+        if maya.cmds.objExists('sxSubMeshShader1'):
+            maya.cmds.delete('sxSubMeshShader1')
+        if maya.cmds.objExists('sxSubMeshShader1SG'):
+            maya.cmds.delete('sxSubMeshShader1SG')
+        if maya.cmds.objExists('sxSubMeshShader2'):
+            maya.cmds.delete('sxSubMeshShader2')
+        if maya.cmds.objExists('sxSubMeshShader2SG'):
+            maya.cmds.delete('sxSubMeshShader2SG')
+        if maya.cmds.objExists('sxSubMeshShader3'):
+            maya.cmds.delete('sxSubMeshShader3')
+        if maya.cmds.objExists('sxSubMeshShader3SG'):
+            maya.cmds.delete('sxSubMeshShader3SG')
+
+        maya.cmds.shadingNode('surfaceShader', asShader=True, name='sxSubMeshShader1')
+        maya.cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name='sxSubMeshShader1SG')
+        maya.cmds.connectAttr('sxSubMeshShader1.outColor', 'sxSubMeshShader1SG.surfaceShader')
+        maya.cmds.setAttr('sxSubMeshShader1.outColor', 1, 0, 0)
+
+        maya.cmds.shadingNode('surfaceShader', asShader=True, name='sxSubMeshShader2')
+        maya.cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name='sxSubMeshShader2SG')
+        maya.cmds.connectAttr('sxSubMeshShader2.outColor', 'sxSubMeshShader2SG.surfaceShader')
+        maya.cmds.setAttr('sxSubMeshShader2.outColor', 0, 1, 0)
+
+        maya.cmds.shadingNode('surfaceShader', asShader=True, name='sxSubMeshShader3')
+        maya.cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name='sxSubMeshShader3SG')
+        maya.cmds.connectAttr('sxSubMeshShader3.outColor', 'sxSubMeshShader3SG.surfaceShader')
+        maya.cmds.setAttr('sxSubMeshShader3.outColor', 0, 0, 1)
+
     def createDefaultLights(self):
         if len(maya.cmds.ls(type='light')) == 0:
             print('SX Tools: No lights found, creating default lights.')
@@ -1609,11 +1638,11 @@ class SceneSetup(object):
             sxglobals.core.selectionManager()
 
     def createCreaseSets(self):
-        if maya.cmds.objExists('sxCreasePartition') is False:
+        if not maya.cmds.objExists('sxCreasePartition'):
             maya.cmds.createNode(
                 'partition',
                 n='sxCreasePartition')
-        if maya.cmds.objExists('sxCrease0') is False:
+        if not maya.cmds.objExists('sxCrease0'):
             maya.cmds.createNode(
                 'creaseSet',
                 n='sxCrease0')
@@ -1622,7 +1651,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxCrease0.partition',
                 'sxCreasePartition.sets[0]')
-        if maya.cmds.objExists('sxCrease1') is False:
+        if not maya.cmds.objExists('sxCrease1'):
             maya.cmds.createNode(
                 'creaseSet',
                 n='sxCrease1')
@@ -1633,7 +1662,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxCrease1.partition',
                 'sxCreasePartition.sets[1]')
-        if maya.cmds.objExists('sxCrease2') is False:
+        if not maya.cmds.objExists('sxCrease2'):
             maya.cmds.createNode(
                 'creaseSet',
                 n='sxCrease2')
@@ -1644,7 +1673,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxCrease2.partition',
                 'sxCreasePartition.sets[2]')
-        if maya.cmds.objExists('sxCrease3') is False:
+        if not maya.cmds.objExists('sxCrease3'):
             maya.cmds.createNode(
                 'creaseSet',
                 n='sxCrease3')
@@ -1655,7 +1684,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxCrease3.partition',
                 'sxCreasePartition.sets[3]')
-        if maya.cmds.objExists('sxCrease4') is False:
+        if not maya.cmds.objExists('sxCrease4'):
             maya.cmds.createNode(
                 'creaseSet',
                 n='sxCrease4')
@@ -1666,6 +1695,33 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxCrease4.partition',
                 'sxCreasePartition.sets[4]')
+
+    def createSubMeshSets(self):
+        if not maya.cmds.objExists('sxSubMeshPartition'):
+            maya.cmds.createNode(
+                'partition',
+                n='sxSubMeshPartition')
+        if not maya.cmds.objExists('sxSubMesh0'):
+            maya.cmds.createNode(
+                'objectSet',
+                n='sxSubMesh0')
+            maya.cmds.connectAttr(
+                'sxSubMesh0.partition',
+                'sxSubMeshPartition.sets[0]')
+        if not maya.cmds.objExists('sxSubMesh1'):
+            maya.cmds.createNode(
+                'objectSet',
+                n='sxSubMesh1')
+            maya.cmds.connectAttr(
+                'sxSubMesh1.partition',
+                'sxSubMeshPartition.sets[1]')
+        if not maya.cmds.objExists('sxSubMesh2'):
+            maya.cmds.createNode(
+                'objectSet',
+                n='sxSubMesh2')
+            maya.cmds.connectAttr(
+                'sxSubMesh2.partition',
+                'sxSubMeshPartition.sets[2]')
 
     def createDisplayLayers(self):
         if 'assetsLayer' not in maya.cmds.ls(type='displayLayer'):
@@ -1702,6 +1758,11 @@ class SceneSetup(object):
                     obj,
                     ln='subdivisionLevel',
                     at='byte', min=0, max=5, dv=0)
+            if ('subMeshes' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='subMeshes',
+                    at='bool', dv=False)                
 
         for shape in sxglobals.settings.shapeArray:
             attrList = maya.cmds.listAttr(shape, ud=True)

@@ -29,6 +29,7 @@ class Settings(object):
         self.localOcclusionDict = {}
         self.globalOcclusionDict = {}
         self.frames = {
+            'paneDivision': 0,
             'prefsCollapse': True,
             'setupCollapse': False,
             'skinMeshCollapse': True,
@@ -117,7 +118,7 @@ class Settings(object):
         shift = bool((modifiers & 1) > 0)
 
         # default values, if the user decides to reset the tool
-        if shift is True:
+        if shift:
             self.project['dockPosition'] = 1,
             self.project['AlphaTolerance'] = 1.0
             self.project['ExportOffset'] = 5
@@ -136,10 +137,10 @@ class Settings(object):
             self.project['paletteTarget4'] = [self.refArray[3], ]
             self.project['paletteTarget5'] = [self.refArray[4], ]
 
-        if shift is True:
+        if shift:
             sxglobals.setup.createSXShader(
                 self.project['LayerCount'], True, True, True, True)
-        elif shift is False:
+        elif not shift:
             sxglobals.setup.createSXShader(
                 self.project['LayerCount'],
                 self.project['LayerData']['occlusion'][5],
@@ -149,6 +150,7 @@ class Settings(object):
         sxglobals.setup.createSXExportShader()
         sxglobals.setup.createSXExportOverlayShader()
         sxglobals.setup.createSXPBShader()
+        sxglobals.setup.createSubMeshMaterials()
 
         # Viewport and Maya prefs
         maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
