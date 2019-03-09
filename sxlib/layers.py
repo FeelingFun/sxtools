@@ -16,98 +16,118 @@ class LayerManagement(object):
     def __del__(self):
         print('SX Tools: Exiting layers')
 
-    def mergeLayers(self, object, sourceLayer, targetLayer, up):
+    def mergeLayers(self, obj, sourceLayer, targetLayer, up):
         if up:
             target = targetLayer
         else:
             target = sourceLayer
 
-        selected = str(object)
-        attr = '.' + str(self.getSelectedLayer()) + 'BlendMode'
+        selected = str(obj)
+        attr = '.' + sxglobals.settings.tools['selectedLayer'] + 'BlendMode'
         mode = int(maya.cmds.getAttr(selected + attr))
 
-        # NOTE: polyBlendColor is used to copy existing
-        # color sets to new list positions because
-        # Maya's color set copy function is bugged.
+        selectionList = OM.MSelectionList()
+        selectionList.add(obj)
+        nodeDagPath = OM.MDagPath()
+        nodeDagPath = selectionList.getDagPath(0)
+        MFnMesh = OM.MFnMesh(nodeDagPath)
 
+        sourceColorArray = OM.MColorArray()
+        targetColorArray = OM.MColorArray()
+        sourceColorArray = MFnMesh.getFaceVertexColors(
+            colorSet=sourceLayer)
+        targetColorArray = MFnMesh.getFaceVertexColors(
+            colorSet=targetLayer)
+        faceIds = OM.MIntArray()
+        vtxIds = OM.MIntArray()
+
+        lenSel = len(sourceColorArray)
+
+        faceIds.setLength(lenSel)
+        vtxIds.setLength(lenSel)
+
+        # generate faceID and vertexID arrays
+        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+        k = 0
+        while not fvIt.isDone():
+            faceIds[k] = fvIt.faceId()
+            vtxIds[k] = fvIt.vertexId()
+            k += 1
+            fvIt.next()
+
+        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+
+        # alpha blend
         if mode == 0:
-            maya.cmds.polyBlendColor(
-                selected,
-                bcn=str(targetLayer),
-                src=str(sourceLayer),
-                dst=str(target),
-                bfn=0,
-                ch=False)
+            k = 0
+            while not fvIt.isDone():
+                targetColorArray[k].r = (
+                    sourceColorArray[k].r * sourceColorArray[k].a +
+                    targetColorArray[k].r * (1 - sourceColorArray[k].a))
+                targetColorArray[k].g = (
+                    sourceColorArray[k].g * sourceColorArray[k].a +
+                    targetColorArray[k].g * (1 - sourceColorArray[k].a))
+                targetColorArray[k].b = (
+                    sourceColorArray[k].b * sourceColorArray[k].a +
+                    targetColorArray[k].b * (1 - sourceColorArray[k].a))
+                targetColorArray[k].a += sourceColorArray[k].a
+                if targetColorArray[k].a > 1.0:
+                   targetColorArray[k].a = 1.0 
+                k += 1
+                fvIt.next()      
+
+        # additive
+        elif mode == 1:
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                vtxIds[k] = fvIt.vertexId()
+
+                targetColorArray[k].r += sourceColorArray[
+                    k].r * sourceColorArray[k].a
+                targetColorArray[k].g += sourceColorArray[
+                    k].g * sourceColorArray[k].a
+                targetColorArray[k].b += sourceColorArray[
+                    k].b * sourceColorArray[k].a
+                targetColorArray[k].a += sourceColorArray[k].a
+                if targetColorArray[k].a > 1.0:
+                   targetColorArray[k].a = 1.0 
+                k += 1
+                fvIt.next()
+
+        # multiply
+        elif mode == 2:
+            # layer2 lerp with white using (1-alpha), multiply with layer1
+            k = 0
+            while not fvIt.isDone():
+                faceIds[k] = fvIt.faceId()
+                vtxIds[k] = fvIt.vertexId()
+
+                sourceColorArray[k].r = (
+                    (sourceColorArray[k].r * sourceColorArray[k].a) +
+                    (1.0 * (1 - sourceColorArray[k].a)))
+                sourceColorArray[k].g = (
+                    (sourceColorArray[k].g * sourceColorArray[k].a) +
+                    (1.0 * (1 - sourceColorArray[k].a)))
+                sourceColorArray[k].b = (
+                    (sourceColorArray[k].b * sourceColorArray[k].a) +
+                    (1.0 * (1 - sourceColorArray[k].a)))
+
+                targetColorArray[k].r = sourceColorArray[
+                    k].r * targetColorArray[k].r
+                targetColorArray[k].g = sourceColorArray[
+                    k].g * targetColorArray[k].g
+                targetColorArray[k].b = sourceColorArray[
+                    k].b * targetColorArray[k].b
+                k += 1
+                fvIt.next()
         else:
-            selectionList = OM.MSelectionList()
-            selectionList.add(object)
-            nodeDagPath = OM.MDagPath()
-            nodeDagPath = selectionList.getDagPath(0)
-            MFnMesh = OM.MFnMesh(nodeDagPath)
+            print('SX Tools Error: Invalid blend mode')
+            return
 
-            sourceColorArray = OM.MColorArray()
-            targetColorArray = OM.MColorArray()
-            sourceColorArray = MFnMesh.getFaceVertexColors(
-                colorSet=sourceLayer)
-            targetColorArray = MFnMesh.getFaceVertexColors(
-                colorSet=targetLayer)
-            faceIds = OM.MIntArray()
-            vtxIds = OM.MIntArray()
-
-            lenSel = len(sourceColorArray)
-
-            faceIds.setLength(lenSel)
-            vtxIds.setLength(lenSel)
-
-            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
-
-            if mode == 1:
-                k = 0
-                while not fvIt.isDone():
-                    faceIds[k] = fvIt.faceId()
-                    vtxIds[k] = fvIt.vertexId()
-
-                    targetColorArray[k].r += sourceColorArray[
-                        k].r * sourceColorArray[k].a
-                    targetColorArray[k].g += sourceColorArray[
-                        k].g * sourceColorArray[k].a
-                    targetColorArray[k].b += sourceColorArray[
-                        k].b * sourceColorArray[k].a
-                    targetColorArray[k].a += sourceColorArray[k].a
-                    k += 1
-                    fvIt.next()
-            elif mode == 2:
-                # layer2 lerp with white using (1-alpha), multiply with layer1
-                k = 0
-                while not fvIt.isDone():
-                    faceIds[k] = fvIt.faceId()
-                    vtxIds[k] = fvIt.vertexId()
-
-                    sourceColorArray[k].r = (
-                        (sourceColorArray[k].r * sourceColorArray[k].a) +
-                        (1.0 * (1 - sourceColorArray[k].a)))
-                    sourceColorArray[k].g = (
-                        (sourceColorArray[k].g * sourceColorArray[k].a) +
-                        (1.0 * (1 - sourceColorArray[k].a)))
-                    sourceColorArray[k].b = (
-                        (sourceColorArray[k].b * sourceColorArray[k].a) +
-                        (1.0 * (1 - sourceColorArray[k].a)))
-
-                    targetColorArray[k].r = sourceColorArray[
-                        k].r * targetColorArray[k].r
-                    targetColorArray[k].g = sourceColorArray[
-                        k].g * targetColorArray[k].g
-                    targetColorArray[k].b = sourceColorArray[
-                        k].b * targetColorArray[k].b
-                    k += 1
-                    fvIt.next()
-            else:
-                print('SX Tools Error: Invalid blend mode')
-                return
-
-            maya.cmds.polyColorSet(
-                selected, currentColorSet=True, colorSet=str(target))
-            MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
+        maya.cmds.polyColorSet(
+            selected, currentColorSet=True, colorSet=str(target))
+        MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
 
         if up:
             maya.cmds.polyColorSet(
@@ -129,12 +149,12 @@ class LayerManagement(object):
         refLayers = self.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
 
-        for object in objects:
+        for obj in objects:
             currentColorSets = maya.cmds.polyColorSet(
-                object, query=True, allColorSets=True)
+                obj, query=True, allColorSets=True)
             if currentColorSets is not None:
                 for layer in refLayers:
-                    maya.cmds.select(object)
+                    # maya.cmds.select(obj)
                     found = False
 
                     for colorSet in currentColorSets:
@@ -145,45 +165,45 @@ class LayerManagement(object):
                             # and either generates empty color sets,
                             # or copies from wrong indices.
                             maya.cmds.polyColorSet(
-                                object,
+                                obj,
                                 rename=True,
                                 colorSet=str(colorSet),
                                 newColorSet='tempColorSet')
                             maya.cmds.polyColorSet(
-                                object,
+                                obj,
                                 create=True,
                                 clamped=True,
                                 representation='RGBA',
                                 colorSet=str(layer))
                             maya.cmds.polyBlendColor(
-                                object,
+                                obj,
                                 bcn=str(layer),
                                 src='tempColorSet',
                                 dst=str(layer),
                                 bfn=0,
                                 ch=False)
                             maya.cmds.polyColorSet(
-                                object,
+                                obj,
                                 delete=True,
                                 colorSet='tempColorSet')
                             found = True
 
                     if not found:
                         maya.cmds.polyColorSet(
-                            object,
+                            obj,
                             create=True,
                             clamped=True,
                             representation='RGBA',
                             colorSet=str(layer))
-                        self.clearLayer([layer, ], [object, ])
+                        self.clearLayer([layer, ], [obj, ])
 
                 maya.cmds.polyColorSet(
-                    object,
+                    obj,
                     currentColorSet=True,
                     colorSet=refLayers[0])
-                maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
+                maya.cmds.sets(obj, e=True, forceElement='SXShaderSG')
             else:
-                noColorSetObject.append(object)
+                noColorSetObject.append(obj)
 
         if len(noColorSetObject) > 0:
             self.resetLayers(noColorSetObject)
@@ -193,7 +213,7 @@ class LayerManagement(object):
 
     # Resulting blended layer is set to Alpha blending mode
     def mergeLayerDirection(self, shapes, up):
-        sourceLayer = self.getSelectedLayer()
+        sourceLayer = sxglobals.settings.tools['selectedLayer']
         if (str(sourceLayer) == 'layer1') and up:
             print('SX Tools Error: Cannot merge layer1')
             return
@@ -236,7 +256,6 @@ class LayerManagement(object):
                 currentColorSet=True,
                 colorSet=str(sourceLayer))
         self.refreshLayerList()
-        self.refreshSelectedItem()
 
     # IF mesh has no color sets at all,
     # or non-matching color set names.
@@ -257,6 +276,7 @@ class LayerManagement(object):
         # Create color sets
         refLayers = self.sortLayers(
                 sxglobals.settings.project['LayerData'].keys())
+
         for layer in refLayers:
             maya.cmds.polyColorSet(
                 objects,
@@ -289,6 +309,7 @@ class LayerManagement(object):
 
         refLayers = self.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
+        refLayers.remove('composite')
         targetLayers = []
         var = varIdx
 
@@ -310,6 +331,8 @@ class LayerManagement(object):
 
     def clearLayer(self, layers, objList=None):
         objects = []
+        if 'composite' in layers:
+            layers.remove('composite')
         for layer in layers:
             if objList is None:
                 objects = sxglobals.settings.shapeArray
@@ -338,10 +361,11 @@ class LayerManagement(object):
                     representation=4,
                     cdo=True)
             attr = '.' + str(layer) + 'BlendMode'
-            for object in objects:
-                maya.cmds.setAttr(str(object) + attr, 0)
-        if maya.cmds.objExists('SXShader'):
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+            for obj in objects:
+                maya.cmds.setAttr(str(obj) + attr, 0)
+        # if maya.cmds.objExists('SXShader'):
+            # sxglobals.export.compositeLayers()
+            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def toggleLayer(self, layer):
         object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
@@ -373,12 +397,12 @@ class LayerManagement(object):
                     self.toggleLayer(layer)
 
             self.refreshLayerList()
-            self.refreshSelectedItem()
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+            sxglobals.export.compositeLayers()
+            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
         elif not shift:
             self.toggleLayer(selLayer)
 
-    # Updates the tool UI to highlight the current color set
+    # Updates the selected color set to match the highlighted layer in the UI
     def setColorSet(self, highlightedLayer):
         maya.cmds.polyColorSet(
             sxglobals.settings.shapeArray,
@@ -392,6 +416,7 @@ class LayerManagement(object):
 
         layers = self.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
+        layers.remove('composite')
         states = []
         for layer in layers:
             states.append(self.verifyLayerState(layer))
@@ -405,63 +430,50 @@ class LayerManagement(object):
             height=(sxglobals.settings.project['LayerCount'] +
                 sxglobals.settings.project['ChannelCount']) * 14,
             selectCommand=(
-                "sxtools.sxglobals.layers.setColorSet("
-                "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                "sxtools.sxglobals.layers.setSelectedLayer()\n"
                 "sxtools.sxglobals.tools.getLayerPaletteOpacity("
                 "sxtools.sxglobals.settings.shapeArray["
                 "len(sxtools.sxglobals.settings.shapeArray)-1],"
-                "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                 "maya.cmds.text("
                 "'layerBlendModeLabel',"
                 "edit=True,"
-                "label=str(sxtools.sxglobals.layers.getSelectedLayer())"
+                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
                 "+' Blend Mode:')\n"
                 "maya.cmds.text("
                 "'layerOpacityLabel',"
                 "edit=True,"
-                "label=str(sxtools.sxglobals.layers.getSelectedLayer())"
+                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
                 "+' Opacity:')\n"
                 "maya.cmds.text("
                 "'layerColorLabel',"
                 "edit=True,"
-                "label=str(sxtools.sxglobals.layers.getSelectedLayer())"
-                "+' Colors:')"),
+                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
+                "+' Colors:')\n"
+                "sxtools.sxglobals.export.compositeLayers()"),
             doubleClickCommand=(
+                "sxtools.sxglobals.layers.setSelectedLayer()\n"
                 "sxtools.sxglobals.layers.toggleAllLayers("
-                "sxtools.sxglobals.layers.getSelectedLayer())\n"
-                "maya.cmds.shaderfx(sfxnode='SXShader', update=True)"))
+                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
+                "sxtools.sxglobals.export.compositeLayers()"))
 
-    def refreshSelectedItem(self):
-        selectedColorSet = str(
-            maya.cmds.polyColorSet(
-                sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-                query=True,
-                currentColorSet=True)[0])
-        if selectedColorSet not in sxglobals.settings.project['LayerData'].keys():
-            maya.cmds.polyColorSet(
-                sxglobals.settings.shapeArray,
-                edit=True,
-                currentColorSet=True,
-                colorSet='layer1')
-            selectedColorSet = 'layer1'
         maya.cmds.textScrollList(
             'layerList',
             edit=True,
-            selectIndexedItem=sxglobals.settings.project['LayerData'][
-                selectedColorSet][0])
+            selectIndexedItem=sxglobals.settings.tools['selectedLayerIndex'])
 
         maya.cmds.text(
             'layerBlendModeLabel',
             edit=True,
-            label=str(sxglobals.layers.getSelectedLayer()) + ' Blend Mode:')
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Blend Mode:')
         maya.cmds.text(
             'layerColorLabel',
             edit=True,
-            label=str(sxglobals.layers.getSelectedLayer()) + ' Colors:')
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Colors:')
         maya.cmds.text(
             'layerOpacityLabel',
             edit=True,
-            label=str(sxglobals.layers.getSelectedLayer()) + ' Opacity:')
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Opacity:')
 
     def sortLayers(self, layers):
         sortedLayers = []
@@ -472,67 +484,61 @@ class LayerManagement(object):
         return sortedLayers
 
     def verifyLayerState(self, layer):
-        object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
-        selectionList = OM.MSelectionList()
-        selectionList.add(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
-        nodeDagPath = OM.MDagPath()
-        nodeDagPath = selectionList.getDagPath(0)
-        MFnMesh = OM.MFnMesh(nodeDagPath)
-
-        layerColors = OM.MColorArray()
-        layerColors = MFnMesh.getFaceVertexColors(colorSet=layer)
-
-        # States: visibility, mask, adjustment
-        state = [False, False, False]
-        state[0] = (bool(maya.cmds.getAttr(str(object) +
-                    '.' + str(layer) + 'Visibility')))
-
-        for k in range(len(layerColors)):
-            if ((layerColors[k].a > 0) and
-               (layerColors[k].a < sxglobals.settings.project['AlphaTolerance'])):
-                state[2] = True
-            elif ((layerColors[k].a >= sxglobals.settings.project['AlphaTolerance']) and
-                  (layerColors[k].a <= 1)):
-                state[1] = True
-
-        if not state[0]:
-            hidden = '(H)'
+        if layer == 'composite':
+            return
         else:
-            hidden = ''
-        if state[1]:
-            mask = '(M)'
-        else:
-            mask = ''
-        if state[2]:
-            adj = '(A)'
-        else:
-            adj = ''
+            obj = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
+            selectionList = OM.MSelectionList()
+            selectionList.add(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
 
-        layerName = sxglobals.settings.project['LayerData'][layer][6]
-        itemString = layerName + '\t' + hidden + mask + adj
-        return itemString
+            layerColors = OM.MColorArray()
+            layerColors = MFnMesh.getFaceVertexColors(colorSet=layer)
 
-    # Maps the selected list item in the layerlist UI
-    # to the parameters of the pre-vis material
-    # and object colorsets
-    def getSelectedLayer(self):
-        if len(sxglobals.settings.objectArray) == 0:
-            return (sxglobals.settings.project['RefNames'][0])
+            # States: visibility, mask, adjustment
+            state = [False, False, False]
+            state[0] = (bool(maya.cmds.getAttr(str(obj) +
+                        '.' + str(layer) + 'Visibility')))
 
-        selectedIndex = maya.cmds.textScrollList(
-            'layerList', query=True, selectIndexedItem=True)
-        if selectedIndex is None:
-            maya.cmds.textScrollList(
-                'layerList',
-                edit=True,
-                selectIndexedItem=1)
-            selectedIndex = 1
-        else:
-            selectedIndex = int(selectedIndex[0])
+            for k in range(len(layerColors)):
+                if ((layerColors[k].a > 0) and
+                   (layerColors[k].a < sxglobals.settings.project['AlphaTolerance'])):
+                    state[2] = True
+                elif ((layerColors[k].a >= sxglobals.settings.project['AlphaTolerance']) and
+                      (layerColors[k].a <= 1)):
+                    state[1] = True
+
+            if not state[0]:
+                hidden = '(H)'
+            else:
+                hidden = ''
+            if state[1]:
+                mask = '(M)'
+            else:
+                mask = ''
+            if state[2]:
+                adj = '(A)'
+            else:
+                adj = ''
+
+            layerName = sxglobals.settings.project['LayerData'][layer][6]
+            itemString = layerName + '\t' + hidden + mask + adj
+            return itemString
+
+    def setSelectedLayer(self):
+        selectedIndex = int(maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)[0])
+        refLayers = self.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
+
+        sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
+        sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
+        sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
 
         # Blend modes are only valid for color layers,
         # not material channels
-        if 'layer' not in sxglobals.settings.project['RefNames'][selectedIndex-1]:
+        if 'layer' not in sxglobals.settings.tools['selectedLayer']:
             maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
         else:
             selected = str(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])

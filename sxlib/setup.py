@@ -22,6 +22,282 @@ class SceneSetup(object):
     def __del__(self):
         print('SX Tools: Exiting setup')
 
+    def createSXShaderLite(self,
+                       numLayers,
+                       occlusion=False,
+                       specular=False,
+                       transmission=False,
+                       emission=False):
+        if maya.cmds.objExists('SXShader'):
+            maya.cmds.delete('SXShader')
+            print('SX Tools: Updating default materials')
+        if maya.cmds.objExists('SXShaderSG'):
+            maya.cmds.delete('SXShaderSG')
+
+        else:
+            print('SX Tools: Creating default materials')
+
+        materialName = 'SXShader'
+        sxglobals.settings.material = SFXNetwork.create(materialName)
+        channels = []
+
+        if occlusion:
+            channels.append('occlusion')
+        if specular:
+            channels.append('specular')
+        if transmission:
+            channels.append('transmission')
+        if emission:
+            channels.append('emission')
+
+        #
+        # Create common nodes
+        #
+
+        bcol_node = sxglobals.settings.material.add(sfxnodes.Color)
+        bcol_node.name = 'black'
+        bcol_node.color = (0, 0, 0, 1)
+        bcol_node.posx = -2500
+        bcol_node.posy = -250
+        # bcolID = maya.cmds.shaderfx(
+        #     sfxnode=materialName, getNodeIDByName='black')
+
+        wcol_node = sxglobals.settings.material.add(sfxnodes.Color)
+        wcol_node.name = 'white'
+        wcol_node.color = (1, 1, 1, 1)
+        wcol_node.posx = -2500
+        wcol_node.posy = -500
+        # wcolID = maya.cmds.shaderfx(
+        #     sfxnode=materialName, getNodeIDByName='white')
+
+        shaderID = maya.cmds.shaderfx(
+            sfxnode=materialName,
+            getNodeIDByName='TraditionalGameSurfaceShader')
+        sxglobals.settings.nodeDict['SXShader'] = shaderID
+
+        #
+        # Create requested number of layer-specific nodes
+        #
+
+        layerName = 'composite'
+        vertcol_node = sxglobals.settings.material.add(sfxnodes.VertexColor)
+        vertcol_node.posx = -2500
+        vertcol_node.posy = 0
+        vertcol_node.name = layerName
+        vertcol_node.colorsetname_Vertex = layerName
+        vertcolID = maya.cmds.shaderfx(
+            sfxnode=materialName,
+            getNodeIDByName=layerName)
+        sxglobals.settings.nodeDict[layerName] = vertcolID
+
+        # Connect diffuse
+        sxglobals.settings.material.connect(
+            vertcol_node.outputs.rgb,
+            (shaderID, 3))
+
+        #
+        # Create material channels
+        #
+
+        for channel in channels:
+            offset = channels.index(channel) * 500
+
+            chancol_node = sxglobals.settings.material.add(sfxnodes.VertexColor)
+            chancol_node.posx = -2000
+            chancol_node.posy = -1000 - offset
+            chancol_node.name = channel
+            chancol_node.colorsetname_Vertex = channel
+            chancolID = maya.cmds.shaderfx(
+                sfxnode=materialName,
+                getNodeIDByName=channel)
+            sxglobals.settings.nodeDict[channel] = chancolID
+
+            chanboolName = channel + 'Visibility'
+            chanbool_node = sxglobals.settings.material.add(sfxnodes.PrimitiveVariable)
+            chanbool_node.posx = -2000
+            chanbool_node.posy = -750 - offset
+            chanbool_node.name = chanboolName
+            chanbool_node.primvariableName = chanboolName
+            chanboolID = maya.cmds.shaderfx(
+                sfxnode=materialName,
+                getNodeIDByName=chanboolName)
+            sxglobals.settings.nodeDict[chanboolName] = chanboolID
+
+            chanCastName = channel + 'Cast'
+            chanCast_node = sxglobals.settings.material.add(sfxnodes.FloatToBool)
+            chanCast_node.posx = -1750
+            chanCast_node.posy = -750 - offset
+            chanCast_node.name = chanCastName
+            chanCastID = maya.cmds.shaderfx(
+                sfxnode=materialName,
+                getNodeIDByName=chanCastName)
+            sxglobals.settings.nodeDict[chanboolName] = chanCastID
+
+            if3_node = sxglobals.settings.material.add(sfxnodes.IfElseBasic)
+            if3_node.posx = -1750
+            if3_node.posy = -1000 - offset
+            if3_node.name = channel + 'Comp'
+
+            if channel == 'occlusion':
+                sxglobals.settings.material.connect(
+                    chancol_node.outputs.red,
+                    if3_node.inputs.true)
+                sxglobals.settings.material.connect(
+                    wcol_node.outputs.red,
+                    if3_node.inputs.false)
+
+                occ_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='occlusionComp')
+                # Connect occlusion
+                sxglobals.settings.material.connect(
+                    (occ_nodeID, 0),
+                    (shaderID, 2))
+
+            elif channel == 'specular':
+                specMul_node = sxglobals.settings.material.add(sfxnodes.Multiply)
+                specMul_node.posx = -750
+                specMul_node.posy = -500
+                specMul_node.name = 'specularMultiplier'
+                specMul_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='specularMultiplier')
+
+                specPow_node = sxglobals.settings.material.add(sfxnodes.Pow)
+                specPow_node.posx = -750
+                specPow_node.posy = -750
+                specPow_node.name = 'specularPower'
+                specPow_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='specularPower')
+
+                smv_node = sxglobals.settings.material.add(sfxnodes.Float)
+                smv_node.posx = -1000
+                smv_node.posy = -500
+                smv_node.name = 'specularMultiplierValue'
+                smv_node.value = 0.4
+                smv_node.defineinheader = True
+                smv_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='specularMultiplierValue')
+
+                spv_node = sxglobals.settings.material.add(sfxnodes.Float)
+                spv_node.posx = -1000
+                spv_node.posy = -750
+                spv_node.name = 'specularPowerValue'
+                spv_node.value = 20
+                spv_node.defineinheader = True
+                # spv_nodeID = maya.cmds.shaderfx(
+                #     sfxnode=materialName,
+                #     getNodeIDByName='specularPowerValue')
+
+                spec_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='specularComp')
+                sxglobals.settings.material.connect(
+                    chancol_node.outputs.rgb,
+                    if3_node.inputs.true)
+                sxglobals.settings.material.connect(
+                    bcol_node.outputs.rgb,
+                    if3_node.inputs.false)
+
+                # Connect specular multiplier
+                sxglobals.settings.material.connect(
+                    (spec_nodeID, 0),
+                    (specMul_nodeID, 0))
+                sxglobals.settings.material.connect(
+                    (smv_nodeID, 0),
+                    (specMul_nodeID, 1))
+
+                # Connect specular power
+                # specRaw_nodeID = sxglobals.settings.nodeDict['specular']
+                sxglobals.settings.material.connect(
+                    spv_node.outputs.float,
+                    specPow_node.inputs.x)
+                sxglobals.settings.material.connect(
+                    chancol_node.outputs.red,
+                    specPow_node.inputs.y)
+
+                # Connect specular
+                sxglobals.settings.material.connect(
+                    (specMul_nodeID, 0),
+                    (shaderID, 5))
+                # Connect specular power
+                sxglobals.settings.material.connect(
+                    (specPow_nodeID, 0),
+                    (shaderID, 4))
+
+            elif channel == 'transmission':
+                trans_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='transmissionComp')
+                sxglobals.settings.material.connect(
+                    chancol_node.outputs.rgb,
+                    if3_node.inputs.true)
+                sxglobals.settings.material.connect(
+                    bcol_node.outputs.rgb,
+                    if3_node.inputs.false)
+                # Connect transmission
+                sxglobals.settings.material.connect(
+                    (trans_nodeID, 0),
+                    (shaderID, 9))
+
+            elif channel == 'emission':
+                emiss_nodeID = maya.cmds.shaderfx(
+                    sfxnode=materialName,
+                    getNodeIDByName='emissionComp')
+                sxglobals.settings.material.connect(
+                    chancol_node.outputs.rgb,
+                    if3_node.inputs.true)
+                sxglobals.settings.material.connect(
+                    bcol_node.outputs.rgb,
+                    if3_node.inputs.false)
+                # Connect emission
+                sxglobals.settings.material.connect(
+                    (emiss_nodeID, 0),
+                    (shaderID, 1))
+
+            sxglobals.settings.material.connect(
+                chanbool_node.outputs.value,
+                chanCast_node.inputs.value)
+            sxglobals.settings.material.connect(
+                chanCast_node.outputs.result,
+                if3_node.inputs.condition)
+
+        # Initialize network to show attributes in Maya AE
+        maya.cmds.shaderfx(sfxnode=materialName, update=True)
+
+        maya.cmds.createNode('shadingEngine', n='SXShaderSG')
+        # maya.cmds.connectAttr('SXShader.oc', 'SXShaderSG.ss')
+
+        maya.cmds.setAttr('.ihi', 0)
+        maya.cmds.setAttr('.dsm', s=2)
+        maya.cmds.setAttr('.ro', True)  # originally 'yes'
+
+        maya.cmds.createNode('materialInfo', n='SXMaterials_materialInfo1')
+        maya.cmds.connectAttr(
+            'SXShader.oc',
+            'SXShaderSG.ss')
+        maya.cmds.connectAttr(
+            'SXShaderSG.msg',
+            'SXMaterials_materialInfo1.sg')
+        maya.cmds.relationship(
+            'link', ':lightLinker1',
+            'SXShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.relationship(
+            'shadowLink', ':lightLinker1',
+            'SXShaderSG.message', ':defaultLightSet.message')
+        maya.cmds.connectAttr('SXShaderSG.pa', ':renderPartition.st', na=True)
+        # maya.cmds.connectAttr(
+        #    'SXShader.msg', ':defaultShaderList1.s', na=True)
+
+        # automatically assign shader to existing multi-layer meshes
+        meshList = maya.cmds.ls(ni=True, typ='mesh')
+        for mesh in meshList:
+            if maya.cmds.attributeQuery(
+               'activeLayerSet', node=mesh, exists=True):
+                maya.cmds.sets(mesh, e=True, forceElement='SXShaderSG')
+
     def createSXShader(self,
                        numLayers,
                        occlusion=False,

@@ -188,7 +188,8 @@ class ToolActions(object):
         objCurvatures = []
         objColors = []
         objIds = []
-
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+        
         for obj in objects:
             selectionList = OM.MSelectionList()
             selectionList.add(obj)
@@ -304,9 +305,9 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def rayRandomizer(self):
         u1 = random.uniform(0, 1)
@@ -746,7 +747,7 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
 
     def applyTexture(self, texture, uvSetName, applyAlpha):
         colors = []
@@ -805,9 +806,9 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def applyMasterPalette(self, objects):
         for i in xrange(1, 6):
@@ -846,16 +847,16 @@ class ToolActions(object):
 
         maya.cmds.select(objects)
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def gradientFill(self, axis):
         selectionCache = sxglobals.settings.selectionArray
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Applying gradient to selection')
-        layer = sxglobals.layers.getSelectedLayer()
-        mod = OM.MDGModifier()
-        colorRep = OM.MFnMesh.kRGBA
+        layer = sxglobals.settings.tools['selectedLayer']
         space = OM.MSpace.kWorld
+        
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
         if len(sxglobals.settings.componentArray) > 0:
             # Convert component selection to face vertices,
@@ -995,8 +996,10 @@ class ToolActions(object):
                     k += 1
                     fvIt.next()
 
-            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
-            mod.doIt()
+            # mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+            # mod.doIt()
+            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds)
             selectionIter.next()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
@@ -1005,14 +1008,15 @@ class ToolActions(object):
         maya.cmds.select(selectionCache)
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def colorFill(self, overwriteAlpha=False):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Applying color to selection')
-        layer = sxglobals.layers.getSelectedLayer()
+        layer = sxglobals.settings.tools['selectedLayer']
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
         fillColor = OM.MColor()
         mod = OM.MDGModifier()
         colorRep = OM.MFnMesh.kRGBA
@@ -1105,15 +1109,15 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def colorNoise(self):
         mono = sxglobals.settings.tools['noiseMonochrome']
         color = sxglobals.settings.currentColor
         value = sxglobals.settings.tools['noiseValue']
-        layer = sxglobals.layers.getSelectedLayer()
+        layer = sxglobals.settings.tools['selectedLayer']
 
         if len(sxglobals.settings.componentArray) > 0:
             # Convert component selection to vertices,
@@ -1206,10 +1210,11 @@ class ToolActions(object):
     def remapRamp(self):
         startTimeOcc = maya.cmds.timerX()
         print('SX Tools: Remapping luminance of selection')
-        layer = sxglobals.layers.getSelectedLayer()
+        layer = sxglobals.settings.tools['selectedLayer']
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
         fvCol = OM.MColor()
-        mod = OM.MDGModifier()
-        colorRep = OM.MFnMesh.kRGBA
+        # mod = OM.MDGModifier()
+        # colorRep = OM.MFnMesh.kRGBA
 
         if len(sxglobals.settings.componentArray) > 0:
             # Convert component selection to face vertices,
@@ -1304,8 +1309,9 @@ class ToolActions(object):
                     k += 1
                     fvIt.next()
 
-            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
-            mod.doIt()
+            # mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+            # mod.doIt()
+            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds)
             selectionIter.next()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
@@ -1314,9 +1320,9 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
+        sxglobals.export.compositeLayers()
 
     def swapLayers(self, shapes):
         refLayers = sxglobals.layers.sortLayers(
@@ -1374,12 +1380,13 @@ class ToolActions(object):
 
                 self.getLayerPaletteOpacity(
                     sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-                    sxglobals.layers.getSelectedLayer())
+                    sxglobals.settings.tools['selectedLayer'])
                 sxglobals.layers.refreshLayerList()
-                sxglobals.layers.refreshSelectedItem()
-                maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+                # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
             else:
                 print('SXTools Error: Invalid layers on ' + str(shape))
+
+        sxglobals.export.compositeLayers()
 
     def copyLayer(self, objects):
         refLayers = sxglobals.layers.sortLayers(
@@ -1430,10 +1437,10 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
-        maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        sxglobals.export.compositeLayers()
+        # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def verifyShadingMode(self):
         if len(sxglobals.settings.shapeArray) > 0:
@@ -1448,7 +1455,8 @@ class ToolActions(object):
     def setShadingMode(self, mode):
         for shape in sxglobals.settings.shapeArray:
             maya.cmds.setAttr(str(shape) + '.shadingMode', mode)
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        sxglobals.export.compositeLayers()
+            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     # check for non-safe history
     # and double shapes under one transform
@@ -1522,17 +1530,18 @@ class ToolActions(object):
         elif not shift:
             if len(sxglobals.settings.componentArray) > 0:
                 sxglobals.layers.clearLayer(
-                    [sxglobals.layers.getSelectedLayer(), ])
+                    [sxglobals.settings.tools['selectedLayer'], ])
             else:
                 sxglobals.layers.clearLayer(
-                    [sxglobals.layers.getSelectedLayer(), ],
+                    [sxglobals.settings.tools['selectedLayer'], ],
                     sxglobals.settings.shapeArray)
 
     def setLayerOpacity(self):
         alphaMax = sxglobals.settings.layerAlphaMax
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
         for shape in sxglobals.settings.shapeArray:
-            layer = sxglobals.layers.getSelectedLayer()
+            layer = sxglobals.settings.tools['selectedLayer']
             sliderAlpha = maya.cmds.floatSlider(
                 'layerOpacitySlider', query=True, value=True)
 
@@ -1585,7 +1594,7 @@ class ToolActions(object):
                         makeConnection=(
                             sxglobals.settings.nodeDict['transparencyComp'], 0,
                             sxglobals.settings.nodeDict['SXShader'], 0))
-                maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+                # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
             elif (str(layer) == 'layer1') and (sliderAlpha == 1):
                 maya.cmds.setAttr(str(shape) + '.transparency', 0)
                 if alphaMax < 1:
@@ -1594,11 +1603,11 @@ class ToolActions(object):
                         breakConnection=(
                             sxglobals.settings.nodeDict['transparencyComp'], 0,
                             sxglobals.settings.nodeDict['SXShader'], 0))
-                maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+                # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
 
     def getLayerMask(self):
         maskList = []
@@ -2014,11 +2023,12 @@ class ToolActions(object):
             'layerBlendModes',
             query=True,
             select=True) - 1
-        attr = '.' + sxglobals.layers.getSelectedLayer() + 'BlendMode'
+        attr = '.' + sxglobals.settings.tools['selectedLayer'] + 'BlendMode'
         for shape in sxglobals.settings.shapeArray:
             maya.cmds.setAttr(str(shape) + attr, mode)
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
-        sxglobals.layers.getSelectedLayer()
+            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        #sxglobals.layers.setSelectedLayer()
+        sxglobals.export.compositeLayers()
 
     def swapLayerSets(self, objects, targetSet, offset=False):
         if offset:
@@ -2028,6 +2038,7 @@ class ToolActions(object):
             return
         refLayers = sxglobals.layers.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
+        refLayers.remove('composite')
 
         for object in objects:
             attr = '.activeLayerSet'
@@ -2062,10 +2073,10 @@ class ToolActions(object):
 
         self.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
-        sxglobals.layers.refreshSelectedItem()
-        maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+        sxglobals.export.compositeLayers()
+        # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def removeLayerSet(self, objects):
         modifiers = maya.cmds.getModifiers()
@@ -2076,6 +2087,7 @@ class ToolActions(object):
         else:
             refLayers = sxglobals.layers.sortLayers(
                 sxglobals.settings.project['LayerData'].keys())
+            refLayers.remove('composite')
             actives = []
             numSets = []
             active = None

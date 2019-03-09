@@ -47,6 +47,8 @@ class Settings(object):
             'exportFlagsCollapse': True
         }
         self.tools = {
+            'compositor': 2,
+            'compositeEnable': True,
             'recentPaletteIndex': 1,
             'overwriteAlpha': False,
             'noiseMonochrome': False,
@@ -68,12 +70,16 @@ class Settings(object):
             'concave': True,
             'creaseThresholds': (0, 0.4, 0.6),
             'sourceLayer': None,
-            'targetLayer': None
+            'targetLayer': None,
+            'selectedLayer': 'layer1',
+            'selectedDisplayLayer': 'layer1',
+            'selectedLayerIndex': 1
         }
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
             u'layer6', u'layer7', u'layer8', u'layer9', u'layer10',
-            u'occlusion', u'specular', u'transmission', u'emission'
+            u'occlusion', u'specular', u'transmission', u'emission',
+            u'composite'
         ]
         # name: ([0]index, [1](default values),
         #        [2]export channels, [3]alphaOverlayIndex,
@@ -107,7 +113,9 @@ class Settings(object):
             self.refArray[12]:
                 [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
             self.refArray[13]:
-                [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission']
+                [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission'],
+            self.refArray[14]:
+                [15, (0, 0, 0, 1), None, 0, False, False, 'composite']
         }
 
     def __del__(self):
@@ -119,7 +127,7 @@ class Settings(object):
 
         # default values, if the user decides to reset the tool
         if shift:
-            self.project['dockPosition'] = 1,
+            self.project['DockPosition'] = 1
             self.project['AlphaTolerance'] = 1.0
             self.project['ExportOffset'] = 5
             self.project['LayerCount'] = 10
@@ -137,16 +145,28 @@ class Settings(object):
             self.project['paletteTarget4'] = [self.refArray[3], ]
             self.project['paletteTarget5'] = [self.refArray[4], ]
 
-        if shift:
-            sxglobals.setup.createSXShader(
-                self.project['LayerCount'], True, True, True, True)
-        elif not shift:
-            sxglobals.setup.createSXShader(
-                self.project['LayerCount'],
-                self.project['LayerData']['occlusion'][5],
-                self.project['LayerData']['specular'][5],
-                self.project['LayerData']['transmission'][5],
-                self.project['LayerData']['emission'][5])
+        if self.tools['compositor'] == 1:
+            if shift:
+                sxglobals.setup.createSXShader(
+                    self.project['LayerCount'], True, True, True, True)
+            elif not shift:
+                sxglobals.setup.createSXShader(
+                    self.project['LayerCount'],
+                    self.project['LayerData']['occlusion'][5],
+                    self.project['LayerData']['specular'][5],
+                    self.project['LayerData']['transmission'][5],
+                    self.project['LayerData']['emission'][5])
+        elif self.tools['compositor'] == 2:
+            if shift:
+                sxglobals.setup.createSXShaderLite(
+                    self.project['LayerCount'], True, True, True, True)
+            elif not shift:
+                sxglobals.setup.createSXShaderLite(
+                    self.project['LayerCount'],
+                    self.project['LayerData']['occlusion'][5],
+                    self.project['LayerData']['specular'][5],
+                    self.project['LayerData']['transmission'][5],
+                    self.project['LayerData']['emission'][5])
         sxglobals.setup.createSXExportShader()
         sxglobals.setup.createSXExportOverlayShader()
         sxglobals.setup.createSXPBShader()
@@ -154,7 +174,7 @@ class Settings(object):
 
         # Viewport and Maya prefs
         maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
-        maya.cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 3)
+        maya.cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 0)
         maya.cmds.setAttr('hardwareRenderingGlobals.lineAAEnable', 1)
         maya.cmds.setAttr('hardwareRenderingGlobals.multiSampleEnable', 1)
         maya.cmds.setAttr('hardwareRenderingGlobals.floatingPointRTEnable', 1)
@@ -165,6 +185,8 @@ class Settings(object):
     # from the setup screen, alternate source for the same dict
     # is to read a saved one
     def createPreferences(self):
+        self.project['DockPosition'] = maya.cmds.radioButtonGrp(
+            'dockPrefsButtons', query=True, select=True)
         self.project['LayerData'] = {}
         self.project['RefNames'] = []
         self.project['AlphaTolerance'] = maya.cmds.floatField(
@@ -230,6 +252,14 @@ class Settings(object):
                         sxglobals.settings.refLayerData[channel][6]]
 
                 self.project['RefNames'].append(channel)
+        self.project['LayerData']['composite'] = [
+            refIndex + 1,
+            (0, 0, 0, 1),
+            None,
+            0,
+            False,
+            False,
+            sxglobals.settings.refLayerData['composite'][6]]
 
         if maya.cmds.checkBox('occlusion', query=True, value=True):
             self.project['LayerData']['occlusion'][5] = True

@@ -218,10 +218,12 @@ class Core(object):
         if ((len(sxglobals.settings.shapeArray) == 0) or
            not (maya.cmds.optionVar(exists='SXToolsPrefsFile')) or
            ('LayerData' not in sxglobals.settings.project)):
+            sxglobals.settings.tools['compositeEnabled'] = False
             sxglobals.ui.setupProjectUI()
 
         # If exported objects selected, construct message
         elif sxglobals.export.checkExported(sxglobals.settings.objectArray):
+            sxglobals.settings.tools['compositeEnabled'] = False
             maya.cmds.setAttr('exportsLayer.visibility', 1)
             maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
@@ -232,6 +234,7 @@ class Core(object):
 
         # If skinned meshes are selected, construct message
         elif sxglobals.tools.checkSkinMesh(sxglobals.settings.objectArray):
+            sxglobals.settings.tools['compositeEnabled'] = False
             maya.cmds.setAttr('exportsLayer.visibility', 0)
             maya.cmds.setAttr('skinMeshLayer.visibility', 1)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
@@ -242,14 +245,17 @@ class Core(object):
 
         # If objects have empty color sets, construct error message
         elif sxglobals.layers.verifyObjectLayers(sxglobals.settings.shapeArray)[0] == 1:
+            sxglobals.settings.tools['compositeEnabled'] = False
             sxglobals.ui.emptyObjectsUI()
 
         # If objects have mismatching color sets, construct error message
         elif sxglobals.layers.verifyObjectLayers(sxglobals.settings.shapeArray)[0] == 2:
+            sxglobals.settings.tools['compositeEnabled'] = False
             sxglobals.ui.mismatchingObjectsUI()
 
         # Construct layer tools window
         else:
+            sxglobals.settings.tools['compositeEnabled'] = True
             if sxglobals.settings.frames['paneDivision'] == 0:
                 sxglobals.ui.calculateDivision()
 
@@ -294,6 +300,8 @@ class Core(object):
             sxglobals.ui.exportFlagsUI()
             sxglobals.ui.exportButtonUI()
 
+            # test of compatibility mode!
+            sxglobals.export.compositeLayers()
             # Make sure selected things are using the correct material
             maya.cmds.sets(
                 sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')

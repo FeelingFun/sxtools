@@ -66,10 +66,42 @@ class UI(object):
                 'sxtools.sxglobals.core.updateSXTools()'))
 
     def openSXPaintTool(self):
-        mel.eval('PaintVertexColorTool;')
-        maya.cmds.artAttrPaintVertexCtx(
-            'artAttrColorPerVertexContext', edit=True, usepressure=False)
-        maya.cmds.toolPropertyWindow(inMainWindow=True)
+        if sxglobals.settings.tools['compositor'] == 1:
+            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            mel.eval('PaintVertexColorTool;')
+            maya.cmds.artAttrPaintVertexCtx(
+                'artAttrColorPerVertexContext',
+                edit=True,
+                usepressure=False,
+                paintNumChannels=4,
+                paintRGBA=True,
+                paintVertexFace=False)
+            maya.cmds.toolPropertyWindow(inMainWindow=True)
+            maya.cmds.setToolTo('artAttrColorPerVertexContext')
+            
+        elif sxglobals.settings.tools['compositor'] == 2:
+            sxglobals.settings.tools['compositeEnabled'] = False
+            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            mel.eval('PaintVertexColorTool;')
+            maya.cmds.artAttrPaintVertexCtx(
+                'artAttrColorPerVertexContext',
+                edit=True,
+                usepressure=False,
+                paintNumChannels=4,
+                paintRGBA=True,
+                paintVertexFace=False)
+            maya.cmds.toolPropertyWindow(inMainWindow=True)
+            maya.cmds.setToolTo('artAttrColorPerVertexContext')
+            maya.cmds.radioButtonGrp(
+                'shadingButtons',
+                edit = True,
+                select=2)
+            sxglobals.tools.setShadingMode(1)
+            maya.cmds.polyOptions(
+                activeObjects=True,
+                colorMaterialChannel='none',
+                colorShadedDisplay=True)
+            maya.mel.eval('DisplayShadedAndTextured;')
 
     def setupProjectUI(self):
         maya.cmds.frameLayout(
@@ -95,16 +127,16 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['prefsCollapse']=False"))
 
         if 'dockPosition' in sxglobals.settings.project:
-            dockPos = sxglobals.settings.project['dockPosition']
+            dockId = sxglobals.settings.project['DockPosition']
         else:
-            dockPos = 1
+            dockId = 1
 
         maya.cmds.radioButtonGrp(
             'dockPrefsButtons',
             parent='prefsFrame',
             vertical=True,
             labelArray2=['Dock Left', 'Dock Right'],
-            select=dockPos,
+            select=dockId,
             numberOfRadioButtons=2,
             onCommand1=(
                 "sxtools.sxglobals.settings.project['dockPosition'] = 1\n"
@@ -114,6 +146,22 @@ class UI(object):
                 "sxtools.sxglobals.settings.project['dockPosition'] = 2\n"
                 "maya.cmds.workspaceControl('SXToolsUI', edit=True,"
                 " dockToControl=('AttributeEditor', 'left'))"))
+
+        maya.cmds.text(
+            parent='prefsFrame',
+            label='Vertex Color Compositing')
+        maya.cmds.radioButtonGrp(
+            'compositorSelector',
+            parent='prefsFrame',
+            vertical=True,
+            ann='Changing the compositor requires applying new Project Settings',
+            labelArray2=['Full GPU (DX11)', 'Hybrid'],
+            select=sxglobals.settings.tools['compositor'],
+            numberOfRadioButtons=2,
+            onCommand1=(
+                "sxtools.sxglobals.settings.tools['compositor'] = 1"),
+            onCommand2=(
+                "sxtools.sxglobals.settings.tools['compositor'] = 2"))
 
         maya.cmds.checkBox(
             'historyToggle',
@@ -470,6 +518,7 @@ class UI(object):
                 "maya.cmds.setAttr('assetsLayer.visibility', 1)\n"
                 "maya.cmds.editDisplayLayerGlobals(cdl='assetsLayer')\n"
                 "maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))\n"
+                "sxtools.sxglobals.settings.tools['compositeEnabled']=True\n"
                 "maya.cmds.select(clear=True)"))
 
         maya.cmds.text(label='Preview export object data:')
@@ -484,6 +533,7 @@ class UI(object):
             onCommand1=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"))
+
         maya.cmds.radioButtonGrp(
             'exportShadingButtons2',
             parent='exportObjFrame',
@@ -511,6 +561,21 @@ class UI(object):
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand4=("sxtools.sxglobals.export.viewExportedMaterial()"))
+
+        for obj in sxglobals.settings.objectArray:
+            if maya.cmds.getAttr(str(obj) + '.subMeshes'):
+                maya.cmds.radioButtonGrp(
+                    'exportShadingButtons3',
+                    edit=True,
+                    select=4)
+                break
+            else:
+                maya.cmds.radioButtonGrp(
+                    'exportShadingButtons1',
+                    edit=True,
+                    select=1)
+        
+        sxglobals.export.viewExportedMaterial()
 
         maya.cmds.button(
             label='Choose Export Path',
@@ -592,7 +657,7 @@ class UI(object):
                 "4. DELETE HISTORY on selected objects\n"
                 "5. Press 'Add Missing Color Sets' button\n\n"
                 "Reference names:\nlayer1-nn, occlusion, specular,\n"
-                "transmission, emission"
+                "transmission, emission, composite"
             ),
             align="left")
         maya.cmds.button(
@@ -650,7 +715,12 @@ class UI(object):
                 "maya.cmds.polyOptions(activeObjects=True,"
                 "colorMaterialChannel='ambientDiffuse',"
                 "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayLight;')"),
+                "maya.mel.eval('DisplayLight;')\n"
+                "maya.cmds.setToolTo('selectSuperContext')\n"
+                "sxtools.sxglobals.settings.tools['compositeEnabled']=True\n"
+                "sxtools.sxglobals.export.compositeLayers()\n"
+                "sxtools.sxglobals.layers.verifyLayerState(sxtools.sxglobals.settings.tools['selectedLayer'])\n"
+                "sxtools.sxglobals.layers.refreshLayerList()"),
             onCommand2=(
                 "sxtools.sxglobals.tools.setShadingMode(1)\n"
                 "maya.cmds.polyOptions(activeObjects=True,"
@@ -660,9 +730,9 @@ class UI(object):
             onCommand3=(
                 "sxtools.sxglobals.tools.setShadingMode(2)\n"
                 "maya.cmds.polyOptions(activeObjects=True,"
-                "colorMaterialChannel='ambientDiffuse',"
+                "colorMaterialChannel='none',"
                 "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayLight;')"))
+                "maya.mel.eval('DisplayShadedAndTextured;')"))
         sxglobals.tools.verifyShadingMode()
 
         maya.cmds.textScrollList(
@@ -674,7 +744,7 @@ class UI(object):
                 '(H) - hidden layer\n'
                 '(M) - mask layer\n'
                 '(A) - adjustment layer'))
-        sxglobals.layers.refreshLayerList()
+        # sxglobals.layers.refreshLayerList()
 
         maya.cmds.popupMenu(
             'layerPopUp',
@@ -685,17 +755,17 @@ class UI(object):
             label='Copy Layer',
             command=(
                 'sxtools.sxglobals.settings.tools["sourceLayer"] = '
-                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'sxtools.sxglobals.settings.tools["selectedLayer"]\n'
                 'maya.cmds.menuItem("sourceNameMenuItem", edit=True,'
                 'label="Source: " + '
-                'str(sxtools.sxglobals.settings.tools["sourceLayer"]))'))
+                'sxtools.sxglobals.settings.tools["selectedDisplayLayer"])'))
         maya.cmds.menuItem(
             'pasteLayerMenuItem',
             parent='layerPopUp',
             label='Paste Layer',
             command=(
                 'sxtools.sxglobals.settings.tools["targetLayer"] = '
-                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'sxtools.sxglobals.settings.tools["selectedLayer"]\n'
                 'sxtools.sxglobals.tools.copyLayer('
                 'sxtools.sxglobals.settings.objectArray)'))
         maya.cmds.menuItem(
@@ -704,7 +774,7 @@ class UI(object):
             label='Swap Layer',
             command=(
                 'sxtools.sxglobals.settings.tools["targetLayer"] = '
-                'sxtools.sxglobals.layers.getSelectedLayer()\n'
+                'sxtools.sxglobals.settings.tools["selectedLayer"]\n'
                 'sxtools.sxglobals.tools.swapLayers('
                 'sxtools.sxglobals.settings.shapeArray)'))
         maya.cmds.menuItem(
@@ -761,9 +831,9 @@ class UI(object):
                     "sxtools.sxglobals.tools.getLayerPaletteOpacity("
                     "sxtools.sxglobals.settings.shapeArray["
                     "len(sxtools.sxglobals.settings.shapeArray)-1],"
-                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                    "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                     "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
+                    "sxtools.sxglobals.export.compositeLayers()"))
         else:
             maya.cmds.button(
                 'clearButton',
@@ -778,9 +848,9 @@ class UI(object):
                     "sxtools.sxglobals.tools.getLayerPaletteOpacity("
                     "sxtools.sxglobals.settings.shapeArray["
                     "len(sxtools.sxglobals.settings.shapeArray)-1], "
-                    "sxtools.sxglobals.layers.getSelectedLayer())\n"
+                    "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                     "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.layers.refreshSelectedItem()"))
+                    "sxtools.sxglobals.export.compositeLayers()"))
 
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
@@ -836,11 +906,12 @@ class UI(object):
             changeCommand=(
                 "sxtools.sxglobals.tools.setLayerOpacity()\n"
                 "sxtools.sxglobals.layers.refreshLayerList()\n"
-                "sxtools.sxglobals.layers.refreshSelectedItem()"))
+                "sxtools.sxglobals.export.compositeLayers()"))
         sxglobals.tools.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
-        sxglobals.layers.refreshSelectedItem()
+            sxglobals.settings.tools["selectedLayer"])
+        sxglobals.layers.refreshLayerList()
+        sxglobals.export.compositeLayers()
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(
@@ -883,7 +954,10 @@ class UI(object):
             editable=True,
             colorEditable=False,
             scc=sxglobals.settings.tools['recentPaletteIndex'],
-            changeCommand='sxtools.sxglobals.tools.setApplyColor()')
+            changeCommand=(
+                'sxtools.sxglobals.tools.setApplyColor()\n'
+                'sxtools.sxglobals.tools.setPaintColor('
+                'sxtools.sxglobals.settings.currentColor)'))
         maya.cmds.text(
             'applyColorLabel',
             parent='applyColorRowColumns',
@@ -1270,7 +1344,7 @@ class UI(object):
 
         sxglobals.tools.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.layers.getSelectedLayer())
+            sxglobals.settings.tools["selectedLayer"])
 
         maya.cmds.button(
             label='Bake Occlusion',
@@ -1982,6 +2056,7 @@ class UI(object):
             parent='canvas',
             width=230,
             command=(
+                "sxtools.sxglobals.settings.tools['compositeEnabled']=False\n"
                 "sxtools.sxglobals.tools.setShadingMode(0)\n"
                 "maya.cmds.polyOptions(activeObjects=True,"
                 "colorMaterialChannel='ambientDiffuse',"
