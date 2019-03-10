@@ -24,7 +24,7 @@ class ToolActions(object):
     def assignToCreaseSet(self, setName):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
-        
+
         if shift:
             self.clearCreases()
         else:
@@ -189,7 +189,7 @@ class ToolActions(object):
         objColors = []
         objIds = []
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-        
+
         for obj in objects:
             selectionList = OM.MSelectionList()
             selectionList.add(obj)
@@ -855,7 +855,7 @@ class ToolActions(object):
         print('SX Tools: Applying gradient to selection')
         layer = sxglobals.settings.tools['selectedLayer']
         space = OM.MSpace.kWorld
-        
+
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
         if len(sxglobals.settings.componentArray) > 0:
@@ -1455,6 +1455,43 @@ class ToolActions(object):
     def setShadingMode(self, mode):
         for shape in sxglobals.settings.shapeArray:
             maya.cmds.setAttr(str(shape) + '.shadingMode', mode)
+
+        if sxglobals.settings.tools['compositor'] == 1:
+            if mode == 0:
+                for shape in sxglobals.settings.shapeArray:
+                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+
+                maya.mel.eval('DisplayLight;')
+
+            elif mode == 1:
+                for shape in sxglobals.settings.shapeArray:
+                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+
+            elif mode == 2:
+                for shape in sxglobals.settings.shapeArray:
+                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+
+        elif sxglobals.settings.tools['compositor'] == 2:
+            if mode == 0:
+                sxglobals.settings.tools['compositeEnabled']=True
+                for shape in sxglobals.settings.shapeArray:
+                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 1)
+                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
+                maya.mel.eval('DisplayLight;')
+
+            elif mode == 1 or mode == 2:
+                for shape in sxglobals.settings.shapeArray:
+                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 1)
+                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+
         sxglobals.export.compositeLayers()
             # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 

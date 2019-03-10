@@ -72,9 +72,9 @@ class LayerManagement(object):
                     targetColorArray[k].b * (1 - sourceColorArray[k].a))
                 targetColorArray[k].a += sourceColorArray[k].a
                 if targetColorArray[k].a > 1.0:
-                   targetColorArray[k].a = 1.0 
+                   targetColorArray[k].a = 1.0
                 k += 1
-                fvIt.next()      
+                fvIt.next()
 
         # additive
         elif mode == 1:
@@ -91,7 +91,7 @@ class LayerManagement(object):
                     k].b * sourceColorArray[k].a
                 targetColorArray[k].a += sourceColorArray[k].a
                 if targetColorArray[k].a > 1.0:
-                   targetColorArray[k].a = 1.0 
+                   targetColorArray[k].a = 1.0
                 k += 1
                 fvIt.next()
 
@@ -363,7 +363,8 @@ class LayerManagement(object):
             attr = '.' + str(layer) + 'BlendMode'
             for obj in objects:
                 maya.cmds.setAttr(str(obj) + attr, 0)
-        # if maya.cmds.objExists('SXShader'):
+
+        #if maya.cmds.objExists('SXShader'):
             # sxglobals.export.compositeLayers()
             # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
@@ -392,6 +393,7 @@ class LayerManagement(object):
         if shift:
             layers = self.sortLayers(
                 sxglobals.settings.project['LayerData'].keys())
+            layers.remove('composite')
             for layer in layers:
                 if layer != selLayer:
                     self.toggleLayer(layer)

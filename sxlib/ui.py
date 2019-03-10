@@ -78,7 +78,7 @@ class UI(object):
                 paintVertexFace=False)
             maya.cmds.toolPropertyWindow(inMainWindow=True)
             maya.cmds.setToolTo('artAttrColorPerVertexContext')
-            
+
         elif sxglobals.settings.tools['compositor'] == 2:
             sxglobals.settings.tools['compositeEnabled'] = False
             sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
@@ -574,7 +574,7 @@ class UI(object):
                     'exportShadingButtons1',
                     edit=True,
                     select=1)
-        
+
         sxglobals.export.viewExportedMaterial()
 
         maya.cmds.button(
@@ -712,27 +712,13 @@ class UI(object):
             numberOfRadioButtons=3,
             onCommand1=(
                 "sxtools.sxglobals.tools.setShadingMode(0)\n"
-                "maya.cmds.polyOptions(activeObjects=True,"
-                "colorMaterialChannel='ambientDiffuse',"
-                "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayLight;')\n"
                 "maya.cmds.setToolTo('selectSuperContext')\n"
-                "sxtools.sxglobals.settings.tools['compositeEnabled']=True\n"
-                "sxtools.sxglobals.export.compositeLayers()\n"
                 "sxtools.sxglobals.layers.verifyLayerState(sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                 "sxtools.sxglobals.layers.refreshLayerList()"),
             onCommand2=(
-                "sxtools.sxglobals.tools.setShadingMode(1)\n"
-                "maya.cmds.polyOptions(activeObjects=True,"
-                "colorMaterialChannel='none',"
-                "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayShadedAndTextured;')"),
+                "sxtools.sxglobals.tools.setShadingMode(1)"),
             onCommand3=(
-                "sxtools.sxglobals.tools.setShadingMode(2)\n"
-                "maya.cmds.polyOptions(activeObjects=True,"
-                "colorMaterialChannel='none',"
-                "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayShadedAndTextured;')"))
+                "sxtools.sxglobals.tools.setShadingMode(2)"))
         sxglobals.tools.verifyShadingMode()
 
         maya.cmds.textScrollList(

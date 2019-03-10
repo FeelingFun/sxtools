@@ -54,8 +54,8 @@ class Export(object):
 
     def compositeLayers(self):
         if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
-            # print('SX Tools: Compositing layers')
-            # startTimeOcc = maya.cmds.timerX()
+            print('SX Tools: Compositing layers')
+            startTimeOcc = maya.cmds.timerX()
             numLayers = sxglobals.settings.project['LayerCount']
             # layerCache = sxglobals.settings.tools['selectedLayer']
 
@@ -93,6 +93,22 @@ class Export(object):
                 sel = str(selected)
                 shading = int(maya.cmds.getAttr(sel + '.shadingMode'))
 
+                # Set layer1 to black if hidden
+                visAttr = '.layer1Visibility'
+                vis = bool(maya.cmds.getAttr(sel + visAttr))
+
+                if not vis:
+                    fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                    k = 0
+                    while not fvIt.isDone():
+                        targetColorArray[k].r = 0.0
+                        targetColorArray[k].g = 0.0
+                        targetColorArray[k].b = 0.0
+                        targetColorArray[k].a = 1.0
+                        k += 1
+                        fvIt.next()
+
+                # accumulate targetColorArray through the remaining layers
                 if shading == 0:
                     if numLayers > 1:
                         for i in range(2, numLayers+1):
@@ -126,7 +142,7 @@ class Export(object):
                                         targetColorArray[k].b * (1 - sourceColorArray[k].a))
                                     #targetColorArray[k].a = 1.0
                                     k += 1
-                                    fvIt.next()                
+                                    fvIt.next()
 
                             elif mode == 1:
                                 k = 0
@@ -195,8 +211,8 @@ class Export(object):
 
             # maya.cmds.polyColorSet(
             #     sxglobals.settings.shapeArray, currentColorSet=True, colorSet=layerCache)
-            # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-            # print('SX Tools: Layer compositing duration: ' + str(totalTime))
+            totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+            print('SX Tools: Layer compositing duration: ' + str(totalTime))
 
         elif sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
@@ -208,7 +224,7 @@ class Export(object):
                  targetUVSet,
                  mode):
         numMasks = sxglobals.settings.project['MaskCount']
-        
+
         selectionList = OM.MSelectionList()
         selectionList.add(shape)
         nodeDagPath = OM.MDagPath()
@@ -300,7 +316,7 @@ class Export(object):
             vArray1 = OM.MFloatArray()
             uArray2 = OM.MFloatArray()
             vArray2 = OM.MFloatArray()
-            
+
             colorArray = MFnMesh.getFaceVertexColors(colorSet=layer)
             lenColorArray = len(colorArray)
             uvIdArray = MFnMesh.getAssignedUVs()
@@ -387,7 +403,7 @@ class Export(object):
             elif value[4]:
                 overlay.append(key)
                 overlayUVArray.append(value[2])
-      
+
         if (str(alphaOverlayUVArray[0])[1] != str(alphaOverlayUVArray[1])[1]):
             print('SX Tools Error: Two alpha overlays must be assigned'
                   ' to the same UV Set')
@@ -398,7 +414,7 @@ class Export(object):
             uSource = None
             vSource = None
             uvSet = None
-            
+
             chanTemp = materialUVArray[idx]
             if chanTemp[0] == 'U':
                 uSource = material
@@ -685,7 +701,7 @@ class Export(object):
                         skinJoints[0], query=True, bindPose=True)
                     maya.cmds.dagPose(skinJoints, bindPose, restore=True)
                     maya.cmds.parent(skinJoints[0], skinTarget)
-                
+
                     # Rename the root joint of the mesh to be exported
                     skinnedMeshHistory = maya.cmds.listHistory(
                         skinnedMesh, pdo=True)

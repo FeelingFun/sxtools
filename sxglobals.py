@@ -34,7 +34,7 @@ def initialize():
     from sxlib.layers import LayerManagement
     from sxlib.ui import UI
     from sxlib.core import Core
-    
+
     global dockID, settings, setup, export, tools, layers, ui, core
     dockID = 'SXToolsUI'
     settings = Settings()
