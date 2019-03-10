@@ -21,7 +21,7 @@ class UI(object):
     def calculateDivision(self):
         paneHeight = maya.cmds.workspaceControl(sxglobals.dockID, query=True, height=True)
         if sxglobals.settings.frames['paneDivision'] == 0:
-            layerHeight = (sxglobals.settings.project['LayerCount'] + sxglobals.settings.project['ChannelCount']) * 14 + 170
+            layerHeight = (sxglobals.settings.project['LayerCount'] + sxglobals.settings.project['ChannelCount']) * 13 + 170
         else:
             layerHeight = maya.cmds.layout('topCanvas', query=True, height=True)
         division = int(float(layerHeight) / float(paneHeight) * 100)
@@ -721,16 +721,146 @@ class UI(object):
                 "sxtools.sxglobals.tools.setShadingMode(2)"))
         sxglobals.tools.verifyShadingMode()
 
+        maya.cmds.rowColumnLayout(
+            'layerListRowColumns',
+            parent='layerFrame',
+            numberOfColumns=3,
+            columnWidth=((1, 20), (2, 190), (3, 20)),
+            columnSpacing=([1, 0], [2, 5], [3, 5]),
+            rowSpacing=(1, 5))
+
+        maya.cmds.columnLayout(
+            'layerSetButtonsLeft',
+            parent='layerListRowColumns',
+            rowSpacing=15,
+            adjustableColumn=True)
+
+        maya.cmds.text(
+            parent='layerSetButtonsLeft',
+            label='')
+
+        maya.cmds.button(
+            'deleteLayerSetButton',
+            parent='layerSetButtonsLeft',
+            label='-',
+            ann='Delete current Layer Set\nShift-click to delete all other Layer Sets',
+            height=15,
+            enable=False,
+            command=(
+                'sxtools.sxglobals.tools.removeLayerSet('
+                'sxtools.sxglobals.settings.objectArray)\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+
+        maya.cmds.button(
+            'previousLayerSetButton',
+            parent='layerSetButtonsLeft',
+            label='<',
+            height=100,
+            ann='Previous Layer Set',
+            enable=False,
+            command=(
+                'sxtools.sxglobals.tools.swapLayerSets('
+                'sxtools.sxglobals.settings.objectArray,'
+                'int(maya.cmds.getAttr('
+                'str(sxtools.sxglobals.settings.shapeArray[0])'
+                '+".activeLayerSet")), True)\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+
         maya.cmds.textScrollList(
             'layerList',
+            parent='layerListRowColumns',
             allowMultiSelection=False,
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
                 'Shift + doubleclick to hide/unhide unselected layers\n'
-                '(H) - hidden layer\n'
-                '(M) - mask layer\n'
-                '(A) - adjustment layer'))
+                'H - hidden layer\n'
+                'M - mask layer\n'
+                'A - adjustment layer'))
         # sxglobals.layers.refreshLayerList()
+
+        maya.cmds.columnLayout(
+            'layerSetButtonsRight',
+            parent='layerListRowColumns',
+            rowSpacing=15,
+            adjustableColumn=True)
+
+        maya.cmds.text(
+            parent='layerSetButtonsRight',
+            label='')
+
+        maya.cmds.button(
+            'addNewLayerSetButton',
+            parent='layerSetButtonsRight',
+            label='+',
+            ann='Add new Layer Set',
+            height=20,
+            enable=False,
+            command=(
+                'sxtools.sxglobals.layers.addLayerSet('
+                'sxtools.sxglobals.settings.objectArray,'
+                'sxtools.sxglobals.layers.getLayerSet('
+                'sxtools.sxglobals.settings.objectArray[0]))\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+
+        maya.cmds.button(
+            'nextLayerSetButton',
+            parent='layerSetButtonsRight',
+            label='>',
+            height=100,
+            ann='Next Layer Set',
+            enable=False,
+            command=(
+                'sxtools.sxglobals.tools.swapLayerSets('
+                'sxtools.sxglobals.settings.objectArray,'
+                'int(maya.cmds.getAttr('
+                'str(sxtools.sxglobals.settings.shapeArray[0])'
+                '+".activeLayerSet"))+2, True)\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+
+        # Validity check for adding Layer Sets
+        setNums = []
+        for object in sxglobals.settings.objectArray:
+            setNums.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
+        if all(num == setNums[0] for num in setNums):
+            maya.cmds.button(
+                'addNewLayerSetButton',
+                edit=True,
+                enable=True)
+        else:
+            print('SX Tools: Objects with mismatching Layer Sets selected!')
+
+
+        if sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]) > 0:
+            maya.cmds.button(
+                'deleteLayerSetButton',
+                edit=True,
+                enable=True)
+            maya.cmds.button(
+                'nextLayerSetButton',
+                edit=True,
+                enable=True)
+            maya.cmds.button(
+                'previousLayerSetButton',
+                edit=True,
+                enable=True)
+
+        if sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]) == 9:
+            maya.cmds.button(
+                'addNewLayerSetButton',
+                edit=True,
+                enable=False)
+
+        if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.activeLayerSet') == sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]):
+            maya.cmds.button(
+                'nextLayerSetButton',
+                edit=True,
+                enable=False)
+
+        if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.activeLayerSet') == 0:
+            maya.cmds.button(
+                'previousLayerSetButton',
+                edit=True,
+                enable=False)
 
         maya.cmds.popupMenu(
             'layerPopUp',
@@ -1815,101 +1945,6 @@ class UI(object):
             height=30,
             width=100,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease0')"))
-
-    def swapLayerSetsUI(self):
-        maya.cmds.frameLayout(
-            'swapLayerSetsFrame',
-            parent='canvas',
-            label='Manage Layer Sets',
-            width=250,
-            marginWidth=5,
-            marginHeight=2,
-            collapsable=True,
-            collapse=sxglobals.settings.frames['swapLayerSetsCollapse'],
-            collapseCommand=(
-                "sxtools.sxglobals.settings.frames['swapLayerSetsCollapse']=True"),
-            expandCommand=(
-                "sxtools.sxglobals.settings.frames['swapLayerSetsCollapse']=False"))
-        setNums = []
-        for object in sxglobals.settings.objectArray:
-            setNums.append(int(maya.cmds.getAttr(object + '.numLayerSets')))
-        if all(num == setNums[0] for num in setNums):
-            maya.cmds.button(
-                label='Add New Layer Set',
-                parent='swapLayerSetsFrame',
-                height=30,
-                width=100,
-                command=(
-                    'sxtools.sxglobals.layers.addLayerSet('
-                    'sxtools.sxglobals.settings.objectArray,'
-                    'sxtools.sxglobals.layers.getLayerSet('
-                    'sxtools.sxglobals.settings.objectArray[0]))\n'
-                    'sxtools.sxglobals.core.updateSXTools()'))
-            if sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]) > 0:
-                maya.cmds.button(
-                    label='Delete Current Layer Set',
-                    parent='swapLayerSetsFrame',
-                    height=30,
-                    width=100,
-                    ann=(
-                        'Shift-click to remove all '
-                        'other Layer Sets'),
-                    command=(
-                        'sxtools.sxglobals.tools.removeLayerSet('
-                        'sxtools.sxglobals.settings.objectArray)\n'
-                        'sxtools.sxglobals.core.updateSXTools()'))
-                maya.cmds.text(
-                    'layerSetLabel',
-                    label=(
-                        'Current Layer Set: ' +
-                        str(int(maya.cmds.getAttr(
-                            str(sxglobals.settings.shapeArray[0]) +
-                            '.activeLayerSet'))+1) + '/' +
-                        str(sxglobals.layers.getLayerSet(
-                            sxglobals.settings.shapeArray[0])+1)))
-                maya.cmds.intSliderGrp(
-                    'layerSetSlider',
-                    field=True,
-                    label='Layer Set',
-                    adjustableColumn=1,
-                    columnWidth=((2, 40), (3, 120)),
-                    columnAttach=[
-                        (1, 'both', 5),
-                        (2, 'both', 5),
-                        (3, 'both', 0)],
-                    minValue=1,
-                    maxValue=(
-                        sxglobals.layers.getLayerSet(
-                            sxglobals.settings.shapeArray[0])+1),
-                    fieldMinValue=0,
-                    fieldMaxValue=(
-                        sxglobals.layers.getLayerSet(
-                            sxglobals.settings.shapeArray[0])+1),
-                    value=(
-                        maya.cmds.getAttr(
-                            str(sxglobals.settings.shapeArray[0]) +
-                            '.activeLayerSet')+1),
-                    changeCommand=(
-                        'sxtools.sxglobals.tools.swapLayerSets('
-                        'sxtools.sxglobals.settings.objectArray,'
-                        'maya.cmds.intSliderGrp('
-                        '"layerSetSlider", query=True, value=True), True)\n'
-                        'maya.cmds.text("layerSetLabel",'
-                        'edit=True,'
-                        'label=("Current Layer Set: "'
-                        '+str(int(maya.cmds.getAttr('
-                        'str(sxtools.sxglobals.settings.shapeArray[0])'
-                        '+".activeLayerSet"))+1))'
-                        '+"/"+str(sxtools.sxglobals.layers.getLayerSet('
-                        'sxtools.sxglobals.settings.shapeArray['
-                        'len(sxtools.sxglobals.settings.shapeArray)-1])+1))'))
-        else:
-            maya.cmds.text(
-                'mismatchLayerSetLabel',
-                label=(
-                    '\nObjects with mismatching\nLayer Sets selected!')
-            )
-        maya.cmds.setParent('canvas')
 
     # TODO: create visibility management buttons,
     # assign joints to skinMeshLayer

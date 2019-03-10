@@ -1447,7 +1447,17 @@ class ToolActions(object):
             object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
             mode = int(maya.cmds.getAttr(object + '.shadingMode') + 1)
 
-            objectLabel = 'Selected Objects: ' + str(len(sxglobals.settings.objectArray))
+            objectLabel = (
+                'Selected Objects: ' +
+                str(len(sxglobals.settings.objectArray)) +
+                '   |   ' +
+                'Layer Set: ' +
+                str(int(maya.cmds.getAttr(
+                    str(sxglobals.settings.shapeArray[0]) +
+                       '.activeLayerSet'))+1) + '/' +
+                       str(sxglobals.layers.getLayerSet(
+                            sxglobals.settings.shapeArray[0])+1))
+
             maya.cmds.frameLayout('layerFrame', edit=True, label=objectLabel)
             maya.cmds.radioButtonGrp('shadingButtons', edit=True, select=mode)
             return mode

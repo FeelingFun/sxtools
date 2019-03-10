@@ -425,12 +425,13 @@ class LayerManagement(object):
         maya.cmds.textScrollList(
             'layerList',
             edit=True,
+            font='fixedWidthFont',
             append=states,
             numberOfRows=(
                 sxglobals.settings.project['LayerCount'] +
                 sxglobals.settings.project['ChannelCount']),
             height=(sxglobals.settings.project['LayerCount'] +
-                sxglobals.settings.project['ChannelCount']) * 14,
+                sxglobals.settings.project['ChannelCount']) * 13,
             selectCommand=(
                 "sxtools.sxglobals.layers.setSelectedLayer()\n"
                 "sxtools.sxglobals.tools.getLayerPaletteOpacity("
@@ -513,20 +514,21 @@ class LayerManagement(object):
                     state[1] = True
 
             if not state[0]:
-                hidden = '(H)'
+                hidden = 'H'
             else:
-                hidden = ''
+                hidden = ' '
             if state[1]:
-                mask = '(M)'
+                mask = 'M'
             else:
-                mask = ''
+                mask = ' '
             if state[2]:
-                adj = '(A)'
+                adj = 'A'
             else:
-                adj = ''
+                adj = ' '
 
             layerName = sxglobals.settings.project['LayerData'][layer][6]
-            itemString = layerName + '\t' + hidden + mask + adj
+            # padding = (14 - len(layerName)) * ' '
+            itemString = hidden + mask + adj + '| ' + layerName
             return itemString
 
     def setSelectedLayer(self):
