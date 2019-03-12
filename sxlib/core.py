@@ -17,11 +17,20 @@ class Core(object):
         print('SX Tools: Exiting core')
 
     def startSXTools(self):
-        platform = maya.cmds.about(os=True)
+        sxglobals.settings.tools['platform'] = maya.cmds.about(os=True)
 
-        if platform == 'win' or platform == 'win64':
-            displayScalingValue = maya.cmds.mayaDpiSetting(
+        if sxglobals.settings.tools['platform'] == 'win' or sxglobals.settings.tools['platform'] == 'win64':
+            sxglobals.settings.tools['displayScale'] = maya.cmds.mayaDpiSetting(
                 query=True, realScaleValue=True)
+            if sxglobals.settings.tools['displayScale'] == 1.0:
+                sxglobals.settings.tools['lineHeight'] = 15
+            elif sxglobals.settings.tools['displayScale'] == 1.25:
+                sxglobals.settings.tools['lineHeight'] = 14.5
+            elif sxglobals.settings.tools['displayScale'] == 1.5:
+                sxglobals.settings.tools['lineHeight'] = 15
+            elif sxglobals.settings.tools['displayScale'] == 2.0:
+                sxglobals.settings.tools['lineHeight'] = 14.5
+
             if maya.cmds.optionVar(query='vp2RenderingEngine') != 'DirectX11':
                 maya.cmds.optionVar(
                     stringValue=('vp2RenderingEngine', 'DirectX11'))
@@ -30,7 +39,8 @@ class Core(object):
                     'The correct mode has been set. Please restart Maya.')
                 self.exitSXTools()
         else:
-            displayScalingValue = 1.0
+            sxglobals.settings.tools['displayScale'] = 1.0
+            sxglobals.settings.tools['lineHeight'] = 12.5
 
         sxglobals.settings.loadPreferences()
         maya.cmds.workspaceControl(
@@ -41,8 +51,8 @@ class Core(object):
             floating=False,
             dockToControl=('Outliner', 'right'),
             initialHeight=5,
-            initialWidth=250 * displayScalingValue,
-            minimumWidth=250 * displayScalingValue,
+            initialWidth=250 * sxglobals.settings.tools['displayScale'],
+            minimumWidth=250 * sxglobals.settings.tools['displayScale'],
             widthProperty='free')
 
         # Background jobs to reconstruct window if selection changes,
@@ -203,7 +213,8 @@ class Core(object):
             'canvasPanes',
             parent=sxglobals.dockID,
             width=250,
-            configuration='horizontal2')
+            configuration='horizontal2',
+            separatorMovedCommand='sxtools.sxglobals.ui.calculateDivision()')
 
         maya.cmds.scrollLayout(
             'topCanvas',
@@ -262,8 +273,7 @@ class Core(object):
             maya.cmds.paneLayout(
                 'canvasPanes',
                 edit=True,
-                paneSize=(1, 100, sxglobals.settings.frames['paneDivision']),
-                separatorMovedCommand='sxtools.sxglobals.ui.calculateDivision()')
+                paneSize=(1, 100, sxglobals.settings.frames['paneDivision']))
 
             maya.cmds.scrollLayout(
                 'canvas',
@@ -299,7 +309,7 @@ class Core(object):
             sxglobals.ui.exportFlagsUI()
             sxglobals.ui.exportButtonUI()
 
-            # test of compatibility mode!
+            sxglobals.layers.refreshLayerList()
             sxglobals.export.compositeLayers()
             # Make sure selected things are using the correct material
             maya.cmds.sets(
@@ -310,15 +320,20 @@ class Core(object):
                     colorMaterialChannel='ambientDiffuse',
                     colorShadedDisplay=True)
                 mel.eval('DisplayLight;')
-                maya.cmds.modelEditor('modelPanel4', edit=True, udm=False)
+                maya.cmds.modelEditor(
+                    'modelPanel4',
+                    edit=True,
+                    udm=False,
+                    displayTextures=True)
 
             # Adjust crease levels based on
             # the subdivision level of the selected object
-            if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
-                sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
-                maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
-                maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
-                maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
+            if sxglobals.settings.tools["matchSubdivision"]:
+                if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
+                    sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
+                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
 
         maya.cmds.setFocus('MayaWindow')

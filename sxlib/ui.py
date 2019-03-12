@@ -21,7 +21,11 @@ class UI(object):
     def calculateDivision(self):
         paneHeight = maya.cmds.workspaceControl(sxglobals.dockID, query=True, height=True)
         if sxglobals.settings.frames['paneDivision'] == 0:
-            layerHeight = (sxglobals.settings.project['LayerCount'] + sxglobals.settings.project['ChannelCount']) * 13 + 170
+            layerHeight = (
+                ((sxglobals.settings.project['LayerCount'] +
+                sxglobals.settings.project['ChannelCount']) *
+                sxglobals.settings.tools['lineHeight'] + 170) *
+                sxglobals.settings.tools['displayScale'])
         else:
             layerHeight = maya.cmds.layout('topCanvas', query=True, height=True)
         division = int(float(layerHeight) / float(paneHeight) * 100)
@@ -162,6 +166,14 @@ class UI(object):
                 "sxtools.sxglobals.settings.tools['compositor'] = 1"),
             onCommand2=(
                 "sxtools.sxglobals.settings.tools['compositor'] = 2"))
+
+        maya.cmds.checkBox(
+            'matchSubdivisionToggle',
+            label='Use export subdivision in viewport',
+            value=sxglobals.settings.tools['matchSubdivision'],
+            ann='This incurs a performance penalty on every selection',
+            onCommand='sxtools.sxglobals.settings.tools["matchSubdivision"]=True',
+            offCommand='sxtools.sxglobals.settings.tools["matchSubdivision"]=False')
 
         maya.cmds.checkBox(
             'historyToggle',
@@ -713,7 +725,8 @@ class UI(object):
             onCommand1=(
                 "sxtools.sxglobals.tools.setShadingMode(0)\n"
                 "maya.cmds.setToolTo('selectSuperContext')\n"
-                "sxtools.sxglobals.layers.verifyLayerState(sxtools.sxglobals.settings.tools['selectedLayer'])\n"
+                "sxtools.sxglobals.layers.verifyLayerState("
+                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                 "sxtools.sxglobals.layers.refreshLayerList()"),
             onCommand2=(
                 "sxtools.sxglobals.tools.setShadingMode(1)"),
@@ -770,13 +783,26 @@ class UI(object):
             'layerList',
             parent='layerListRowColumns',
             allowMultiSelection=False,
+            font='fixedWidthFont',
+            numberOfRows=(
+                sxglobals.settings.project['LayerCount'] +
+                sxglobals.settings.project['ChannelCount']),
+            height=(
+                (sxglobals.settings.project['LayerCount'] +
+                sxglobals.settings.project['ChannelCount']) *
+                sxglobals.settings.tools['lineHeight']),
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
                 'Shift + doubleclick to hide/unhide unselected layers\n'
                 'H - hidden layer\n'
                 'M - mask layer\n'
-                'A - adjustment layer'))
+                'A - adjustment layer'),
+            selectCommand='sxtools.sxglobals.layers.highlightLayer()',
+            doubleClickCommand=(
+                "sxtools.sxglobals.layers.toggleAllLayers("
+                "sxtools.sxglobals.settings.tools['selectedLayer'])"))
         # sxglobals.layers.refreshLayerList()
+        # "sxtools.sxglobals.layers.setSelectedLayer()\n"
 
         maya.cmds.columnLayout(
             'layerSetButtonsRight',
@@ -1026,8 +1052,8 @@ class UI(object):
         sxglobals.tools.getLayerPaletteOpacity(
             sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
             sxglobals.settings.tools["selectedLayer"])
-        sxglobals.layers.refreshLayerList()
-        sxglobals.export.compositeLayers()
+        # sxglobals.layers.refreshLayerList()
+        # sxglobals.export.compositeLayers()
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(

@@ -398,11 +398,11 @@ class LayerManagement(object):
                 if layer != selLayer:
                     self.toggleLayer(layer)
 
-            self.refreshLayerList()
-            sxglobals.export.compositeLayers()
-            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
         elif not shift:
             self.toggleLayer(selLayer)
+
+        self.refreshLayerList()
+        sxglobals.export.compositeLayers()
 
     # Updates the selected color set to match the highlighted layer in the UI
     def setColorSet(self, highlightedLayer):
@@ -412,6 +412,9 @@ class LayerManagement(object):
             colorSet=highlightedLayer)
 
     # This function populates the layer list in the tool UI.
+    # Any state change in a list item requires a list rebuild
+    # since the text in a single item can not be changed
+    # after creation
     def refreshLayerList(self):
         if maya.cmds.textScrollList('layerList', exists=True):
             maya.cmds.textScrollList('layerList', edit=True, removeAll=True)
@@ -422,47 +425,11 @@ class LayerManagement(object):
         states = []
         for layer in layers:
             states.append(self.verifyLayerState(layer))
-        maya.cmds.textScrollList(
-            'layerList',
-            edit=True,
-            font='fixedWidthFont',
-            append=states,
-            numberOfRows=(
-                sxglobals.settings.project['LayerCount'] +
-                sxglobals.settings.project['ChannelCount']),
-            height=(sxglobals.settings.project['LayerCount'] +
-                sxglobals.settings.project['ChannelCount']) * 13,
-            selectCommand=(
-                "sxtools.sxglobals.layers.setSelectedLayer()\n"
-                "sxtools.sxglobals.tools.getLayerPaletteOpacity("
-                "sxtools.sxglobals.settings.shapeArray["
-                "len(sxtools.sxglobals.settings.shapeArray)-1],"
-                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
-                "maya.cmds.text("
-                "'layerBlendModeLabel',"
-                "edit=True,"
-                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
-                "+' Blend Mode:')\n"
-                "maya.cmds.text("
-                "'layerOpacityLabel',"
-                "edit=True,"
-                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
-                "+' Opacity:')\n"
-                "maya.cmds.text("
-                "'layerColorLabel',"
-                "edit=True,"
-                "label=sxtools.sxglobals.settings.tools['selectedDisplayLayer']"
-                "+' Colors:')\n"
-                "sxtools.sxglobals.export.compositeLayers()"),
-            doubleClickCommand=(
-                "sxtools.sxglobals.layers.setSelectedLayer()\n"
-                "sxtools.sxglobals.layers.toggleAllLayers("
-                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
-                "sxtools.sxglobals.export.compositeLayers()"))
 
         maya.cmds.textScrollList(
             'layerList',
             edit=True,
+            append=states,
             selectIndexedItem=sxglobals.settings.tools['selectedLayerIndex'])
 
         maya.cmds.text(
@@ -527,36 +494,8 @@ class LayerManagement(object):
                 adj = ' '
 
             layerName = sxglobals.settings.project['LayerData'][layer][6]
-            # padding = (14 - len(layerName)) * ' '
-            itemString = hidden + mask + adj + '| ' + layerName
+            itemString = hidden + mask + adj + '  ' + layerName
             return itemString
-
-    def setSelectedLayer(self):
-        selectedIndex = int(maya.cmds.textScrollList('layerList', query=True, selectIndexedItem=True)[0])
-        refLayers = self.sortLayers(
-            sxglobals.settings.project['LayerData'].keys())
-
-        sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
-        sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
-        sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
-
-        # Blend modes are only valid for color layers,
-        # not material channels
-        if 'layer' not in sxglobals.settings.tools['selectedLayer']:
-            maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
-        else:
-            selected = str(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
-            attr = (
-                '.' + sxglobals.settings.project['RefNames'][selectedIndex-1] +
-                'BlendMode')
-            mode = maya.cmds.getAttr(selected + attr) + 1
-            maya.cmds.optionMenu(
-                'layerBlendModes',
-                edit=True,
-                select=mode,
-                enable=True)
-
-        return (sxglobals.settings.project['RefNames'][selectedIndex-1])
 
     # Color sets of any selected object are checked
     # to see if they match the reference set.
@@ -609,3 +548,49 @@ class LayerManagement(object):
             maya.cmds.setAttr(str(shape)+'.activeLayerSet', 0)
             maya.cmds.setAttr(str(shape)+'.numLayerSets', 0)
         sxglobals.core.updateSXTools()
+
+    def highlightLayer(self):
+        selectedIndex = int(maya.cmds.textScrollList(
+            'layerList', query=True, selectIndexedItem=True)[0])
+        refLayers = self.sortLayers(
+            sxglobals.settings.project['LayerData'].keys())
+
+        sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
+        sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
+        sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
+
+        # Blend modes are only valid for color layers,
+        # not material channels
+        if 'layer' not in sxglobals.settings.tools['selectedLayer']:
+            maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
+        else:
+            selected = str(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
+            attr = (
+                '.' + sxglobals.settings.project['RefNames'][selectedIndex-1] +
+                'BlendMode')
+            mode = maya.cmds.getAttr(selected + attr) + 1
+            maya.cmds.optionMenu(
+                'layerBlendModes',
+                edit=True,
+                select=mode,
+                enable=True)
+
+        sxglobals.tools.getLayerPaletteOpacity(
+            sxglobals.settings.shapeArray[
+                len(sxglobals.settings.shapeArray)-1],
+                sxglobals.settings.tools['selectedLayer'])
+
+        maya.cmds.text(
+            'layerBlendModeLabel',
+            edit=True,
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Blend Mode:')
+        maya.cmds.text(
+            'layerOpacityLabel',
+            edit=True,
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Opacity:')
+        maya.cmds.text(
+            'layerColorLabel',
+            edit=True,
+            label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Colors:')
+        if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.shadingMode') != 0:
+            sxglobals.export.compositeLayers()

@@ -54,8 +54,8 @@ class Export(object):
 
     def compositeLayers(self):
         if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
-            print('SX Tools: Compositing layers')
-            startTimeOcc = maya.cmds.timerX()
+            # print('SX Tools: Compositing layers')
+            # startTimeOcc = maya.cmds.timerX()
             numLayers = sxglobals.settings.project['LayerCount']
             # layerCache = sxglobals.settings.tools['selectedLayer']
 
@@ -211,8 +211,8 @@ class Export(object):
 
             # maya.cmds.polyColorSet(
             #     sxglobals.settings.shapeArray, currentColorSet=True, colorSet=layerCache)
-            totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-            print('SX Tools: Layer compositing duration: ' + str(totalTime))
+            # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+            # print('SX Tools: Layer compositing duration: ' + str(totalTime))
 
         elif sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)

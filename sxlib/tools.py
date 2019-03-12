@@ -2340,9 +2340,9 @@ class ToolActions(object):
 
     def setSubdivisionFlag(self, objects, flag):
         if flag > 0:
-            maya.cmds.setAttr('sxCrease1.creaseLevel', flag*.25)
-            maya.cmds.setAttr('sxCrease2.creaseLevel', flag*.5)
-            maya.cmds.setAttr('sxCrease3.creaseLevel', flag*.75)
+            maya.cmds.setAttr('sxCrease1.creaseLevel', flag * 0.25)
+            maya.cmds.setAttr('sxCrease2.creaseLevel', flag * 0.5)
+            maya.cmds.setAttr('sxCrease3.creaseLevel', flag * 0.75)
             maya.cmds.setAttr('sxCrease4.creaseLevel', flag)
 
         for obj in objects:
