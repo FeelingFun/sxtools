@@ -153,8 +153,16 @@ class Settings(object):
             if shift:
                 sxglobals.setup.createSXShader(
                     self.project['LayerCount'], True, True, True, True)
+                sxglobals.setup.createSXDebugShader(
+                    self.project['LayerCount'], True, True, True, True)
             elif not shift:
                 sxglobals.setup.createSXShader(
+                    self.project['LayerCount'],
+                    self.project['LayerData']['occlusion'][5],
+                    self.project['LayerData']['specular'][5],
+                    self.project['LayerData']['transmission'][5],
+                    self.project['LayerData']['emission'][5])
+                sxglobals.setup.createSXDebugShader(
                     self.project['LayerCount'],
                     self.project['LayerData']['occlusion'][5],
                     self.project['LayerData']['specular'][5],

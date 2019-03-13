@@ -31,6 +31,11 @@ class Core(object):
             elif sxglobals.settings.tools['displayScale'] == 2.0:
                 sxglobals.settings.tools['lineHeight'] = 14.5
 
+            # Most PCs with modern graphics cards can run
+            # vertex color compositing fully on the GPU
+            sxglobals.settings.tools['compositor'] = 1
+            sxglobals.settings.tools['compositeEnable'] = False
+
             if maya.cmds.optionVar(query='vp2RenderingEngine') != 'DirectX11':
                 maya.cmds.optionVar(
                     stringValue=('vp2RenderingEngine', 'DirectX11'))
@@ -41,6 +46,11 @@ class Core(object):
         else:
             sxglobals.settings.tools['displayScale'] = 1.0
             sxglobals.settings.tools['lineHeight'] = 12.5
+
+            # On Mac (Linux untested), a simpler shader
+            # with CPU color compositing is used instead
+            sxglobals.settings.tools['compositor'] = 2
+            sxglobals.settings.tools['compositeEnable'] = True
 
         sxglobals.settings.loadPreferences()
         maya.cmds.workspaceControl(
@@ -311,9 +321,21 @@ class Core(object):
 
             sxglobals.layers.refreshLayerList()
             sxglobals.export.compositeLayers()
+
             # Make sure selected things are using the correct material
-            maya.cmds.sets(
-                sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
+            if sxglobals.settings.tools['compositor'] == 1:
+                for shape in sxglobals.settings.shapeArray:
+                    mode = maya.cmds.getAttr(str(shape) + '.shadingMode')
+                    if mode == 0:
+                        maya.cmds.sets(
+                            shape, e=True, forceElement='SXShaderSG')
+                    else:
+                        maya.cmds.sets(
+                            shape, e=True, forceElement='SXDebugShaderSG')
+            else:
+                maya.cmds.sets(
+                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
+
             if sxglobals.tools.verifyShadingMode() == 0:
                 maya.cmds.polyOptions(
                     activeObjects=True,

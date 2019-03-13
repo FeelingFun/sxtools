@@ -1468,6 +1468,8 @@ class ToolActions(object):
 
         if sxglobals.settings.tools['compositor'] == 1:
             if mode == 0:
+                maya.cmds.sets(
+                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
                 for shape in sxglobals.settings.shapeArray:
                     maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColors', 0)
@@ -1476,12 +1478,16 @@ class ToolActions(object):
                 maya.mel.eval('DisplayLight;')
 
             elif mode == 1:
+                maya.cmds.sets(
+                    sxglobals.settings.shapeArray, e=True, forceElement='SXDebugShaderSG')
                 for shape in sxglobals.settings.shapeArray:
                     maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColors', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
 
             elif mode == 2:
+                maya.cmds.sets(
+                    sxglobals.settings.shapeArray, e=True, forceElement='SXDebugShaderSG')
                 for shape in sxglobals.settings.shapeArray:
                     maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColors', 0)
