@@ -23,7 +23,7 @@ class Core(object):
             sxglobals.settings.tools['displayScale'] = maya.cmds.mayaDpiSetting(
                 query=True, realScaleValue=True)
             if sxglobals.settings.tools['displayScale'] == 1.0:
-                sxglobals.settings.tools['lineHeight'] = 15
+                sxglobals.settings.tools['lineHeight'] = 16
             elif sxglobals.settings.tools['displayScale'] == 1.25:
                 sxglobals.settings.tools['lineHeight'] = 14.5
             elif sxglobals.settings.tools['displayScale'] == 1.5:

@@ -811,41 +811,75 @@ class ToolActions(object):
         sxglobals.export.compositeLayers()
 
     def applyMasterPalette(self, objects):
+        print('SX Tools: Applying Master Palette')
+        startTimeOcc = maya.cmds.timerX()
+
+        selectionList = OM.MSelectionList()
+        for obj in objects:
+            selectionList.add(obj)
+        selDagPath = OM.MDagPath()
+        fVert = OM.MObject()
+        fvColors = OM.MColorArray()
+        vtxIds = OM.MIntArray()
+        fvIds = OM.MIntArray()
+        faceIds = OM.MIntArray()
+        compDagPath = OM.MDagPath()
+        fillColor = OM.MColor()
+        mod = OM.MDGModifier()
+        colorRep = OM.MFnMesh.kRGBA
+
         for i in xrange(1, 6):
             targetLayers = sxglobals.settings.project['paletteTarget'+str(i)]
             maya.cmds.palettePort('masterPalette', edit=True, scc=i-1)
+            fillColor.r = maya.cmds.palettePort(
+                'masterPalette', query=True, rgb=True)[0]
+            fillColor.g = maya.cmds.palettePort(
+                'masterPalette', query=True, rgb=True)[1]
+            fillColor.b = maya.cmds.palettePort(
+                'masterPalette', query=True, rgb=True)[2]
+
             for layer in targetLayers:
                 maya.cmds.polyColorSet(
                     objects,
                     currentColorSet=True,
                     colorSet=layer)
-                maya.cmds.polyColorPerVertex(
-                    objects,
-                    r=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[0],
-                    g=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[1],
-                    b=maya.cmds.palettePort(
-                        'masterPalette', query=True, rgb=True)[2])
-                # clear empty vertices of RGB info
-                if layer != 'layer1':
-                    maskList = []
-                    vertFaceList = maya.cmds.ls(
-                        maya.cmds.polyListComponentConversion(
-                            objects, tvf=True), fl=True)
 
-                    for vertFace in vertFaceList:
-                        if maya.cmds.polyColorPerVertex(
-                           vertFace, query=True, a=True)[0] == 0:
-                            maskList.append(vertFace)
+                selectionIter = OM.MItSelectionList(selectionList)
+                while not selectionIter.isDone():
+                    selDagPath = selectionIter.getDagPath()
+                    mesh = OM.MFnMesh(selDagPath)
+                    fvColors.clear()
+                    fvColors = mesh.getFaceVertexColors(colorSet=layer)
+                    selLen = len(fvColors)
+                    vtxIds.setLength(selLen)
+                    fvIds.setLength(selLen)
+                    faceIds.setLength(selLen)
 
-                    if len(maskList) == 0:
-                        maskList = vertFaceList
+                    meshIter = OM.MItMeshFaceVertex(selDagPath)
+                    j = 0
+                    while not meshIter.isDone():
+                        vtxIds[j] = meshIter.vertexId()
+                        faceIds[j] = meshIter.faceId()
+                        fvIds[j] = meshIter.faceVertexId()
 
-                    maya.cmds.select(maskList)
-                    sxglobals.layers.clearLayer([layer, ])
+                        if fvColors[j].a == 0 and layer != 'layer1':
+                            fvColors[j].r = 0.0
+                            fvColors[j].g = 0.0
+                            fvColors[j].b = 0.0
+                        else:
+                            fvColors[j].r = fillColor.r
+                            fvColors[j].g = fillColor.g
+                            fvColors[j].b = fillColor.b                            
 
-        maya.cmds.select(objects)
+                        j += 1
+                        meshIter.next()
+
+                    mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+                    selectionIter.next()
+
+        mod.doIt()
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Master Palette duration: ' + str(totalTime))
         sxglobals.layers.refreshLayerList()
         sxglobals.export.compositeLayers()
 
