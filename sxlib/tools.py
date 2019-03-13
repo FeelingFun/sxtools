@@ -182,7 +182,7 @@ class ToolActions(object):
             selIter.next()
 
         maya.cmds.select(selEdges)
-        sxglobals.core.selectionManager()
+        # sxglobals.core.selectionManager()
 
     def calculateCurvature(self, objects, returnColors=False, normalize=False):
         objCurvatures = []
@@ -325,6 +325,7 @@ class ToolActions(object):
         sxglobals.settings.globalOcclusionDict.clear()
         bboxCoords = []
         newBboxCoords = []
+        selectionCache = sxglobals.settings.selectionArray
         sxglobals.settings.bakeSet = sxglobals.settings.shapeArray
         contribution = 1.0/float(rayCount)
 
@@ -564,8 +565,8 @@ class ToolActions(object):
                         delete=True,
                         colorSet=AOSet)
 
-        maya.cmds.select(sxglobals.settings.bakeSet)
-        sxglobals.core.selectionManager()
+        maya.cmds.select(selectionCache)
+        # sxglobals.core.selectionManager()
 
     def bakeOcclusionMR(self):
         bbox = []
@@ -645,7 +646,7 @@ class ToolActions(object):
             maya.cmds.delete('sxGroundPlane')
 
         maya.cmds.select(sxglobals.settings.bakeSet)
-        sxglobals.core.selectionManager()
+        # sxglobals.core.selectionManager()
 
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
@@ -809,6 +810,45 @@ class ToolActions(object):
             sxglobals.settings.tools['selectedLayer'])
         sxglobals.layers.refreshLayerList()
         sxglobals.export.compositeLayers()
+
+    def openSXPaintTool(self):
+        if sxglobals.settings.tools['compositor'] == 1:
+            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            maya.mel.eval('PaintVertexColorTool;')
+            maya.cmds.artAttrPaintVertexCtx(
+                'artAttrColorPerVertexContext',
+                edit=True,
+                usepressure=False,
+                paintNumChannels=4,
+                paintRGBA=True,
+                paintVertexFace=False)
+            maya.cmds.toolPropertyWindow(inMainWindow=True)
+            maya.cmds.setToolTo('artAttrColorPerVertexContext')
+
+        elif sxglobals.settings.tools['compositor'] == 2:
+            sxglobals.settings.tools['currentTool'] = 'SXPaint'
+            sxglobals.settings.tools['compositeEnabled'] = False
+            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            maya.mel.eval('PaintVertexColorTool;')
+            maya.cmds.artAttrPaintVertexCtx(
+                'artAttrColorPerVertexContext',
+                edit=True,
+                usepressure=False,
+                paintNumChannels=4,
+                paintRGBA=True,
+                paintVertexFace=False)
+            maya.cmds.toolPropertyWindow(inMainWindow=True)
+            maya.cmds.setToolTo('artAttrColorPerVertexContext')
+            maya.cmds.radioButtonGrp(
+                'shadingButtons',
+                edit = True,
+                select=2)
+            self.setShadingMode(1)
+            maya.cmds.polyOptions(
+                activeObjects=True,
+                colorMaterialChannel='none',
+                colorShadedDisplay=True)
+            maya.mel.eval('DisplayShadedAndTextured;')
 
     def applyMasterPalette(self, objects):
         print('SX Tools: Applying Master Palette')
@@ -1489,7 +1529,7 @@ class ToolActions(object):
                 str(int(maya.cmds.getAttr(
                     str(sxglobals.settings.shapeArray[0]) +
                        '.activeLayerSet'))+1) + '/' +
-                       str(sxglobals.layers.getLayerSet(
+                       str(sxglobals.layers.getLayerSets(
                             sxglobals.settings.shapeArray[0])+1))
 
             maya.cmds.frameLayout('layerFrame', edit=True, label=objectLabel)
@@ -1535,6 +1575,13 @@ class ToolActions(object):
                     maya.cmds.setAttr(str(shape) + '.displayColors', 1)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
                 maya.mel.eval('DisplayLight;')
+                
+                # kludgy kludge for deadling with 
+                # paint vertex tool output in sw compositing
+                if sxglobals.settings.tools['currentTool'] == 'SXPaint':
+                    maya.cmds.setToolTo('selectSuperContext')
+                    sxglobals.settings.tools['currentTool'] = 'Select'
+                    sxglobals.layers.refreshLayerList()
 
             elif mode == 1 or mode == 2:
                 for shape in sxglobals.settings.shapeArray:
@@ -2120,7 +2167,7 @@ class ToolActions(object):
     def swapLayerSets(self, objects, targetSet, offset=False):
         if offset:
             targetSet -= 1
-        if (targetSet > sxglobals.layers.getLayerSet(objects[0])) or (targetSet < 0):
+        if (targetSet > sxglobals.layers.getLayerSets(objects[0])) or (targetSet < 0):
             print('SX Tools Error: Selected layer set does not exist!')
             return
         refLayers = sxglobals.layers.sortLayers(

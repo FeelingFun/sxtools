@@ -47,6 +47,7 @@ class Settings(object):
             'exportFlagsCollapse': True
         }
         self.tools = {
+            'currentTool': None,
             'matchSubdivision': False,
             'displayScale': 1.0,
             'platform': 'win64',

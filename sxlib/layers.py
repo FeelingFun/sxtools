@@ -209,7 +209,7 @@ class LayerManagement(object):
             self.resetLayers(noColorSetObject)
 
         maya.cmds.select(sxglobals.settings.selectionArray)
-        sxglobals.core.selectionManager()
+        # sxglobals.core.selectionManager()
 
     # Resulting blended layer is set to Alpha blending mode
     def mergeLayerDirection(self, shapes, up):
@@ -255,6 +255,7 @@ class LayerManagement(object):
                 shapes,
                 currentColorSet=True,
                 colorSet=str(sourceLayer))
+
         self.refreshLayerList()
 
     # IF mesh has no color sets at all,
@@ -286,14 +287,14 @@ class LayerManagement(object):
                 colorSet=str(layer))
             self.clearLayer([layer, ], objects)
 
-        maya.cmds.polyColorSet(
-            object,
-            currentColorSet=True,
-            colorSet='layer1')
-        maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
+        # maya.cmds.polyColorSet(
+        #    object,
+        #    currentColorSet=True,
+        #    colorSet='layer1')
+        # maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
 
-    def getLayerSet(self, object):
-        var = int(maya.cmds.getAttr(object + '.numLayerSets'))
+    def getLayerSets(self, obj):
+        var = int(maya.cmds.getAttr(obj + '.numLayerSets'))
         return var
 
     def addLayerSet(self, objects, varIdx):
@@ -324,10 +325,10 @@ class LayerManagement(object):
         for object in objects:
             maya.cmds.setAttr(object + '.numLayerSets', var)
 
-        maya.cmds.polyColorSet(
-            objects,
-            currentColorSet=True,
-            colorSet='layer1')
+        # maya.cmds.polyColorSet(
+        #    objects,
+        #    currentColorSet=True,
+        #    colorSet='layer1')
 
     def clearLayer(self, layers, objList=None):
         objects = []
@@ -363,10 +364,6 @@ class LayerManagement(object):
             attr = '.' + str(layer) + 'BlendMode'
             for obj in objects:
                 maya.cmds.setAttr(str(obj) + attr, 0)
-
-        #if maya.cmds.objExists('SXShader'):
-            # sxglobals.export.compositeLayers()
-            # maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def toggleLayer(self, layer):
         object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
@@ -559,13 +556,14 @@ class LayerManagement(object):
         sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
         sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
         
-        # Update debug material
-        maya.cmds.shaderfx(
-            sfxnode='SXDebugShader',
-            edit_int=(
-                sxglobals.settings.nodeDict['layerIndex'], 
-                'value', 
-                sxglobals.settings.tools['selectedLayerIndex'] - 1))
+        # Update debug material when GPU compositing
+        if sxglobals.settings.tools['compositor'] == 1:
+            maya.cmds.shaderfx(
+                sfxnode='SXDebugShader',
+                edit_int=(
+                    sxglobals.settings.nodeDict['layerIndex'], 
+                    'value', 
+                    sxglobals.settings.tools['selectedLayerIndex'] - 1))
 
         # Blend modes are only valid for color layers,
         # not material channels
@@ -600,5 +598,6 @@ class LayerManagement(object):
             'layerColorLabel',
             edit=True,
             label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Colors:')
+
         if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.shadingMode') != 0:
             sxglobals.export.compositeLayers()

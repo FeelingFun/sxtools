@@ -69,44 +69,6 @@ class UI(object):
                 'sxtools.sxglobals.settings.multiShapeArray, shape=True)\n'
                 'sxtools.sxglobals.core.updateSXTools()'))
 
-    def openSXPaintTool(self):
-        if sxglobals.settings.tools['compositor'] == 1:
-            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-            mel.eval('PaintVertexColorTool;')
-            maya.cmds.artAttrPaintVertexCtx(
-                'artAttrColorPerVertexContext',
-                edit=True,
-                usepressure=False,
-                paintNumChannels=4,
-                paintRGBA=True,
-                paintVertexFace=False)
-            maya.cmds.toolPropertyWindow(inMainWindow=True)
-            maya.cmds.setToolTo('artAttrColorPerVertexContext')
-
-        elif sxglobals.settings.tools['compositor'] == 2:
-            sxglobals.settings.tools['compositeEnabled'] = False
-            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-            mel.eval('PaintVertexColorTool;')
-            maya.cmds.artAttrPaintVertexCtx(
-                'artAttrColorPerVertexContext',
-                edit=True,
-                usepressure=False,
-                paintNumChannels=4,
-                paintRGBA=True,
-                paintVertexFace=False)
-            maya.cmds.toolPropertyWindow(inMainWindow=True)
-            maya.cmds.setToolTo('artAttrColorPerVertexContext')
-            maya.cmds.radioButtonGrp(
-                'shadingButtons',
-                edit = True,
-                select=2)
-            sxglobals.tools.setShadingMode(1)
-            maya.cmds.polyOptions(
-                activeObjects=True,
-                colorMaterialChannel='none',
-                colorShadedDisplay=True)
-            maya.mel.eval('DisplayShadedAndTextured;')
-
     def setupProjectUI(self):
         maya.cmds.frameLayout(
             'emptyFrame',
@@ -723,11 +685,7 @@ class UI(object):
             select=1,
             numberOfRadioButtons=3,
             onCommand1=(
-                "sxtools.sxglobals.tools.setShadingMode(0)\n"
-                "maya.cmds.setToolTo('selectSuperContext')\n"
-                "sxtools.sxglobals.layers.verifyLayerState("
-                "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
-                "sxtools.sxglobals.layers.refreshLayerList()"),
+                "sxtools.sxglobals.tools.setShadingMode(0)"),
             onCommand2=(
                 "sxtools.sxglobals.tools.setShadingMode(1)"),
             onCommand3=(
@@ -824,7 +782,7 @@ class UI(object):
             command=(
                 'sxtools.sxglobals.layers.addLayerSet('
                 'sxtools.sxglobals.settings.objectArray,'
-                'sxtools.sxglobals.layers.getLayerSet('
+                'sxtools.sxglobals.layers.getLayerSets('
                 'sxtools.sxglobals.settings.objectArray[0]))\n'
                 'sxtools.sxglobals.core.updateSXTools()'))
 
@@ -856,7 +814,7 @@ class UI(object):
             print('SX Tools: Objects with mismatching Layer Sets selected!')
 
 
-        if sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]) > 0:
+        if sxglobals.layers.getLayerSets(sxglobals.settings.objectArray[0]) > 0:
             maya.cmds.button(
                 'deleteLayerSetButton',
                 edit=True,
@@ -870,13 +828,13 @@ class UI(object):
                 edit=True,
                 enable=True)
 
-        if sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]) == 9:
+        if sxglobals.layers.getLayerSets(sxglobals.settings.objectArray[0]) == 9:
             maya.cmds.button(
                 'addNewLayerSetButton',
                 edit=True,
                 enable=False)
 
-        if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.activeLayerSet') == sxglobals.layers.getLayerSet(sxglobals.settings.objectArray[0]):
+        if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.activeLayerSet') == sxglobals.layers.getLayerSets(sxglobals.settings.objectArray[0]):
             maya.cmds.button(
                 'nextLayerSetButton',
                 edit=True,
@@ -1074,7 +1032,7 @@ class UI(object):
             label='Paint Vertex Colors',
             width=100,
             height=20,
-            command="sxtools.sxglobals.ui.openSXPaintTool()")
+            command="sxtools.sxglobals.tools.openSXPaintTool()")
         maya.cmds.rowColumnLayout(
             "applyColorRowColumns",
             parent="applyColorFrame",

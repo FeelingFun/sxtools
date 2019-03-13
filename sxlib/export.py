@@ -43,7 +43,7 @@ class Export(object):
         maya.cmds.select(
             maya.cmds.polyListComponentConversion(selected, tuv=True))
         maya.cmds.polyEditUV(relative=False, uValue=0, vValue=0)
-        sxglobals.core.selectionManager()
+        # sxglobals.core.selectionManager()
 
     def flattenLayers(self, selected, numLayers):
         if numLayers > 1:
@@ -484,7 +484,7 @@ class Export(object):
         # Check for additional Layer Sets on the objects,
         # create additional entries for export
         for exportShape in exportShapeArray:
-            var = int(sxglobals.layers.getLayerSet(exportShape))
+            var = int(sxglobals.layers.getLayerSets(exportShape))
             if var > 0:
                 sxglobals.tools.swapLayerSets([exportShape, ], 0)
             for x in xrange(1, var+1):
@@ -778,7 +778,7 @@ class Export(object):
         totalTime = maya.cmds.timerX(startTime=startTime0)
         print('SX Tools: Total time ' + str(totalTime))
         maya.cmds.select('_staticExports', r=True)
-        sxglobals.core.selectionManager()
+        # sxglobals.core.selectionManager()
         maya.cmds.editDisplayLayerMembers(
             'exportsLayer', maya.cmds.ls(sl=True))
         self.viewExported()
