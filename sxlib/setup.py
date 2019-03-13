@@ -1292,6 +1292,7 @@ class SceneSetup(object):
         index_nodeID = maya.cmds.shaderfx(
             sfxnode=materialName,
             getNodeIDByName='layerIndex')
+        sxglobals.settings.nodeDict['layerIndex'] = index_nodeID
 
         maya.cmds.shaderfx(
             sfxnode=materialName,

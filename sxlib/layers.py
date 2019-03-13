@@ -558,6 +558,14 @@ class LayerManagement(object):
         sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
         sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
         sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
+        
+        # Update debug material
+        maya.cmds.shaderfx(
+            sfxnode='SXDebugShader',
+            edit_int=(
+                sxglobals.settings.nodeDict['layerIndex'], 
+                'value', 
+                sxglobals.settings.tools['selectedLayerIndex'] - 1))
 
         # Blend modes are only valid for color layers,
         # not material channels
