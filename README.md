@@ -45,7 +45,8 @@ For certain art styles, taking the control cages to the game engine to be tessel
 9. (At some point, set a Master Palette location.)
 
 ## Caveats
-Viewport shading only works on Windows. **Make sure your viewport is in DX11 Mode!**
+On Windows, SX Tools runs with a complex ShaderFX shader that handles vertex color compositing fully on the GPU. On Mac (and possibly Linux), a CPU-assisted shader is used. There have been no major issues with either.
+**Make sure your viewport is in DX11 Mode on Windows!**
 (Windows -> Settings/Preferences -> Preferences -> Display -> Viewport 2.0 -> Rendering engine: -> DirectX 11
 Some tool actions fail if the object has history. The toolbox has a built-in warning for when history is detected.
 Some tools are not undo-safe. If proper development pipeline is observed, this should not be too hazardous.
