@@ -641,7 +641,6 @@ class ToolActions(object):
 
     def bakeBlendOcclusion(self):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Baking ambient occlusion')
         self.bakeOcclusion(
             sxglobals.settings.tools['rayCount'],
             sxglobals.settings.tools['bias'],
@@ -651,11 +650,10 @@ class ToolActions(object):
         sxglobals.settings.tools['blendSlider'] = 0.5
         self.blendOcclusion()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Occlusion baking time: ' + str(totalTime))
+        print('SX Tools: Occlusion baking duration ' + str(totalTime))
 
     def bakeBlendOcclusionMR(self):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Baking ambient occlusion')
         ground = sxglobals.settings.tools['bakeGroundPlane']
         sxglobals.settings.tools['bakeGroundPlane'] = False
         sxglobals.settings.tools['bakeTogether'] = False
@@ -691,7 +689,7 @@ class ToolActions(object):
         sxglobals.settings.tools['blendSlider'] = 0.5
         self.blendOcclusion()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Occlusion baking time: ' + str(totalTime))
+        print('SX Tools: Occlusion baking duration ' + str(totalTime))
 
     def blendOcclusion(self):
         sliderValue = sxglobals.settings.tools['blendSlider']
@@ -839,7 +837,6 @@ class ToolActions(object):
             maya.mel.eval('DisplayShadedAndTextured;')
 
     def applyMasterPalette(self, objects):
-        print('SX Tools: Applying Master Palette')
         startTimeOcc = maya.cmds.timerX()
 
         selectionList = OM.MSelectionList()
@@ -907,14 +904,110 @@ class ToolActions(object):
 
         mod.doIt()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Master Palette duration: ' + str(totalTime))
+        print('SX Tools: Apply Master Palette duration ' + str(totalTime))
         sxglobals.layers.refreshLayerList()
         sxglobals.layers.compositeLayers()
 
+    def calculateBoundingBox(self, selection):
+        selectionList = OM.MSelectionList()
+        for sl in selection:
+            selectionList.add(sl)
+
+        selDagPath = OM.MDagPath()
+        fVert = OM.MObject()
+        compDagPath = OM.MDagPath()
+        space = OM.MSpace.kWorld
+        
+        xmin = None
+        xmax = None
+        ymin = None
+        ymax = None
+        zmin = None
+        zmax = None
+
+        selectionIter = OM.MItSelectionList(selectionList)
+        while not selectionIter.isDone():
+            # Gather full mesh data to compare selection against
+            selDagPath = selectionIter.getDagPath()
+            mesh = OM.MFnMesh(selDagPath)
+
+            if selectionIter.hasComponents():
+                (compDagPath, fVert) = selectionIter.getComponent()
+                fvIt = OM.MItMeshFaceVertex(selDagPath, fVert)
+                k = 0
+                while not fvIt.isDone():
+                    fvPos = fvIt.position(space)
+                    if k == 0:
+                        if not xmin:
+                            xmin = fvPos[0]
+                        if not xmax:
+                            xmax = fvPos[0]
+                        if not ymin:
+                            ymin = fvPos[1]
+                        if not ymax:
+                            ymax = fvPos[1]
+                        if not zmin:
+                            zmin = fvPos[2]
+                        if not zmax:
+                            zmax = fvPos[2]
+                    else:
+                        if fvPos[0] < xmin:
+                            xmin = fvPos[0]
+                        elif fvPos[0] > xmax:
+                            xmax = fvPos[0]
+
+                        if fvPos[1] < ymin:
+                            ymin = fvPos[1]
+                        elif fvPos[1] > ymax:
+                            ymax = fvPos[1]
+
+                        if fvPos[2] < zmin:
+                            zmin = fvPos[2]
+                        elif fvPos[2] > zmax:
+                            zmax = fvPos[2]
+                    k += 1
+                    fvIt.next()
+            else:
+                fvIt = OM.MItMeshFaceVertex(selDagPath)
+                k = 0
+                while not fvIt.isDone():
+                    fvPos = fvIt.position(space)
+                    if k == 0:
+                        if not xmin:
+                            xmin = fvPos[0]
+                        if not xmax:
+                            xmax = fvPos[0]
+                        if not ymin:
+                            ymin = fvPos[1]
+                        if not ymax:
+                            ymax = fvPos[1]
+                        if not zmin:
+                            zmin = fvPos[2]
+                        if not zmax:
+                            zmax = fvPos[2]
+                    else:
+                        if fvPos[0] < xmin:
+                            xmin = fvPos[0]
+                        elif fvPos[0] > xmax:
+                            xmax = fvPos[0]
+
+                        if fvPos[1] < ymin:
+                            ymin = fvPos[1]
+                        elif fvPos[1] > ymax:
+                            ymax = fvPos[1]
+
+                        if fvPos[2] < zmin:
+                            zmin = fvPos[2]
+                        elif fvPos[2] > zmax:
+                            zmax = fvPos[2]
+                    k += 1
+                    fvIt.next()
+
+            selectionIter.next()
+        return ((xmin,xmax), (ymin,ymax), (zmin,zmax))
+
     def gradientFill(self, axis):
-        selectionCache = sxglobals.settings.selectionArray
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Applying gradient to selection')
         layer = sxglobals.settings.tools['selectedLayer']
         space = OM.MSpace.kWorld
 
@@ -925,18 +1018,11 @@ class ToolActions(object):
             # fill position-matching verts with color
             selection = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
-                    sxglobals.settings.selectionArray, tvf=True), fl=True)
-            # tempArray is constructed because
-            # polyEvaluate doesn't work on face vertices
-            tempArray = maya.cmds.ls(maya.cmds.polyListComponentConversion(
-                    sxglobals.settings.componentArray, tv=True), fl=True)
-            maya.cmds.select(tempArray)
-            objectBounds = maya.cmds.polyEvaluate(bc=True, ae=True)
+                    sxglobals.settings.selectionArray, tvf=True), fl=True)          
         else:
             selection = sxglobals.settings.shapeArray
-            objectBounds = maya.cmds.polyEvaluate(
-                sxglobals.settings.shapeArray, b=True, ae=True)
 
+        objectBounds = self.calculateBoundingBox(selection)
         objectBoundsXmin = objectBounds[0][0]
         objectBoundsXmax = objectBounds[0][1]
         objectBoundsYmin = objectBounds[1][0]
@@ -947,6 +1033,7 @@ class ToolActions(object):
         selectionList = OM.MSelectionList()
         for sl in selection:
             selectionList.add(sl)
+
         selDagPath = OM.MDagPath()
         fVert = OM.MObject()
         fvColors = OM.MColorArray()
@@ -1063,12 +1150,10 @@ class ToolActions(object):
             selectionIter.next()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Gradient Fill task duration: ' + str(totalTime))
-        maya.cmds.select(selectionCache)
+        print('SX Tools: Gradient Fill duration ' + str(totalTime))
 
     def colorFill(self, overwriteAlpha=False):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Applying color to selection')
         layer = sxglobals.settings.tools['selectedLayer']
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
         fillColor = OM.MColor()
@@ -1159,7 +1244,7 @@ class ToolActions(object):
             self.colorNoise()
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Apply Color task duration: ' + str(totalTime))
+        print('SX Tools: Apply Color duration ' + str(totalTime))
 
         sxglobals.layers.refreshLayerList()
         sxglobals.layers.compositeLayers()
@@ -1260,7 +1345,6 @@ class ToolActions(object):
 
     def remapRamp(self):
         startTimeOcc = maya.cmds.timerX()
-        print('SX Tools: Remapping luminance of selection')
         layer = sxglobals.settings.tools['selectedLayer']
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
         fvCol = OM.MColor()
@@ -1363,7 +1447,7 @@ class ToolActions(object):
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print(
-            'SX Tools: Surface luminance remap task duration: ' + str(totalTime))
+            'SX Tools: Surface luminance remap duration ' + str(totalTime))
 
     def copyLayer(self, shapes, mode=1):
         refLayers = sxglobals.layers.sortLayers(
@@ -1989,8 +2073,8 @@ class ToolActions(object):
             sxglobals.layers.compositeLayers()
         else:
             self.gradientFill(mode)
-            # sxglobals.layers.refreshLayerList()
-            # sxglobals.export.compositeLayers()
+            sxglobals.layers.refreshLayerList()
+            sxglobals.layers.compositeLayers()
 
     def clearRamp(self, rampName):
         indexList = maya.cmds.getAttr(

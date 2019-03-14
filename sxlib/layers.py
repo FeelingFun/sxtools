@@ -18,7 +18,6 @@ class LayerManagement(object):
 
     def compositeLayers(self):
         if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
-            # print('SX Tools: Compositing layers')
             # startTimeOcc = maya.cmds.timerX()
             numLayers = sxglobals.settings.project['LayerCount']
 
@@ -172,7 +171,7 @@ class LayerManagement(object):
                 MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
 
             # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-            # print('SX Tools: Layer compositing duration: ' + str(totalTime))
+            # print('SX Tools: Layer compositing duration ' + str(totalTime))
 
         elif sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
