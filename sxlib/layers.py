@@ -16,6 +16,167 @@ class LayerManagement(object):
     def __del__(self):
         print('SX Tools: Exiting layers')
 
+    def compositeLayers(self):
+        if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
+            # print('SX Tools: Compositing layers')
+            # startTimeOcc = maya.cmds.timerX()
+            numLayers = sxglobals.settings.project['LayerCount']
+
+            maya.cmds.polyColorSet(
+                sxglobals.settings.shapeArray, currentColorSet=True, colorSet='composite')
+
+            for selected in sxglobals.settings.shapeArray:
+                selectionList = OM.MSelectionList()
+                selectionList.add(selected)
+                nodeDagPath = OM.MDagPath()
+                nodeDagPath = selectionList.getDagPath(0)
+                MFnMesh = OM.MFnMesh(nodeDagPath)
+
+                sourceColorArray = OM.MColorArray()
+                targetColorArray = OM.MColorArray()
+                targetColorArray = MFnMesh.getFaceVertexColors(colorSet='layer1')
+
+                faceIds = OM.MIntArray()
+                vtxIds = OM.MIntArray()
+
+                lenSel = len(targetColorArray)
+
+                faceIds.setLength(lenSel)
+                vtxIds.setLength(lenSel)
+
+                # generate faceID and vertexID arrays
+                fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                k = 0
+                while not fvIt.isDone():
+                    faceIds[k] = fvIt.faceId()
+                    vtxIds[k] = fvIt.vertexId()
+                    k += 1
+                    fvIt.next()
+
+                sel = str(selected)
+                shading = int(maya.cmds.getAttr(sel + '.shadingMode'))
+
+                # Set layer1 to black if hidden
+                visAttr = '.layer1Visibility'
+                vis = bool(maya.cmds.getAttr(sel + visAttr))
+
+                if not vis:
+                    fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                    k = 0
+                    while not fvIt.isDone():
+                        targetColorArray[k].r = 0.0
+                        targetColorArray[k].g = 0.0
+                        targetColorArray[k].b = 0.0
+                        targetColorArray[k].a = 1.0
+                        k += 1
+                        fvIt.next()
+
+                # accumulate targetColorArray through the remaining layers
+                if shading == 0:
+                    if numLayers > 1:
+                        for i in range(2, numLayers+1):
+                            sourceLayer = 'layer' + str(i)
+
+                            modeAttr = '.' + sourceLayer + 'BlendMode'
+                            mode = int(maya.cmds.getAttr(sel + modeAttr))
+
+                            visAttr = '.' + sourceLayer + 'Visibility'
+                            vis = bool(maya.cmds.getAttr(sel + visAttr))
+                            sourceColorArray = MFnMesh.getFaceVertexColors(
+                                colorSet=sourceLayer)
+
+                            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+
+                            if not vis:
+                                continue
+
+                            elif mode == 0:
+                                k = 0
+                                while not fvIt.isDone():
+                                    targetColorArray[k].r = (
+                                        sourceColorArray[k].r * sourceColorArray[k].a +
+                                        targetColorArray[k].r * (1 - sourceColorArray[k].a))
+                                    targetColorArray[k].g = (
+                                        sourceColorArray[k].g * sourceColorArray[k].a +
+                                        targetColorArray[k].g * (1 - sourceColorArray[k].a))
+                                    targetColorArray[k].b = (
+                                        sourceColorArray[k].b * sourceColorArray[k].a +
+                                        targetColorArray[k].b * (1 - sourceColorArray[k].a))
+                                    #targetColorArray[k].a = 1.0
+                                    k += 1
+                                    fvIt.next()
+
+                            elif mode == 1:
+                                k = 0
+                                while not fvIt.isDone():
+                                    targetColorArray[k].r += sourceColorArray[
+                                        k].r * sourceColorArray[k].a
+                                    targetColorArray[k].g += sourceColorArray[
+                                        k].g * sourceColorArray[k].a
+                                    targetColorArray[k].b += sourceColorArray[
+                                        k].b * sourceColorArray[k].a
+                                    #targetColorArray[k].a = 1.0
+                                    k += 1
+                                    fvIt.next()
+
+                            elif mode == 2:
+                                # layer2 lerp with white using (1-alpha), multiply with layer1
+                                k = 0
+                                while not fvIt.isDone():
+                                    sourceColorArray[k].r = (
+                                        (sourceColorArray[k].r * sourceColorArray[k].a) +
+                                        (1.0 * (1 - sourceColorArray[k].a)))
+                                    sourceColorArray[k].g = (
+                                        (sourceColorArray[k].g * sourceColorArray[k].a) +
+                                        (1.0 * (1 - sourceColorArray[k].a)))
+                                    sourceColorArray[k].b = (
+                                        (sourceColorArray[k].b * sourceColorArray[k].a) +
+                                        (1.0 * (1 - sourceColorArray[k].a)))
+
+                                    targetColorArray[k].r = sourceColorArray[
+                                        k].r * targetColorArray[k].r
+                                    targetColorArray[k].g = sourceColorArray[
+                                        k].g * targetColorArray[k].g
+                                    targetColorArray[k].b = sourceColorArray[
+                                        k].b * targetColorArray[k].b
+                                    k += 1
+                                    fvIt.next()
+                            else:
+                                print('SX Tools Error: Invalid blend mode')
+                                return
+
+                elif shading == 1:
+                    targetColorArray = MFnMesh.getFaceVertexColors(colorSet=sxglobals.settings.tools['selectedLayer'])
+                    fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                    k = 0
+                    while not fvIt.isDone():
+                        if targetColorArray[k].a == 0.0:
+                            targetColorArray[k].r = 0.0
+                            targetColorArray[k].g = 0.0
+                            targetColorArray[k].b = 0.0
+                        k += 1
+                        fvIt.next()
+
+                elif shading == 2:
+                    targetColorArray = MFnMesh.getFaceVertexColors(colorSet=sxglobals.settings.tools['selectedLayer'])
+                    fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+                    k = 0
+                    while not fvIt.isDone():
+                        targetColorArray[k].r = targetColorArray[k].a
+                        targetColorArray[k].g = targetColorArray[k].a
+                        targetColorArray[k].b = targetColorArray[k].a
+                        targetColorArray[k].a = 1.0
+                        k += 1
+                        fvIt.next()
+
+                MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
+
+            # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+            # print('SX Tools: Layer compositing duration: ' + str(totalTime))
+
+        elif sxglobals.settings.tools['compositor'] == 1:
+            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+
     def mergeLayers(self, obj, sourceLayer, targetLayer, up):
         if up:
             target = targetLayer
@@ -209,7 +370,6 @@ class LayerManagement(object):
             self.resetLayers(noColorSetObject)
 
         maya.cmds.select(sxglobals.settings.selectionArray)
-        # sxglobals.core.selectionManager()
 
     # Resulting blended layer is set to Alpha blending mode
     def mergeLayerDirection(self, shapes, up):
@@ -399,7 +559,7 @@ class LayerManagement(object):
             self.toggleLayer(selLayer)
 
         self.refreshLayerList()
-        sxglobals.export.compositeLayers()
+        self.compositeLayers()
 
     # Updates the selected color set to match the highlighted layer in the UI
     def setColorSet(self, highlightedLayer):
@@ -441,6 +601,11 @@ class LayerManagement(object):
             'layerOpacityLabel',
             edit=True,
             label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Opacity:')
+
+        self.getLayerPaletteAndOpacity(
+            sxglobals.settings.shapeArray[
+                len(sxglobals.settings.shapeArray)-1],
+                sxglobals.settings.tools['selectedLayer'])
 
     def sortLayers(self, layers):
         sortedLayers = []
@@ -528,6 +693,90 @@ class LayerManagement(object):
         else:
             return 0, None
 
+    def getLayerPaletteAndOpacity(self, obj, layer):
+        selectionList = OM.MSelectionList()
+        selectionList.add(obj)
+        nodeDagPath = OM.MDagPath()
+        nodeDagPath = selectionList.getDagPath(0)
+        MFnMesh = OM.MFnMesh(nodeDagPath)
+
+        layerColorArray = OM.MColorArray()
+        layerColorArray = MFnMesh.getFaceVertexColors(colorSet=layer)
+        black = OM.MColor()
+        black = (0, 0, 0, 1)
+
+        layerPaletteArray = OM.MColorArray()
+        layerPaletteArray.setLength(8)
+        for k in range(0, 8):
+            layerPaletteArray[k] = black
+
+        n = 0
+        alphaMax = 0
+        for k in range(len(layerColorArray)):
+            match = False
+            for p in range(0, 8):
+                if ((layerColorArray[k].r == layerPaletteArray[p].r) and
+                   (layerColorArray[k].g == layerPaletteArray[p].g) and
+                   (layerColorArray[k].b == layerPaletteArray[p].b)):
+                    match = True
+
+            if (not match) and (n < 8):
+                layerPaletteArray[n] = layerColorArray[k]
+                n += 1
+
+            if layerColorArray[k].a > alphaMax:
+                alphaMax = layerColorArray[k].a
+
+        if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+            maya.cmds.floatSlider(
+                'layerOpacitySlider',
+                edit=True,
+                value=alphaMax)
+            sxglobals.settings.layerAlphaMax = alphaMax
+
+        for k in range(0, 8):
+            maya.cmds.palettePort(
+                'layerPalette',
+                edit=True,
+                rgb=(
+                    k,
+                    layerPaletteArray[k].r,
+                    layerPaletteArray[k].g,
+                    layerPaletteArray[k].b))
+            maya.cmds.palettePort('layerPalette', edit=True, redraw=True)
+
+        if 'layer' not in layer:
+            if maya.cmds.optionMenu('layerBlendModes', exists=True):
+                maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
+            if maya.cmds.text('layerOpacityLabel', exists=True):
+                maya.cmds.text('layerOpacityLabel', edit=True, enable=False)
+            if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+                maya.cmds.floatSlider(
+                    'layerOpacitySlider',
+                    edit=True,
+                    enable=False)
+            return
+        # Blend modes are only valid for color layers,
+        # not material channels
+        else:
+            if maya.cmds.text('layerOpacityLabel', exists=True):
+                maya.cmds.text('layerOpacityLabel', edit=True, enable=True)
+            if maya.cmds.floatSlider('layerOpacitySlider', exists=True):
+                maya.cmds.floatSlider(
+                    'layerOpacitySlider',
+                    edit=True,
+                    enable=True)
+            
+            attr = (
+                '.' + sxglobals.settings.project['RefNames'][sxglobals.settings.tools['selectedLayerIndex']-1] +
+                'BlendMode')
+            mode = maya.cmds.getAttr(str(obj) + attr) + 1
+            maya.cmds.optionMenu(
+                'layerBlendModes',
+                edit=True,
+                select=mode,
+                enable=True)
+
     def clearLayerSets(self):
         refLayers = self.sortLayers(
             sxglobals.settings.project['LayerData'].keys())
@@ -565,23 +814,7 @@ class LayerManagement(object):
                     'value', 
                     sxglobals.settings.tools['selectedLayerIndex'] - 1))
 
-        # Blend modes are only valid for color layers,
-        # not material channels
-        if 'layer' not in sxglobals.settings.tools['selectedLayer']:
-            maya.cmds.optionMenu('layerBlendModes', edit=True, enable=False)
-        else:
-            selected = str(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
-            attr = (
-                '.' + sxglobals.settings.project['RefNames'][selectedIndex-1] +
-                'BlendMode')
-            mode = maya.cmds.getAttr(selected + attr) + 1
-            maya.cmds.optionMenu(
-                'layerBlendModes',
-                edit=True,
-                select=mode,
-                enable=True)
-
-        sxglobals.tools.getLayerPaletteOpacity(
+        self.getLayerPaletteAndOpacity(
             sxglobals.settings.shapeArray[
                 len(sxglobals.settings.shapeArray)-1],
                 sxglobals.settings.tools['selectedLayer'])
@@ -600,4 +833,4 @@ class LayerManagement(object):
             label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Colors:')
 
         if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.shadingMode') != 0:
-            sxglobals.export.compositeLayers()
+            self.compositeLayers()

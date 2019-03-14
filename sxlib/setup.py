@@ -2160,7 +2160,6 @@ class SceneSetup(object):
                 ambientShade=0,
                 position=(0, 50, 0))
             maya.cmds.select(clear=True)
-            # sxglobals.core.selectionManager()
 
     def createCreaseSets(self):
         if not maya.cmds.objExists('sxCreasePartition'):

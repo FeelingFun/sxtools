@@ -210,7 +210,7 @@ class UI(object):
         maya.cmds.text(label='Count')
         maya.cmds.text(label='Mask Export')
 
-        # Max layers 10. Going higher causes instability.
+        # Max layers 10. Going higher causes instability on GPU compositing.
         maya.cmds.text(label='Color layers:')
         maya.cmds.intField(
             'layerCount',
@@ -759,8 +759,6 @@ class UI(object):
             doubleClickCommand=(
                 "sxtools.sxglobals.layers.toggleAllLayers("
                 "sxtools.sxglobals.settings.tools['selectedLayer'])"))
-        # sxglobals.layers.refreshLayerList()
-        # "sxtools.sxglobals.layers.setSelectedLayer()\n"
 
         maya.cmds.columnLayout(
             'layerSetButtonsRight',
@@ -867,7 +865,7 @@ class UI(object):
                 'sxtools.sxglobals.settings.tools["targetLayer"] = '
                 'sxtools.sxglobals.settings.tools["selectedLayer"]\n'
                 'sxtools.sxglobals.tools.copyLayer('
-                'sxtools.sxglobals.settings.objectArray)'))
+                'sxtools.sxglobals.settings.shapeArray)'))
         maya.cmds.menuItem(
             'swapLayerMenuItem',
             parent='layerPopUp',
@@ -875,8 +873,8 @@ class UI(object):
             command=(
                 'sxtools.sxglobals.settings.tools["targetLayer"] = '
                 'sxtools.sxglobals.settings.tools["selectedLayer"]\n'
-                'sxtools.sxglobals.tools.swapLayers('
-                'sxtools.sxglobals.settings.shapeArray)'))
+                'sxtools.sxglobals.tools.copyLayer('
+                'sxtools.sxglobals.settings.shapeArray, 2)'))
         maya.cmds.menuItem(
             parent='layerPopUp',
             divider=True)
@@ -928,12 +926,8 @@ class UI(object):
                 height=20,
                 command=(
                     "sxtools.sxglobals.tools.clearSelector()\n"
-                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
-                    "sxtools.sxglobals.settings.shapeArray["
-                    "len(sxtools.sxglobals.settings.shapeArray)-1],"
-                    "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                     "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.export.compositeLayers()"))
+                    "sxtools.sxglobals.layers.compositeLayers()"))
         else:
             maya.cmds.button(
                 'clearButton',
@@ -945,12 +939,8 @@ class UI(object):
                 height=20,
                 command=(
                     "sxtools.sxglobals.tools.clearSelector()\n"
-                    "sxtools.sxglobals.tools.getLayerPaletteOpacity("
-                    "sxtools.sxglobals.settings.shapeArray["
-                    "len(sxtools.sxglobals.settings.shapeArray)-1], "
-                    "sxtools.sxglobals.settings.tools['selectedLayer'])\n"
                     "sxtools.sxglobals.layers.refreshLayerList()\n"
-                    "sxtools.sxglobals.export.compositeLayers()"))
+                    "sxtools.sxglobals.layers.compositeLayers()"))
 
         maya.cmds.rowColumnLayout(
             'layerRowColumns',
@@ -1006,12 +996,7 @@ class UI(object):
             changeCommand=(
                 "sxtools.sxglobals.tools.setLayerOpacity()\n"
                 "sxtools.sxglobals.layers.refreshLayerList()\n"
-                "sxtools.sxglobals.export.compositeLayers()"))
-        sxglobals.tools.getLayerPaletteOpacity(
-            sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.settings.tools["selectedLayer"])
-        # sxglobals.layers.refreshLayerList()
-        # sxglobals.export.compositeLayers()
+                "sxtools.sxglobals.layers.compositeLayers()"))
 
     def applyColorToolUI(self):
         maya.cmds.frameLayout(
@@ -1327,8 +1312,7 @@ class UI(object):
             maxValue=2000,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['rayCount'] = ("
-                "maya.cmds.intField('rayCount', query=True, value=True))"
-            ))
+                "maya.cmds.intField('rayCount', query=True, value=True))"))
 
         maya.cmds.text('maxDistanceLabel', label='Ray Max Distance:')
         maya.cmds.floatField(
@@ -1340,8 +1324,7 @@ class UI(object):
             maxValue=10000.0,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['maxDistance'] = ("
-                "maya.cmds.floatField('maxDistance', query=True, value=True))"
-            ))
+                "maya.cmds.floatField('maxDistance', query=True, value=True))"))
 
         maya.cmds.text('comboOffsetLabel', label='Mesh Offset:')
         maya.cmds.floatField(
@@ -1353,8 +1336,7 @@ class UI(object):
             maxValue=10.0,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['comboOffset'] = ("
-                "maya.cmds.floatField('comboOffset', query=True, value=True))"
-            ))
+                "maya.cmds.floatField('comboOffset', query=True, value=True))"))
 
         maya.cmds.text('biasLabel', label='Ray Source Offset:')
         maya.cmds.floatField(
@@ -1368,8 +1350,7 @@ class UI(object):
             maxValue=10.0,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['bias'] = ("
-                "maya.cmds.floatField('bias', query=True, value=True))"
-            ))
+                "maya.cmds.floatField('bias', query=True, value=True))"))
 
         maya.cmds.rowColumnLayout(
             'occlusionRowColumns',
@@ -1407,8 +1388,7 @@ class UI(object):
             minValue=0.0,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['bakeGroundScale'] = ("
-                "maya.cmds.floatField('groundScale', query=True, value=True))"
-            ))
+                "maya.cmds.floatField('groundScale', query=True, value=True))"))
         maya.cmds.floatField(
             'groundOffset',
             value=sxglobals.settings.tools['bakeGroundOffset'],
@@ -1416,8 +1396,7 @@ class UI(object):
             minValue=0.0,
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['bakeGroundOffset'] = ("
-                "maya.cmds.floatField('groundOffset', query=True, value=True))"
-            ))
+                "maya.cmds.floatField('groundOffset', query=True, value=True))"))
 
         maya.cmds.rowColumnLayout(
             'occlusionRowColumns2',
@@ -1439,12 +1418,7 @@ class UI(object):
                 "sxtools.sxglobals.settings.tools['blendSlider'] = ("
                 "maya.cmds.floatSlider("
                 "'blendSlider', query=True, value=True))\n"
-                "sxtools.sxglobals.tools.blendOcclusion()"
-            ))
-
-        sxglobals.tools.getLayerPaletteOpacity(
-            sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1],
-            sxglobals.settings.tools["selectedLayer"])
+                "sxtools.sxglobals.tools.blendOcclusion()"))
 
         maya.cmds.button(
             label='Bake Occlusion',

@@ -320,7 +320,7 @@ class Core(object):
             sxglobals.ui.exportButtonUI()
 
             sxglobals.layers.refreshLayerList()
-            sxglobals.export.compositeLayers()
+            sxglobals.layers.compositeLayers()
 
             # Make sure selected things are using the correct material
             if sxglobals.settings.tools['compositor'] == 1:
