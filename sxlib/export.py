@@ -499,11 +499,20 @@ class Export(object):
                     maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
-                        ofb=3, ofc=0, ost=1, ocr=0,
+                        ofb=3, ofc=0, ost=1, ocr=1,
                         dv=maya.cmds.getAttr(exportShape+'.subdivisionLevel'),
-                        bnr=1, c=1, kb=1, ksb=1, khe=0,
-                        kt=1, kmb=1, suv=1, peh=0,
+                        bnr=1, c=1, kb=1, ksb=1, khe=1,
+                        kt=1, kmb=1, suv=1, peh=1,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
+
+                    objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
+                    hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+
+                    # Apply hard edges to hard creases
+                    if hardEdges:
+                        maya.cmds.select(hardEdges, r=True, ne=True)
+                        maya.cmds.polySoftEdge(a=0, ch=0)
+
                 maya.cmds.editDisplayLayerMembers(
                     'exportsLayer', exportShape)
                 maya.cmds.hide(exportShape)
@@ -565,6 +574,14 @@ class Export(object):
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
+                    objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
+                    hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+
+                    # Apply hard edges to hard creases
+                    if hardEdges:
+                        maya.cmds.select(hardEdges, r=True, ne=True)
+                        maya.cmds.polySoftEdge(a=0, ch=0)
+
                 maya.cmds.bakePartialHistory(
                     skinTarget,
                     prePostDeformers=True,
@@ -609,6 +626,14 @@ class Export(object):
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
                     maya.cmds.delete(exportShape, ch=True)
+
+                    objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
+                    hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+
+                    # Apply hard edges to hard creases
+                    if hardEdges:
+                        maya.cmds.select(hardEdges, r=True, ne=True)
+                        maya.cmds.polySoftEdge(a=0, ch=0)
 
         totalTime = maya.cmds.timerX(startTime=startTime0)
         print('SX Tools: Total time ' + str(totalTime))
