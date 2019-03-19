@@ -834,7 +834,13 @@ class ToolActions(object):
                 activeObjects=True,
                 colorMaterialChannel='none',
                 colorShadedDisplay=True)
-            maya.mel.eval('DisplayShadedAndTextured;')
+            maya.cmds.modelEditor(
+                'modelPanel4',
+                edit=True,
+                useDefaultMaterial=False,
+                displayLights='all',
+                lights=True,
+                displayTextures=True)
 
     def applyMasterPalette(self, objects):
         startTimeOcc = maya.cmds.timerX()
@@ -1512,10 +1518,11 @@ class ToolActions(object):
         else:
             print('SXTools Error: Invalid layers!')
 
+    # Updates tool title bar and returns active shading mode
     def verifyShadingMode(self):
         if len(sxglobals.settings.shapeArray) > 0:
-            object = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
-            mode = int(maya.cmds.getAttr(object + '.shadingMode') + 1)
+            obj = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
+            mode = int(maya.cmds.getAttr(obj + '.shadingMode') + 1)
 
             objectLabel = (
                 'Selected Objects: ' +
@@ -1545,7 +1552,13 @@ class ToolActions(object):
                     maya.cmds.setAttr(str(shape) + '.displayColors', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
 
-                maya.mel.eval('DisplayLight;')
+                maya.cmds.modelEditor(
+                    'modelPanel4',
+                    edit=True,
+                    useDefaultMaterial=False,
+                    displayLights='all',
+                    lights=True,
+                    displayTextures=True)
 
             elif mode == 1:
                 maya.cmds.sets(
@@ -1570,7 +1583,13 @@ class ToolActions(object):
                     maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColors', 1)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
-                maya.mel.eval('DisplayLight;')
+                maya.cmds.modelEditor(
+                    'modelPanel4',
+                    edit=True,
+                    useDefaultMaterial=False,
+                    displayLights='all',
+                    lights=True,
+                    displayTextures=True)
 
                 # kludgy kludge for deadling with
                 # paint vertex tool output in sw compositing

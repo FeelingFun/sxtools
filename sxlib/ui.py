@@ -2055,9 +2055,5 @@ class UI(object):
             command=(
                 "sxtools.sxglobals.settings.tools['compositeEnabled']=False\n"
                 "sxtools.sxglobals.tools.setShadingMode(0)\n"
-                "maya.cmds.polyOptions(activeObjects=True,"
-                "colorMaterialChannel='ambientDiffuse',"
-                "colorShadedDisplay=True)\n"
-                "maya.mel.eval('DisplayLight;')\n"
                 "sxtools.sxglobals.export.processObjects("
                 "sxtools.sxglobals.settings.objectArray)"))

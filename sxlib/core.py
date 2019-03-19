@@ -204,12 +204,12 @@ class Core(object):
 
     # Re-draws the UI dynamically for different selection types
     def refreshSXTools(self):
-        
+
         x1 = sxglobals.setup.createDefaultLights()
         x2 = sxglobals.setup.createCreaseSets()
         x3 = sxglobals.setup.createSubMeshSets()
         x4 = sxglobals.setup.createDisplayLayers()
-        
+
         if (x1 or x2 or x3 or x4):
             maya.cmds.select(clear=True)
 
@@ -340,21 +340,17 @@ class Core(object):
                 maya.cmds.sets(
                     sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
 
-            if sxglobals.tools.verifyShadingMode() == 0:
-                maya.cmds.polyOptions(
-                    activeObjects=True,
-                    colorMaterialChannel='ambientDiffuse',
-                    colorShadedDisplay=True)
-                mel.eval('DisplayLight;')
-                maya.cmds.modelEditor(
-                    'modelPanel4',
-                    edit=True,
-                    udm=False,
-                    displayTextures=True)
+            maya.cmds.modelEditor(
+                'modelPanel4',
+                edit=True,
+                useDefaultMaterial=False,
+                displayLights='all',
+                lights=True,
+                displayTextures=True)
 
             # Adjust crease levels based on
             # the subdivision level of the selected object
-            if sxglobals.settings.tools["matchSubdivision"]:
+            if sxglobals.settings.tools['matchSubdivision']:
                 if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
                     sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
@@ -364,7 +360,7 @@ class Core(object):
 
         maya.cmds.setFocus('MayaWindow')
 
-        # Hacky hack to prevent Maya's outliner bug from 
+        # Hacky hack to prevent Maya's outliner bug from
         # replicating unlimited sets per refresh
         if not maya.cmds.objExists('sxToolsItemFilter'):
             maya.cmds.itemFilter('sxToolsItemFilter', bt='creaseSet')
