@@ -176,134 +176,153 @@ class LayerManagement(object):
         elif sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
-    def mergeLayers(self, obj, sourceLayer, targetLayer, up):
-        if up:
-            target = targetLayer
-        else:
-            target = sourceLayer
+    def mergeLayers(self, objects, sourceLayer, targetLayer, up):
+        print sourceLayer, targetLayer
+        startTimeOcc = maya.cmds.timerX()
 
-        selected = str(obj)
-        attr = '.' + sxglobals.settings.tools['selectedLayer'] + 'BlendMode'
-        mode = int(maya.cmds.getAttr(selected + attr))
+        attrA = '.' + str(sourceLayer) + 'BlendMode'
+        attrB = '.' + str(targetLayer) + 'BlendMode'
+        color = sxglobals.settings.project['LayerData'][sourceLayer][1]
 
-        selectionList = OM.MSelectionList()
-        selectionList.add(obj)
-        nodeDagPath = OM.MDagPath()
-        nodeDagPath = selectionList.getDagPath(0)
-        MFnMesh = OM.MFnMesh(nodeDagPath)
+        fillColor = OM.MColor()
+        mod = OM.MDGModifier()
+        colorRep = OM.MFnMesh.kRGBA
+        fillColor.r = color[0]
+        fillColor.g = color[1]
+        fillColor.b = color[2]
+        fillColor.a = color[3]
 
-        sourceColorArray = OM.MColorArray()
-        targetColorArray = OM.MColorArray()
-        sourceColorArray = MFnMesh.getFaceVertexColors(
-            colorSet=sourceLayer)
-        targetColorArray = MFnMesh.getFaceVertexColors(
-            colorSet=targetLayer)
-        faceIds = OM.MIntArray()
-        vtxIds = OM.MIntArray()
+        for obj in objects:
+            mode = int(maya.cmds.getAttr(obj + attrA))
 
-        lenSel = len(sourceColorArray)
+            selectionList = OM.MSelectionList()
+            selectionList.add(obj)
+            nodeDagPath = OM.MDagPath()
+            nodeDagPath = selectionList.getDagPath(0)
+            MFnMesh = OM.MFnMesh(nodeDagPath)
 
-        faceIds.setLength(lenSel)
-        vtxIds.setLength(lenSel)
+            sourceColorArray = OM.MColorArray()
+            targetColorArray = OM.MColorArray()
+            fillColorArray = OM.MColorArray()
+            sourceColorArray = MFnMesh.getFaceVertexColors(
+                colorSet=sourceLayer)
+            targetColorArray = MFnMesh.getFaceVertexColors(
+                colorSet=targetLayer)
+            fillColorArray = MFnMesh.getFaceVertexColors(
+                colorSet = sourceLayer)
+            faceIds = OM.MIntArray()
+            vtxIds = OM.MIntArray()
 
-        # generate faceID and vertexID arrays
-        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
-        k = 0
-        while not fvIt.isDone():
-            faceIds[k] = fvIt.faceId()
-            vtxIds[k] = fvIt.vertexId()
-            k += 1
-            fvIt.next()
+            lenSel = len(sourceColorArray)
 
-        fvIt = OM.MItMeshFaceVertex(nodeDagPath)
+            faceIds.setLength(lenSel)
+            vtxIds.setLength(lenSel)
 
-        # alpha blend
-        if mode == 0:
-            k = 0
-            while not fvIt.isDone():
-                targetColorArray[k].r = (
-                    sourceColorArray[k].r * sourceColorArray[k].a +
-                    targetColorArray[k].r * (1 - sourceColorArray[k].a))
-                targetColorArray[k].g = (
-                    sourceColorArray[k].g * sourceColorArray[k].a +
-                    targetColorArray[k].g * (1 - sourceColorArray[k].a))
-                targetColorArray[k].b = (
-                    sourceColorArray[k].b * sourceColorArray[k].a +
-                    targetColorArray[k].b * (1 - sourceColorArray[k].a))
-                targetColorArray[k].a += sourceColorArray[k].a
-                if targetColorArray[k].a > 1.0:
-                   targetColorArray[k].a = 1.0
-                k += 1
-                fvIt.next()
-
-        # additive
-        elif mode == 1:
+            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
             k = 0
             while not fvIt.isDone():
                 faceIds[k] = fvIt.faceId()
                 vtxIds[k] = fvIt.vertexId()
-
-                targetColorArray[k].r += sourceColorArray[
-                    k].r * sourceColorArray[k].a
-                targetColorArray[k].g += sourceColorArray[
-                    k].g * sourceColorArray[k].a
-                targetColorArray[k].b += sourceColorArray[
-                    k].b * sourceColorArray[k].a
-                targetColorArray[k].a += sourceColorArray[k].a
-                if targetColorArray[k].a > 1.0:
-                   targetColorArray[k].a = 1.0
+                fillColorArray[k] = fillColor
                 k += 1
                 fvIt.next()
 
-        # multiply
-        elif mode == 2:
-            # layer2 lerp with white using (1-alpha), multiply with layer1
-            k = 0
-            while not fvIt.isDone():
-                faceIds[k] = fvIt.faceId()
-                vtxIds[k] = fvIt.vertexId()
+            fvIt = OM.MItMeshFaceVertex(nodeDagPath)
 
-                sourceColorArray[k].r = (
-                    (sourceColorArray[k].r * sourceColorArray[k].a) +
-                    (1.0 * (1 - sourceColorArray[k].a)))
-                sourceColorArray[k].g = (
-                    (sourceColorArray[k].g * sourceColorArray[k].a) +
-                    (1.0 * (1 - sourceColorArray[k].a)))
-                sourceColorArray[k].b = (
-                    (sourceColorArray[k].b * sourceColorArray[k].a) +
-                    (1.0 * (1 - sourceColorArray[k].a)))
+            # alpha blend
+            if mode == 0:
+                k = 0
+                while not fvIt.isDone():
+                    targetColorArray[k].r = (
+                        sourceColorArray[k].r * sourceColorArray[k].a +
+                        targetColorArray[k].r * (1 - sourceColorArray[k].a))
+                    targetColorArray[k].g = (
+                        sourceColorArray[k].g * sourceColorArray[k].a +
+                        targetColorArray[k].g * (1 - sourceColorArray[k].a))
+                    targetColorArray[k].b = (
+                        sourceColorArray[k].b * sourceColorArray[k].a +
+                        targetColorArray[k].b * (1 - sourceColorArray[k].a))
+                    targetColorArray[k].a += sourceColorArray[k].a
+                    if targetColorArray[k].a > 1.0:
+                       targetColorArray[k].a = 1.0
+                    k += 1
+                    fvIt.next()
 
-                targetColorArray[k].r = sourceColorArray[
-                    k].r * targetColorArray[k].r
-                targetColorArray[k].g = sourceColorArray[
-                    k].g * targetColorArray[k].g
-                targetColorArray[k].b = sourceColorArray[
-                    k].b * targetColorArray[k].b
-                k += 1
-                fvIt.next()
-        else:
-            print('SX Tools Error: Invalid blend mode')
-            return
+            # additive
+            elif mode == 1:
+                k = 0
+                while not fvIt.isDone():
+                    faceIds[k] = fvIt.faceId()
+                    vtxIds[k] = fvIt.vertexId()
 
-        maya.cmds.polyColorSet(
-            selected, currentColorSet=True, colorSet=str(target))
-        MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
+                    targetColorArray[k].r += sourceColorArray[
+                        k].r * sourceColorArray[k].a
+                    targetColorArray[k].g += sourceColorArray[
+                        k].g * sourceColorArray[k].a
+                    targetColorArray[k].b += sourceColorArray[
+                        k].b * sourceColorArray[k].a
+                    targetColorArray[k].a += sourceColorArray[k].a
+                    if targetColorArray[k].a > 1.0:
+                       targetColorArray[k].a = 1.0
+                    k += 1
+                    fvIt.next()
 
-        if up:
-            maya.cmds.polyColorSet(
-                selected,
-                delete=True,
-                colorSet=str(sourceLayer))
-        else:
-            maya.cmds.polyColorSet(
-                selected,
-                delete=True,
-                colorSet=str(targetLayer))
+            # multiply
+            elif mode == 2:
+                # layer2 lerp with white using (1-alpha), multiply with layer1
+                k = 0
+                while not fvIt.isDone():
+                    faceIds[k] = fvIt.faceId()
+                    vtxIds[k] = fvIt.vertexId()
+
+                    sourceColorArray[k].r = (
+                        (sourceColorArray[k].r * sourceColorArray[k].a) +
+                        (1.0 * (1 - sourceColorArray[k].a)))
+                    sourceColorArray[k].g = (
+                        (sourceColorArray[k].g * sourceColorArray[k].a) +
+                        (1.0 * (1 - sourceColorArray[k].a)))
+                    sourceColorArray[k].b = (
+                        (sourceColorArray[k].b * sourceColorArray[k].a) +
+                        (1.0 * (1 - sourceColorArray[k].a)))
+
+                    targetColorArray[k].r = sourceColorArray[
+                        k].r * targetColorArray[k].r
+                    targetColorArray[k].g = sourceColorArray[
+                        k].g * targetColorArray[k].g
+                    targetColorArray[k].b = sourceColorArray[
+                        k].b * targetColorArray[k].b
+                    k += 1
+                    fvIt.next()
+            else:
+                print('SX Tools Error: Invalid blend mode')
+                return
+
+            if up:
+                maya.cmds.polyColorSet(
+                    obj, currentColorSet=True, colorSet=targetLayer)
+                MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
+                maya.cmds.polyColorSet(
+                    obj, currentColorSet=True, colorSet=sourceLayer)
+                MFnMesh.setFaceVertexColors(fillColorArray, faceIds, vtxIds)
+            else:
+                maya.cmds.polyColorSet(
+                    obj, currentColorSet=True, colorSet=sourceLayer)
+                MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
+                maya.cmds.polyColorSet(
+                    obj, currentColorSet=True, colorSet=targetLayer)
+                MFnMesh.setFaceVertexColors(fillColorArray, faceIds, vtxIds)
+
+            maya.cmds.setAttr(str(obj) + attrA, 0)
+            maya.cmds.setAttr(str(obj) + attrB, 0)
+
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Mergelayers duration ' + str(totalTime))
 
     # If mesh color sets don't match the reference layers.
     # Sorts the existing color sets to the correct order,
     # and fills the missing slots with default layers.
     def patchLayers(self, objects):
+        startTimeOcc = maya.cmds.timerX()
         noColorSetObject = []
 
         refLayers = self.sortLayers(
@@ -368,10 +387,13 @@ class LayerManagement(object):
         if len(noColorSetObject) > 0:
             self.resetLayers(noColorSetObject)
 
-        maya.cmds.select(sxglobals.settings.selectionArray)
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Patchlayers duration ' + str(totalTime))
+        # maya.cmds.select(sxglobals.settings.selectionArray)
 
     # Resulting blended layer is set to Alpha blending mode
     def mergeLayerDirection(self, shapes, up):
+        startTimeOcc = maya.cmds.timerX()
         sourceLayer = sxglobals.settings.tools['selectedLayer']
         if (str(sourceLayer) == 'layer1') and up:
             print('SX Tools Error: Cannot merge layer1')
@@ -397,25 +419,14 @@ class LayerManagement(object):
             sourceLayer = sxglobals.settings.project['RefNames'][layerIndex+1]
             targetLayer = sxglobals.settings.project['RefNames'][layerIndex]
 
-        for shape in shapes:
-            self.mergeLayers(
-                shape,
+        self.mergeLayers(
+                shapes,
                 sourceLayer,
                 targetLayer, up)
-            self.patchLayers([shape, ])
-
-        if up:
-            maya.cmds.polyColorSet(
-                shapes,
-                currentColorSet=True,
-                colorSet=str(targetLayer))
-        else:
-            maya.cmds.polyColorSet(
-                shapes,
-                currentColorSet=True,
-                colorSet=str(sourceLayer))
 
         self.refreshLayerList()
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Mergelayerdirection duration ' + str(totalTime))
 
     # IF mesh has no color sets at all,
     # or non-matching color set names.
@@ -444,7 +455,7 @@ class LayerManagement(object):
                 clamped=True,
                 representation='RGBA',
                 colorSet=str(layer))
-            self.clearLayer([layer, ], objects)
+        self.clearLayer(refLayers, objects)
 
         # maya.cmds.polyColorSet(
         #    object,
@@ -488,6 +499,110 @@ class LayerManagement(object):
         #    objects,
         #    currentColorSet=True,
         #    colorSet='layer1')
+
+    def clearLayer_new(self, layers, objList=None):
+        objects = []
+        if objList is None:
+            objects = sxglobals.settings.shapeArray
+        else:
+            objects = objList
+
+        if 'composite' in layers:
+            layers.remove('composite')
+
+        for layer in layers:
+
+            maya.cmds.polyColorSet(
+                objects,
+                currentColorSet=True,
+                colorSet=layer)
+
+            color = sxglobals.settings.project['LayerData'][layer][1]
+
+            fillColor = OM.MColor()
+            mod = OM.MDGModifier()
+            colorRep = OM.MFnMesh.kRGBA
+            fillColor.r = color[0]
+            fillColor.g = color[1]
+            fillColor.b = color[2]
+            fillColor.a = color[3]
+
+            selectionList = OM.MSelectionList()
+            for obj in objects:
+                selectionList.add(obj)
+            selDagPath = OM.MDagPath()
+            fVert = OM.MObject()
+            fvColors = OM.MColorArray()
+            vtxIds = OM.MIntArray()
+            fvIds = OM.MIntArray()
+            faceIds = OM.MIntArray()
+            compDagPath = OM.MDagPath()
+
+            selectionIter = OM.MItSelectionList(selectionList)
+            while not selectionIter.isDone():
+                # Gather full mesh data to compare selection against
+                selDagPath = selectionIter.getDagPath()
+                mesh = OM.MFnMesh(selDagPath)
+                fvColors.clear()
+                fvColors = mesh.getFaceVertexColors(colorSet=layer)
+                selLen = len(fvColors)
+                vtxIds.setLength(selLen)
+                fvIds.setLength(selLen)
+                faceIds.setLength(selLen)
+
+                meshIter = OM.MItMeshFaceVertex(selDagPath)
+                i = 0
+                while not meshIter.isDone():
+                    vtxIds[i] = meshIter.vertexId()
+                    faceIds[i] = meshIter.faceId()
+                    fvIds[i] = meshIter.faceVertexId()
+                    i += 1
+                    meshIter.next()
+
+                if selectionIter.hasComponents():
+                    (compDagPath, fVert) = selectionIter.getComponent()
+                    # Iterate through selected vertices on current selection
+                    fvIt = OM.MItMeshFaceVertex(selDagPath, fVert)
+                    while not fvIt.isDone():
+                        faceId = fvIt.faceId()
+                        fvId = fvIt.faceVertexId()
+                        vtxId = fvIt.vertexId()
+                        for idx in xrange(selLen):
+                            if (faceId == faceIds[idx] and
+                               fvId == fvIds[idx] and
+                               vtxId == vtxIds[idx] and
+                               compDagPath == selDagPath):
+                                fvColors[idx] = fillColor
+                                break
+                        fvIt.next()
+                else:
+                    if overwriteAlpha:
+                        for idx in xrange(selLen):
+                            fvColors[idx] = fillColor
+                    elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax == 0):
+                        for idx in xrange(selLen):
+                            fvColors[idx] = fillColor
+                    elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax != 0):
+                        for idx in xrange(selLen):
+                            fvColors[idx].r = fillColor.r
+                            fvColors[idx].g = fillColor.g
+                            fvColors[idx].b = fillColor.b
+                    else:
+                        fvColors = [fillColor] * selLen
+
+                mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
+                mod.doIt()
+                selectionIter.next()
+
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Apply Color duration ' + str(totalTime))
+
+        sxglobals.layers.refreshLayerList()
+        sxglobals.layers.compositeLayers()
+
+        attr = '.' + str(layer) + 'BlendMode'
+        for obj in objects:
+            maya.cmds.setAttr(str(obj) + attr, 0)
 
     def clearLayer(self, layers, objList=None):
         objects = []

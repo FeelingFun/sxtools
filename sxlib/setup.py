@@ -2142,6 +2142,7 @@ class SceneSetup(object):
         maya.cmds.setAttr('sxSubMeshShader3.outColor', 0, 0, 1)
 
     def createDefaultLights(self):
+        setUpdated = False
         if len(maya.cmds.ls(type='light')) == 0:
             print('SX Tools: No lights found, creating default lights.')
             maya.cmds.directionalLight(
@@ -2159,72 +2160,39 @@ class SceneSetup(object):
                 intensity=0.4,
                 ambientShade=0,
                 position=(0, 50, 0))
-            maya.cmds.select(clear=True)
+            setUpdated = True
+        return setUpdated
 
     def createCreaseSets(self):
+        numCreaseSets = 5
+        setUpdated = False
         if not maya.cmds.objExists('sxCreasePartition'):
             maya.cmds.createNode(
                 'partition',
                 n='sxCreasePartition')
-        if not maya.cmds.objExists('sxCrease0'):
-            maya.cmds.createNode(
-                'creaseSet',
-                n='sxCrease0')
-            maya.cmds.setAttr(
-                'sxCrease0.creaseLevel', 0.0)
-            maya.cmds.connectAttr(
-                'sxCrease0.partition',
-                'sxCreasePartition.sets[0]')
-        if not maya.cmds.objExists('sxCrease1'):
-            maya.cmds.createNode(
-                'creaseSet',
-                n='sxCrease1')
-            maya.cmds.setAttr(
-                'sxCrease1.creaseLevel', 0.5)
-            maya.cmds.setAttr(
-                'sxCrease1.memberWireframeColor', 3)
-            maya.cmds.connectAttr(
-                'sxCrease1.partition',
-                'sxCreasePartition.sets[1]')
-        if not maya.cmds.objExists('sxCrease2'):
-            maya.cmds.createNode(
-                'creaseSet',
-                n='sxCrease2')
-            maya.cmds.setAttr(
-                'sxCrease2.creaseLevel', 1.0)
-            maya.cmds.setAttr(
-                'sxCrease2.memberWireframeColor', 5)
-            maya.cmds.connectAttr(
-                'sxCrease2.partition',
-                'sxCreasePartition.sets[2]')
-        if not maya.cmds.objExists('sxCrease3'):
-            maya.cmds.createNode(
-                'creaseSet',
-                n='sxCrease3')
-            maya.cmds.setAttr(
-                'sxCrease3.creaseLevel', 2.0)
-            maya.cmds.setAttr(
-                'sxCrease3.memberWireframeColor', 6)
-            maya.cmds.connectAttr(
-                'sxCrease3.partition',
-                'sxCreasePartition.sets[3]')
-        if not maya.cmds.objExists('sxCrease4'):
-            maya.cmds.createNode(
-                'creaseSet',
-                n='sxCrease4')
-            maya.cmds.setAttr(
-                'sxCrease4.creaseLevel', 10.0)
-            maya.cmds.setAttr(
-                'sxCrease4.memberWireframeColor', 7)
-            maya.cmds.connectAttr(
-                'sxCrease4.partition',
-                'sxCreasePartition.sets[4]')
+            setUpdated = True
+
+        for i in xrange(numCreaseSets):
+            setName = 'sxCrease' + str(i)
+            if not maya.cmds.objExists(setName):
+                maya.cmds.createNode(
+                    'creaseSet',
+                    n=setName)
+                maya.cmds.setAttr(
+                    setName + '.creaseLevel', i * 0.25)
+                maya.cmds.connectAttr(
+                    setName + '.partition',
+                    'sxCreasePartition.sets[' + str(i) + ']')
+                setUpdated = True
+        return setUpdated
 
     def createSubMeshSets(self):
+        setUpdated = False
         if not maya.cmds.objExists('sxSubMeshPartition'):
             maya.cmds.createNode(
                 'partition',
                 n='sxSubMeshPartition')
+            setUpdated = True
         if not maya.cmds.objExists('sxSubMesh0'):
             maya.cmds.createNode(
                 'objectSet',
@@ -2232,6 +2200,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxSubMesh0.partition',
                 'sxSubMeshPartition.sets[0]')
+            setUpdated = True
         if not maya.cmds.objExists('sxSubMesh1'):
             maya.cmds.createNode(
                 'objectSet',
@@ -2239,6 +2208,7 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxSubMesh1.partition',
                 'sxSubMeshPartition.sets[1]')
+            setUpdated = True
         if not maya.cmds.objExists('sxSubMesh2'):
             maya.cmds.createNode(
                 'objectSet',
@@ -2246,20 +2216,27 @@ class SceneSetup(object):
             maya.cmds.connectAttr(
                 'sxSubMesh2.partition',
                 'sxSubMeshPartition.sets[2]')
+            setUpdated = True
+        return setUpdated
 
     def createDisplayLayers(self):
+        setUpdated = False
         if 'assetsLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating assetsLayer')
             maya.cmds.createDisplayLayer(
                 name='assetsLayer', number=1, empty=True)
+            setUpdated = True
         if 'skinMeshLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating skinMeshLayer')
             maya.cmds.createDisplayLayer(
                 name='skinMeshLayer', number=2, empty=True)
+            setUpdated = True
         if 'exportsLayer' not in maya.cmds.ls(type='displayLayer'):
             print('SX Tools: Creating exportsLayer')
             maya.cmds.createDisplayLayer(
                 name='exportsLayer', number=3, empty=True)
+            setUpdated = True
+        return setUpdated
 
     def setPrimVars(self):
         refLayers = sxglobals.layers.sortLayers(

@@ -50,7 +50,7 @@ class Export(object):
             for i in range(1, numLayers):
                 sourceLayer = 'layer' + str(i + 1)
                 sxglobals.layers.mergeLayers(
-                    selected, sourceLayer, 'layer1', True)
+                    [selected, ], sourceLayer, 'layer1', True)
 
     def dataToUV(self,
                  shape,
@@ -202,21 +202,6 @@ class Export(object):
         materials = []
         materialUVArray = []
         exportBlocks = []
-        subMeshes = False
-
-        # Check for sub-meshes, assign materials
-        maya.cmds.select('sxSubMesh0')
-        if len(maya.cmds.ls(selection=True)) > 0:
-            subMeshes = True
-            maya.cmds.sets(e=True, forceElement='sxSubMeshShader1SG')
-        maya.cmds.select('sxSubMesh1')
-        if len(maya.cmds.ls(selection=True)) > 0:
-            subMeshes = True
-            maya.cmds.sets(e=True, forceElement='sxSubMeshShader2SG')
-        maya.cmds.select('sxSubMesh2')
-        if len(maya.cmds.ls(selection=True)) > 0:
-            subMeshes = True
-            maya.cmds.sets(e=True, forceElement='sxSubMeshShader3SG')
 
         for key, value in sxglobals.settings.project['LayerData'].iteritems():
             # UV channel for palette masks
@@ -315,6 +300,20 @@ class Export(object):
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
+
+        # Check for sub-meshes, assign materials
+        for exportShape in exportShapeArray:
+            if maya.cmds.getAttr(str(exportShape) + '.subMeshes'):
+                maya.cmds.setAttr(str(exportShape) + '.displayColors', 0)
+                maya.cmds.select('sxSubMesh0', r=True)
+                if len(maya.cmds.ls(selection=True)) > 0:
+                    maya.cmds.sets(e=True, forceElement='sxSubMeshShader1SG')
+                maya.cmds.select('sxSubMesh1', r=True)
+                if len(maya.cmds.ls(selection=True)) > 0:
+                    maya.cmds.sets(e=True, forceElement='sxSubMeshShader2SG')
+                maya.cmds.select('sxSubMesh2', r=True)
+                if len(maya.cmds.ls(selection=True)) > 0:
+                    maya.cmds.sets(e=True, forceElement='sxSubMeshShader3SG')
 
         # Check for additional Layer Sets on the objects,
         # create additional entries for export
@@ -928,7 +927,7 @@ class Export(object):
         elif buttonState3 == 4:
             pass
 
-        if (buttonState1 != 1) and (buttonState3 != 3):
+        if (buttonState1 != 1) and (buttonState3 != 3) and (buttonState3 != 4):
             maya.cmds.shaderfx(
                 sfxnode='SXExportShader',
                 edit_int=(

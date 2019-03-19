@@ -204,10 +204,14 @@ class Core(object):
 
     # Re-draws the UI dynamically for different selection types
     def refreshSXTools(self):
-        sxglobals.setup.createDefaultLights()
-        sxglobals.setup.createCreaseSets()
-        sxglobals.setup.createSubMeshSets()
-        sxglobals.setup.createDisplayLayers()
+        
+        x1 = sxglobals.setup.createDefaultLights()
+        x2 = sxglobals.setup.createCreaseSets()
+        x3 = sxglobals.setup.createSubMeshSets()
+        x4 = sxglobals.setup.createDisplayLayers()
+        
+        if (x1 or x2 or x3 or x4):
+            maya.cmds.select(clear=True)
 
         # base canvases for all SX Tools UI
         if maya.cmds.layout('canvasPanes', exists=True):
@@ -359,3 +363,11 @@ class Core(object):
                     maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
 
         maya.cmds.setFocus('MayaWindow')
+
+        # Hacky hack to prevent Maya's outliner bug from 
+        # replicating unlimited sets per refresh
+        if not maya.cmds.objExists('sxToolsItemFilter'):
+            maya.cmds.itemFilter('sxToolsItemFilter', bt='creaseSet')
+        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='sxToolsItemFilter')
+        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, refresh=True)
+        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='')

@@ -131,9 +131,11 @@ class UI(object):
 
         maya.cmds.checkBox(
             'matchSubdivisionToggle',
-            label='Use export subdivision in viewport',
+            label='Accurate crease preview',
             value=sxglobals.settings.tools['matchSubdivision'],
-            ann='This incurs a performance penalty on every selection',
+            ann=(
+                'Match crease values with subdivision level in the viewport.\n'
+                'This incurs a performance penalty on every selection.'),
             onCommand='sxtools.sxglobals.settings.tools["matchSubdivision"]=True',
             offCommand='sxtools.sxglobals.settings.tools["matchSubdivision"]=False')
 
@@ -603,7 +605,8 @@ class UI(object):
                 label='Add missing color sets',
                 command=(
                     'sxtools.sxglobals.layers.patchLayers('
-                    'sxtools.sxglobals.settings.patchArray)'))
+                    'sxtools.sxglobals.settings.patchArray)\n'
+                    'sxtools.sxglobals.core.updateSXTools()'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
@@ -642,7 +645,8 @@ class UI(object):
                 label='Add missing color sets',
                 command=(
                     'sxtools.sxglobals.layers.patchLayers('
-                    'sxtools.sxglobals.settings.patchArray)'))
+                    'sxtools.sxglobals.settings.patchArray)\n'
+                    'sxtools.sxglobals.core.updateSXTools()'))
         maya.cmds.setParent('patchFrame')
         maya.cmds.setParent('topCanvas')
         maya.cmds.workspaceControl(
@@ -1951,16 +1955,30 @@ class UI(object):
                 "sxtools.sxglobals.settings.frames['exportFlagsCollapse']=True"),
             expandCommand=(
                 "sxtools.sxglobals.settings.frames['exportFlagsCollapse']=False"))
-        maya.cmds.radioButtonGrp(
-            'subMeshSets',
+
+        maya.cmds.rowColumnLayout(
+            'subMeshRowColumns',
             parent='exportFlagsFrame',
-            columnWidth3=(80, 80, 80),
-            columnAttach3=('left', 'left', 'left'),
-            labelArray3=['SubMesh0', 'SubMesh1', 'SubMesh2'],
-            numberOfRadioButtons=3,
-            onCommand1="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh0')",
-            onCommand2="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh1')",
-            onCommand3="sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh2')")
+            numberOfColumns=3,
+            columnWidth=((1, 80), (2, 80), (3, 80)),
+            columnAttach=[(1, 'both', 5), (2, 'both', 5), (3, 'both', 5)],
+            rowSpacing=(1, 5))
+        maya.cmds.button(
+            label='SubMesh0',
+            parent='subMeshRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh0')"))
+        maya.cmds.button(
+            label='SubMesh1',
+            parent='subMeshRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh1')"))
+        maya.cmds.button(
+            label='SubMesh2',
+            parent='subMeshRowColumns',
+            height=30,
+            command=("sxtools.sxglobals.tools.assignToSubMeshSet('sxSubMesh2')"))
+
         maya.cmds.rowColumnLayout(
             'exportFlagsRowColumns',
             parent='exportFlagsFrame',
@@ -1971,7 +1989,7 @@ class UI(object):
         maya.cmds.text(
             'subMeshLabel',
             parent='exportFlagsRowColumns',
-            label='Contains Sub-Meshes:')
+            label='Export Sub-Meshes:')
         maya.cmds.checkBox(
             'subMeshCheckbox',
             parent='exportFlagsRowColumns',
