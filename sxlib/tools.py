@@ -1010,6 +1010,8 @@ class ToolActions(object):
         startTimeOcc = maya.cmds.timerX()
         layer = sxglobals.settings.tools['selectedLayer']
         space = OM.MSpace.kWorld
+        mod = OM.MDGModifier()
+        colorRep = OM.MFnMesh.kRGBA
 
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
@@ -1023,12 +1025,12 @@ class ToolActions(object):
             selection = sxglobals.settings.shapeArray
 
         objectBounds = self.calculateBoundingBox(selection)
-        objectBoundsXmin = objectBounds[0][0]
-        objectBoundsXmax = objectBounds[0][1]
-        objectBoundsYmin = objectBounds[1][0]
-        objectBoundsYmax = objectBounds[1][1]
-        objectBoundsZmin = objectBounds[2][0]
-        objectBoundsZmax = objectBounds[2][1]
+        xmin = objectBounds[0][0]
+        xmax = objectBounds[0][1]
+        ymin = objectBounds[1][0]
+        ymax = objectBounds[1][1]
+        zmin = objectBounds[2][0]
+        zmax = objectBounds[2][1]
 
         selectionList = OM.MSelectionList()
         for sl in selection:
@@ -1047,7 +1049,7 @@ class ToolActions(object):
             # Gather full mesh data to compare selection against
             selDagPath = selectionIter.getDagPath()
             mesh = OM.MFnMesh(selDagPath)
-            fvColors.clear()
+            # fvColors.clear()
             fvColors = mesh.getFaceVertexColors(colorSet=layer)
             selLen = len(fvColors)
             vtxIds.setLength(selLen)
@@ -1081,16 +1083,16 @@ class ToolActions(object):
                             fvPos = fvIt.position(space)
                             if axis == 1:
                                 ratioRaw = (
-                                    (fvPos[0] - objectBoundsXmin) /
-                                    float(objectBoundsXmax - objectBoundsXmin))
+                                    (fvPos[0] - xmin) /
+                                    float(xmax - xmin))
                             elif axis == 2:
                                 ratioRaw = (
-                                    (fvPos[1] - objectBoundsYmin) /
-                                    float(objectBoundsYmax - objectBoundsYmin))
+                                    (fvPos[1] - ymin) /
+                                    float(ymax - ymin))
                             elif axis == 3:
                                 ratioRaw = (
-                                    (fvPos[2] - objectBoundsZmin) /
-                                    float(objectBoundsZmax - objectBoundsZmin))
+                                    (fvPos[2] - zmin) /
+                                    float(zmax - zmin))
                             ratio = max(min(ratioRaw, 1), 0)
                             outColor = maya.cmds.colorAtPoint(
                                 'SXRamp', o='RGB', u=(ratio), v=(ratio))
@@ -1113,21 +1115,21 @@ class ToolActions(object):
                 while not fvIt.isDone():
                     ratioRaw = None
                     ratio = None
-                    faceIds[k] = fvIt.faceId()
-                    vtxIds[k] = fvIt.vertexId()
+                    # faceIds[k] = fvIt.faceId()
+                    # vtxIds[k] = fvIt.vertexId()
                     fvPos = fvIt.position(space)
                     if axis == 1:
                         ratioRaw = (
-                            (fvPos[0] - objectBoundsXmin) /
-                            float(objectBoundsXmax - objectBoundsXmin))
+                            (fvPos[0] - xmin) /
+                            float(xmax - xmin))
                     elif axis == 2:
                         ratioRaw = (
-                            (fvPos[1] - objectBoundsYmin) /
-                            float(objectBoundsYmax - objectBoundsYmin))
+                            (fvPos[1] - ymin) /
+                            float(ymax - ymin))
                     elif axis == 3:
                         ratioRaw = (
-                            (fvPos[2] - objectBoundsZmin) /
-                            float(objectBoundsZmax - objectBoundsZmin))
+                            (fvPos[2] - zmin) /
+                            float(zmax - zmin))
                     ratio = max(min(ratioRaw, 1), 0)
                     outColor = maya.cmds.colorAtPoint(
                         'SXRamp', o='RGB', u=(ratio), v=(ratio))
@@ -1145,10 +1147,11 @@ class ToolActions(object):
                     k += 1
                     fvIt.next()
 
-            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds)
+            # sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+            mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
             selectionIter.next()
 
+        mod.doIt()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Gradient Fill duration ' + str(totalTime))
 

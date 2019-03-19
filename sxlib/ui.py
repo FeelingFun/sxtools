@@ -924,7 +924,7 @@ class UI(object):
                 'clearButton',
                 label='Clear Selected',
                 statusBarMessage=(
-                    'Shift-click button to clear'
+                    'Shift-click button to clear '
                     'all layers on selected components'),
                 width=100,
                 height=20,
