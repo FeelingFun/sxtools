@@ -517,8 +517,7 @@ class LayerManagement(object):
                     g=color[1],
                     b=color[2],
                     a=color[3],
-                    representation=4,
-                    cdo=True)
+                    representation=4)
             else:
                 maya.cmds.polyColorPerVertex(
                     objects,
@@ -526,8 +525,7 @@ class LayerManagement(object):
                     g=color[1],
                     b=color[2],
                     a=color[3],
-                    representation=4,
-                    cdo=True)
+                    representation=4)
             attr = '.' + str(layer) + 'BlendMode'
             for obj in objects:
                 maya.cmds.setAttr(str(obj) + attr, 0)

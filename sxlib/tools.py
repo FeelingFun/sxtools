@@ -1581,7 +1581,7 @@ class ToolActions(object):
                 sxglobals.settings.tools['compositeEnabled']=True
                 for shape in sxglobals.settings.shapeArray:
                     maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 1)
+                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
                 maya.cmds.modelEditor(
                     'modelPanel4',
@@ -2328,8 +2328,7 @@ class ToolActions(object):
                         g=0.5,
                         b=0.5,
                         a=1,
-                        representation=4,
-                        cdo=True)
+                        representation=4)
             name = maya.cmds.getAttr(
                 skinMesh[0] + '.uvSet[0].uvSetName')
             maya.cmds.polyUVSet(
