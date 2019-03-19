@@ -177,15 +177,13 @@ class LayerManagement(object):
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
     def mergeLayers(self, objects, sourceLayer, targetLayer, up):
-        startTimeOcc = maya.cmds.timerX()
+        # startTimeOcc = maya.cmds.timerX()
 
         attrA = '.' + str(sourceLayer) + 'BlendMode'
         attrB = '.' + str(targetLayer) + 'BlendMode'
         color = sxglobals.settings.project['LayerData'][sourceLayer][1]
 
         fillColor = OM.MColor()
-        mod = OM.MDGModifier()
-        colorRep = OM.MFnMesh.kRGBA
         fillColor.r = color[0]
         fillColor.g = color[1]
         fillColor.b = color[2]
@@ -314,8 +312,8 @@ class LayerManagement(object):
             maya.cmds.setAttr(str(obj) + attrA, 0)
             maya.cmds.setAttr(str(obj) + attrB, 0)
 
-        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Mergelayers duration ' + str(totalTime))
+        # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        # print('SX Tools: Mergelayers duration ' + str(totalTime))
 
     # If mesh color sets don't match the reference layers.
     # Sorts the existing color sets to the correct order,
@@ -775,7 +773,7 @@ class LayerManagement(object):
                     'layerOpacitySlider',
                     edit=True,
                     enable=True)
-            
+
             attr = (
                 '.' + sxglobals.settings.project['RefNames'][sxglobals.settings.tools['selectedLayerIndex']-1] +
                 'BlendMode')
@@ -813,14 +811,14 @@ class LayerManagement(object):
         sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
         sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
         sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
-        
+
         # Update debug material when GPU compositing
         if sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(
                 sfxnode='SXDebugShader',
                 edit_int=(
-                    sxglobals.settings.nodeDict['layerIndex'], 
-                    'value', 
+                    sxglobals.settings.nodeDict['layerIndex'],
+                    'value',
                     sxglobals.settings.tools['selectedLayerIndex'] - 1))
 
         self.getLayerPaletteAndOpacity(

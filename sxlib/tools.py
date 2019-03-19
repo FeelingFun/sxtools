@@ -843,12 +843,10 @@ class ToolActions(object):
         for obj in objects:
             selectionList.add(obj)
         selDagPath = OM.MDagPath()
-        fVert = OM.MObject()
         fvColors = OM.MColorArray()
         vtxIds = OM.MIntArray()
         fvIds = OM.MIntArray()
         faceIds = OM.MIntArray()
-        compDagPath = OM.MDagPath()
         fillColor = OM.MColor()
         mod = OM.MDGModifier()
         colorRep = OM.MFnMesh.kRGBA
@@ -894,7 +892,7 @@ class ToolActions(object):
                         else:
                             fvColors[j].r = fillColor.r
                             fvColors[j].g = fillColor.g
-                            fvColors[j].b = fillColor.b                            
+                            fvColors[j].b = fillColor.b
 
                         j += 1
                         meshIter.next()
@@ -917,7 +915,7 @@ class ToolActions(object):
         fVert = OM.MObject()
         compDagPath = OM.MDagPath()
         space = OM.MSpace.kWorld
-        
+
         xmin = None
         xmax = None
         ymin = None
@@ -929,7 +927,6 @@ class ToolActions(object):
         while not selectionIter.isDone():
             # Gather full mesh data to compare selection against
             selDagPath = selectionIter.getDagPath()
-            mesh = OM.MFnMesh(selDagPath)
 
             if selectionIter.hasComponents():
                 (compDagPath, fVert) = selectionIter.getComponent()
@@ -1020,7 +1017,7 @@ class ToolActions(object):
             # fill position-matching verts with color
             selection = maya.cmds.ls(
                 maya.cmds.polyListComponentConversion(
-                    sxglobals.settings.selectionArray, tvf=True), fl=True)          
+                    sxglobals.settings.selectionArray, tvf=True), fl=True)
         else:
             selection = sxglobals.settings.shapeArray
 
@@ -1473,7 +1470,7 @@ class ToolActions(object):
 
                 layerAColors = OM.MColorArray()
                 layerAColors = MFnMesh.getFaceVertexColors(colorSet=layerA)
-                
+
                 if mode == 2:
                     modeB = maya.cmds.getAttr(str(shape) + attrB)
                     layerBColors = OM.MColorArray()
@@ -1574,8 +1571,8 @@ class ToolActions(object):
                     maya.cmds.setAttr(str(shape) + '.displayColors', 1)
                     maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
                 maya.mel.eval('DisplayLight;')
-                
-                # kludgy kludge for deadling with 
+
+                # kludgy kludge for deadling with
                 # paint vertex tool output in sw compositing
                 if sxglobals.settings.tools['currentTool'] == 'SXPaint':
                     maya.cmds.setToolTo('selectSuperContext')
@@ -1633,6 +1630,9 @@ class ToolActions(object):
                     histList.remove(hist)
             for hist in reversed(histList):
                 if 'groupId' in str(hist):
+                    histList.remove(hist)
+            for hist in reversed(histList):
+                if 'topoSymmetrySet' in str(hist):
                     histList.remove(hist)
 
             if len(histList) > 0:
