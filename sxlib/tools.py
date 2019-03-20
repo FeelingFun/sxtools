@@ -1763,6 +1763,8 @@ class ToolActions(object):
 
     def getLayerMask(self):
         maskList = []
+        
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
         vertFaceList = maya.cmds.ls(
             maya.cmds.polyListComponentConversion(
