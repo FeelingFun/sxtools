@@ -16,6 +16,9 @@ class LayerManagement(object):
     def __del__(self):
         print('SX Tools: Exiting layers')
 
+    # With hybrid vertex color compositing enabled
+    # the 'composite' colorSet will be refreshed
+    # after every user action
     def compositeLayers(self):
         if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
             # startTimeOcc = maya.cmds.timerX()
@@ -428,16 +431,16 @@ class LayerManagement(object):
     # IF mesh has no color sets at all,
     # or non-matching color set names.
     def resetLayers(self, objects):
-        for object in objects:
+        for obj in objects:
             # Remove existing color sets, if any
             colorSets = maya.cmds.polyColorSet(
-                object,
+                obj,
                 query=True,
                 allColorSets=True)
             if colorSets is not None:
                 for colorSet in colorSets:
                     maya.cmds.polyColorSet(
-                        object,
+                        obj,
                         delete=True,
                         colorSet=colorSet)
 
@@ -452,13 +455,8 @@ class LayerManagement(object):
                 clamped=True,
                 representation='RGBA',
                 colorSet=str(layer))
-        self.clearLayer(refLayers, objects)
 
-        # maya.cmds.polyColorSet(
-        #    object,
-        #    currentColorSet=True,
-        #    colorSet='layer1')
-        # maya.cmds.sets(object, e=True, forceElement='SXShaderSG')
+        self.clearLayer(refLayers, objects)
 
     def getLayerSets(self, obj):
         var = int(maya.cmds.getAttr(obj + '.numLayerSets'))
@@ -492,11 +490,6 @@ class LayerManagement(object):
         for object in objects:
             maya.cmds.setAttr(object + '.numLayerSets', var)
 
-        # maya.cmds.polyColorSet(
-        #    objects,
-        #    currentColorSet=True,
-        #    colorSet='layer1')
-
     def clearLayer(self, layers, objList=None):
         objects = []
         if 'composite' in layers:
@@ -506,11 +499,14 @@ class LayerManagement(object):
                 objects = sxglobals.settings.shapeArray
             else:
                 objects = objList
+
             maya.cmds.polyColorSet(
                 objects,
                 currentColorSet=True,
                 colorSet=layer)
             color = sxglobals.settings.project['LayerData'][layer][1]
+            
+            # Component vs. object selection
             if objList is None:
                 maya.cmds.polyColorPerVertex(
                     r=color[0],
@@ -526,6 +522,7 @@ class LayerManagement(object):
                     b=color[2],
                     a=color[3],
                     representation=4)
+
             attr = '.' + str(layer) + 'BlendMode'
             for obj in objects:
                 maya.cmds.setAttr(str(obj) + attr, 0)
@@ -626,7 +623,7 @@ class LayerManagement(object):
         else:
             obj = sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1]
             selectionList = OM.MSelectionList()
-            selectionList.add(sxglobals.settings.shapeArray[len(sxglobals.settings.shapeArray)-1])
+            selectionList.add(obj)
             nodeDagPath = OM.MDagPath()
             nodeDagPath = selectionList.getDagPath(0)
             MFnMesh = OM.MFnMesh(nodeDagPath)
