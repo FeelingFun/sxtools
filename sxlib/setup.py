@@ -2264,6 +2264,16 @@ class SceneSetup(object):
                     obj,
                     ln='subMeshes',
                     at='bool', dv=False)
+            if ('creaseBevels' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='creaseBevels',
+                    at='bool', dv=False)
+            if ('smoothingAngle' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='smoothingAngle',
+                    at='byte', min=0, max=180, dv=80)
 
         for shape in sxglobals.settings.shapeArray:
             attrList = maya.cmds.listAttr(shape, ud=True)

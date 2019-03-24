@@ -1221,14 +1221,6 @@ class UI(object):
             enterCommand=("maya.cmds.setFocus('MayaWindow')"),
             placeholderText='Preset Name')
 
-        maya.cmds.attrColorSliderGrp(
-            'sxRampColor',
-            parent='gradientFrame',
-            label='Selected Color:',
-            showButton=False,
-            columnWidth4=(80, 20, 140, 0),
-            adjustableColumn4=3,
-            columnAlign4=('right', 'left', 'left', 'left'))
         maya.cmds.attrEnumOptionMenuGrp(
             'sxRampMode',
             parent='gradientFrame',
@@ -1236,35 +1228,49 @@ class UI(object):
             columnWidth2=(80, 160),
             columnAttach2=('right', 'left'),
             columnAlign2=('right', 'left'))
-        maya.cmds.rampColorPort(
-            'sxRampControl',
-            parent="gradientFrame",
-            height=90,
-            node='SXRamp',
-            selectedColorControl='sxRampColor',
-            selectedInterpControl='sxRampMode')
+
         maya.cmds.attrColorSliderGrp(
-            'sxRampAlpha',
+            'sxRampColor',
             parent='gradientFrame',
-            label='Selected Alpha:',
+            label='Selected:',
             showButton=False,
             columnWidth4=(80, 20, 140, 0),
             adjustableColumn4=3,
             columnAlign4=('right', 'left', 'left', 'left'))
-        maya.cmds.attrEnumOptionMenuGrp(
-            'sxAlphaRampMode',
+
+        maya.cmds.rampColorPort(
+            'sxRampControl',
             parent='gradientFrame',
-            label='Interpolation:',
-            columnWidth2=(80, 160),
-            columnAttach2=('right', 'left'),
-            columnAlign2=('right', 'left'))
+            height=90,
+            node='SXRamp',
+            selectedColorControl='sxRampColor',
+            selectedInterpControl='sxRampMode')
+
+        #maya.cmds.attrColorSliderGrp(
+        #    'sxRampAlpha',
+        #    parent='rampColumn',
+        #    label='Selected Alpha:',
+        #    showButton=False,
+        #    columnWidth4=(80, 20, 140, 0),
+        #    adjustableColumn4=3,
+        #    columnAlign4=('right', 'left', 'left', 'left'))
+
         maya.cmds.rampColorPort(
             'sxRampAlphaControl',
             parent='gradientFrame',
             height=90,
             node='SXAlphaRamp',
-            selectedColorControl='sxRampAlpha',
-            selectedInterpControl='sxAlphaRampMode')
+            selectedColorControl='sxRampColor',
+            selectedInterpControl='sxRampMode')
+
+        #maya.cmds.attrEnumOptionMenuGrp(
+        #    'sxAlphaRampMode',
+        #    parent='gradientFrame',
+        #    label='Interpolation:',
+        #    columnWidth2=(80, 160),
+        #    columnAttach2=('right', 'left'),
+        #    columnAlign2=('right', 'left'))
+
         maya.cmds.button(
             label='Apply Gradient',
             parent='gradientFrame',
@@ -2027,6 +2033,27 @@ class UI(object):
                 'sxtools.sxglobals.tools.setExportFlags('
                 'sxtools.sxglobals.settings.objectArray, False)'))
         maya.cmds.text(
+            'creaseBevelLabel',
+            parent='exportFlagsRowColumns',
+            label='Bevel Edge Loop Creases:')
+        maya.cmds.checkBox(
+            'creaseBevelCheckbox',
+            parent='exportFlagsRowColumns',
+            label='',
+            ann=(
+                'Improves mesh detail at lower '
+                'subdivision levels.'),
+            value=(
+                maya.cmds.getAttr(
+                    str(sxglobals.settings.objectArray[0]) +
+                    '.creaseBevels')),
+            onCommand=(
+                'sxtools.sxglobals.tools.setCreaseBevelFlag('
+                'sxtools.sxglobals.settings.objectArray, True)'),
+            offCommand=(
+                'sxtools.sxglobals.tools.setCreaseBevelFlag('
+                'sxtools.sxglobals.settings.objectArray, False)'))
+        maya.cmds.text(
             'smoothStepsLabel',
             parent='exportFlagsRowColumns',
             label='Export Subdivision Level:')
@@ -2044,6 +2071,25 @@ class UI(object):
                 'sxtools.sxglobals.tools.setSubdivisionFlag('
                 'sxtools.sxglobals.settings.objectArray,'
                 'maya.cmds.intField("smoothSteps",'
+                ' query=True, value=True))'))
+        maya.cmds.text(
+            'smoothingAngleLabel',
+            parent='exportFlagsRowColumns',
+            label='Smoothing Angle:')
+        maya.cmds.intField(
+            'smoothAngle',
+            parent='exportFlagsRowColumns',
+            min=0,
+            max=180,
+            step=1,
+            value=(
+                maya.cmds.getAttr(
+                    str(sxglobals.settings.objectArray[0]) +
+                    '.smoothingAngle')),
+            changeCommand=(
+                'sxtools.sxglobals.tools.setSmoothingFlag('
+                'sxtools.sxglobals.settings.objectArray,'
+                'maya.cmds.intField("smoothAngle",'
                 ' query=True, value=True))'))
 
     def exportButtonUI(self):

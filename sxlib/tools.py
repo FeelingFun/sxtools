@@ -1674,10 +1674,15 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
         if shift:
-            sxglobals.layers.clearLayer(
-                sxglobals.layers.sortLayers(
-                    sxglobals.settings.project['LayerData'].keys()),
-                sxglobals.settings.shapeArray)
+            if len(sxglobals.settings.componentArray) > 0:
+                sxglobals.layers.clearLayer(
+                    sxglobals.layers.sortLayers(
+                        sxglobals.settings.project['LayerData'].keys()))
+            else:
+                sxglobals.layers.clearLayer(
+                    sxglobals.layers.sortLayers(
+                        sxglobals.settings.project['LayerData'].keys()),
+                        sxglobals.settings.shapeArray)
         elif not shift:
             if len(sxglobals.settings.componentArray) > 0:
                 sxglobals.layers.clearLayer(
@@ -1763,7 +1768,7 @@ class ToolActions(object):
 
     def getLayerMask(self):
         maskList = []
-        
+
         sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
 
         vertFaceList = maya.cmds.ls(
@@ -2391,3 +2396,11 @@ class ToolActions(object):
             maya.cmds.setAttr(obj+'.subdivisionLevel', flag)
             objShape = maya.cmds.listRelatives(obj, shapes=True)[0]
             maya.cmds.setAttr(objShape+'.smoothLevel', flag)
+
+    def setCreaseBevelFlag(self, objects, flag):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.creaseBevels', flag)
+
+    def setSmoothingFlag(self, objects, flag):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.smoothingAngle', flag)

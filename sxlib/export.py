@@ -45,6 +45,148 @@ class Export(object):
         maya.cmds.polyEditUV(relative=False, uValue=0, vValue=0)
         # sxglobals.core.selectionManager()
 
+    # For consistent export visuals and better quality at
+    # lower subdivision, creases 1-3 are beveled, hard creases remain
+    # The steps:
+    # 1) Store edge loop information from crease sets into a color set
+    # 2) Bevel edge loops per crease set, fixing the broken edge loops
+    # TODO: Handle continous edges that are not a loop
+    def creaseBevels(self, shape):
+        maya.cmds.polyColorSet(
+            shape,
+            create=True,
+            clamped=True,
+            representation='RGBA',
+            colorSet='creases')
+        maya.cmds.polyColorSet(
+            shape,
+            currentColorSet=True,
+            colorSet='creases')
+        
+        creaseSets = (
+            ('sxCrease1', 0.2),
+            ('sxCrease2', 0.1),
+            ('sxCrease3', 0.02),
+            ('sxCrease4', 0.005))
+
+        # Store edgeloop information into colorset
+        for creaseSet in creaseSets:
+            objEdges = maya.cmds.ls(
+                maya.cmds.polyListComponentConversion(
+                    shape, te=True), fl=True)
+            setEdges = maya.cmds.ls(maya.cmds.sets(creaseSet[0], query=True), fl=True)
+            creaseEdges = list(set(objEdges).intersection(setEdges))
+            
+            bevelEdges = creaseEdges[:]
+
+            for edge in creaseEdges:
+                if len(bevelEdges) > 0:
+                    edgeID = int(str(str(edge).split('[')[-1]).split(']')[0])
+                    loopEdges = maya.cmds.ls(maya.cmds.polySelect(shape, el=edgeID, ns=True, ass=True), fl=True)
+                    if len(loopEdges) > 1:
+                        value = 1
+                    else:
+                        value = 0.1  
+
+                    edgeVerts = maya.cmds.ls(
+                        maya.cmds.polyListComponentConversion(loopEdges, tv=True), fl=True)
+
+                    if creaseSet[0] == 'sxCrease1':
+                        maya.cmds.polyColorPerVertex(edgeVerts, r=value, g=0, b=0, a=0, rpt=4)
+                    elif creaseSet[0] == 'sxCrease2':
+                        maya.cmds.polyColorPerVertex(edgeVerts, r=0, g=value, b=0, a=0, rpt=4)
+                    elif creaseSet[0] == 'sxCrease3':
+                        maya.cmds.polyColorPerVertex(edgeVerts, r=0, g=0, b=value, a=0, rpt=4)
+                    elif creaseSet[0] == 'sxCrease4':
+                        maya.cmds.polyColorPerVertex(edgeVerts, r=0, g=0, b=0, a=value, rpt=4)
+
+                    for loopEdge in loopEdges:
+                        if loopEdge in bevelEdges:
+                            bevelEdges.remove(loopEdge)
+                else:
+                    break
+
+        # Bevel edgeloops, fix gaps in the next set           
+        for creaseSet in creaseSets:
+            bevelEdges = []
+            loopEdges = []
+            objEdges = maya.cmds.ls(
+                maya.cmds.polyListComponentConversion(
+                    shape, te=True), fl=True)
+            setEdges = maya.cmds.ls(maya.cmds.sets(creaseSet[0], query=True), fl=True)
+            creaseEdges = list(set(objEdges).intersection(setEdges))
+
+            edgePool = creaseEdges[:]
+
+            for edge in creaseEdges:
+                if len(edgePool) > 0:
+                    if edge not in bevelEdges:
+                        edgeVerts = maya.cmds.ls(
+                            maya.cmds.polyListComponentConversion(edge, tv=True), fl=True)
+                        
+                        bevel = False
+                        edgeColors = [None, None]
+                        for idx, vert in enumerate(edgeVerts):
+                            if creaseSet[0] == 'sxCrease1':
+                                edgeColors[idx] = maya.cmds.polyColorPerVertex(
+                                    vert, query=True, r=True)
+                            elif creaseSet[0] == 'sxCrease2':
+                                edgeColors[idx] = maya.cmds.polyColorPerVertex(
+                                    vert, query=True, g=True)
+                            elif creaseSet[0] == 'sxCrease3':
+                                edgeColors[idx] = maya.cmds.polyColorPerVertex(
+                                    vert, query=True, b=True)
+                            elif creaseSet[0] == 'sxCrease4':
+                                edgeColors[idx] = maya.cmds.polyColorPerVertex(
+                                    vert, query=True, a=True)
+
+                        if edgeColors[0] == edgeColors[1] and edgeColors[0] > 0.5:
+                            bevel = True
+
+                        # test if edgeloop
+                        if bevel:
+                            edgeID = int(str(str(edge).split('[')[-1]).split(']')[0])
+                            loopEdges = maya.cmds.ls(maya.cmds.polySelect(shape, el=edgeID, ns=True, ass=True), fl=True)
+                            if len(loopEdges) > 1:
+                                for edge in loopEdges:
+                                    bevelEdges.append(edge)
+                                    if edge in edgePool:
+                                        edgePool.remove(edge)
+                        else:
+                            edgePool.remove(edge)
+
+                else:
+                    break
+
+            if len(bevelEdges) > 0:
+                maya.cmds.polyBevel3(
+                    bevelEdges,
+                    offset=creaseSet[1],
+                    offsetAsFraction=0,
+                    autoFit=1,
+                    depth=1,
+                    mitering=0,
+                    miterAlong=0,
+                    chamfer=1,
+                    segments=1,
+                    worldSpace=1,
+                    smoothingAngle=0,
+                    subdivideNgons=1,
+                    mergeVertices=1,
+                    mergeVertexTolerance=0.0001,
+                    miteringAngle=180,
+                    angleTolerance=180,
+                    ch=0)
+
+        maya.cmds.polyColorSet(
+            shape,
+            currentColorSet=True,
+            colorSet='layer1')
+        maya.cmds.polyColorSet(
+            shape,
+            delete=True,
+            colorSet='creases')
+
     def flattenLayers(self, selected, numLayers):
         if numLayers > 1:
             for i in range(1, numLayers):
@@ -280,7 +422,7 @@ class Export(object):
         # Duplicate all selected objects for export
         # TODO: Handle long names returned by duplicate names in the scene
         sourceNamesArray = maya.cmds.ls(sourceArray, dag=True, tr=True)
-        exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)
+        exportArray = maya.cmds.duplicate(sourceArray, renameChildren=True)       
 
         # Parent export objects under new group,
         # the tricky bit here is renaming the new objects to the old names.
@@ -358,6 +500,11 @@ class Export(object):
         exportShapeArray = self.getTransforms(
             maya.cmds.listRelatives(
                 '_staticExports', ad=True, type='mesh', fullPath=True))
+
+        # Bevel creases, if enabled
+        for exportShape in exportShapeArray:
+            if maya.cmds.getAttr(str(exportShape) + '.creaseBevels'):
+                self.creaseBevels(exportShape)     
 
         for exportShape in exportShapeArray:
             maya.cmds.setAttr(exportShape + '.outlinerColor', 0.25, 0.75, 0.25)
@@ -506,6 +653,8 @@ class Export(object):
 
                     objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
                     hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+                    maya.cmds.select(objEdges, r=True, ne=True)
+                    maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
                     if hardEdges:
@@ -575,6 +724,8 @@ class Export(object):
 
                     objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
                     hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+                    maya.cmds.select(objEdges, r=True, ne=True)
+                    maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
                     if hardEdges:
@@ -628,6 +779,8 @@ class Export(object):
 
                     objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
                     hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
+                    maya.cmds.select(objEdges, r=True, ne=True)
+                    maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
                     if hardEdges:
