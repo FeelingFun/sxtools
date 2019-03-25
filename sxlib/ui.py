@@ -2033,6 +2033,24 @@ class UI(object):
                 'sxtools.sxglobals.tools.setExportFlags('
                 'sxtools.sxglobals.settings.objectArray, False)'))
         maya.cmds.text(
+            'hardEdgeLabel',
+            parent='exportFlagsRowColumns',
+            label='Hard Edges on Hard Creases:')
+        maya.cmds.checkBox(
+            'hardEdgeCheckbox',
+            parent='exportFlagsRowColumns',
+            label='',
+            value=(
+                maya.cmds.getAttr(
+                    str(sxglobals.settings.objectArray[0]) +
+                    '.hardEdges')),
+            onCommand=(
+                'sxtools.sxglobals.tools.setHardEdgeFlag('
+                'sxtools.sxglobals.settings.objectArray, True)'),
+            offCommand=(
+                'sxtools.sxglobals.tools.setHardEdgeFlag('
+                'sxtools.sxglobals.settings.objectArray, False)'))
+        maya.cmds.text(
             'creaseBevelLabel',
             parent='exportFlagsRowColumns',
             label='Bevel Edge Loop Creases:')

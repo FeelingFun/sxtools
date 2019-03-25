@@ -2404,3 +2404,7 @@ class ToolActions(object):
     def setSmoothingFlag(self, objects, flag):
         for obj in objects:
             maya.cmds.setAttr(obj+'.smoothingAngle', flag)
+
+    def setHardEdgeFlag(self, objects, flag):
+        for obj in objects:
+            maya.cmds.setAttr(obj+'.hardEdges', flag)

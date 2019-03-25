@@ -657,7 +657,7 @@ class Export(object):
                     maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
-                    if hardEdges:
+                    if hardEdges and maya.cmds.getAttr(exportShape+'.hardEdges'):
                         maya.cmds.select(hardEdges, r=True, ne=True)
                         maya.cmds.polySoftEdge(a=0, ch=0)
 
@@ -728,7 +728,7 @@ class Export(object):
                     maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
-                    if hardEdges:
+                    if hardEdges and maya.cmds.getAttr(exportShape+'.hardEdges'):
                         maya.cmds.select(hardEdges, r=True, ne=True)
                         maya.cmds.polySoftEdge(a=0, ch=0)
 
@@ -783,7 +783,7 @@ class Export(object):
                     maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
-                    if hardEdges:
+                    if hardEdges and maya.cmds.getAttr(exportShape+'.hardEdges'):
                         maya.cmds.select(hardEdges, r=True, ne=True)
                         maya.cmds.polySoftEdge(a=0, ch=0)
 

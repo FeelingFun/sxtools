@@ -2264,6 +2264,11 @@ class SceneSetup(object):
                     obj,
                     ln='subMeshes',
                     at='bool', dv=False)
+            if ('hardEdges' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='hardEdges',
+                    at='bool', dv=True)
             if ('creaseBevels' not in flagList):
                 maya.cmds.addAttr(
                     obj,
