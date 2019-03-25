@@ -642,7 +642,7 @@ class Export(object):
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
                     maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
                     maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=1,
@@ -713,7 +713,7 @@ class Export(object):
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
                     maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
                     maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
                     maya.cmds.polySmooth(
                         skinTarget, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,
@@ -766,7 +766,7 @@ class Export(object):
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
                     maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
                     maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
                     maya.cmds.polySmooth(
                         exportShape, mth=0, sdt=2, ovb=1,
                         ofb=3, ofc=0, ost=1, ocr=0,

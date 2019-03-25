@@ -356,7 +356,7 @@ class Core(object):
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
                     maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
                     maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                    maya.cmds.setAttr('sxCrease4.creaseLevel', sdl)
+                    maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
 
         maya.cmds.setFocus('MayaWindow')
 

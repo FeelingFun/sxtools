@@ -1869,6 +1869,7 @@ class UI(object):
             changeCommand=(
                 "sxtools.sxglobals.settings.tools['minCreaseLength'] = ("
                 "maya.cmds.floatField('minCreaseLength', query=True, value=True))"))
+
         maya.cmds.button(
             parent='autoCreaseFrame',
             label='Auto-Select Edges',
@@ -1877,6 +1878,51 @@ class UI(object):
             command=(
                 "sxtools.sxglobals.tools.curvatureSelect("
                 "sxtools.sxglobals.settings.shapeArray)"))
+
+        bgc1 = (0.365, 0.365, 0.365)
+        bgc2 = (0.365, 0.365, 0.365)
+        bgc3 = (0.365, 0.365, 0.365)
+        bgc4 = (0.365, 0.365, 0.365)
+        found = False
+
+        creaseSet1 = maya.cmds.ls(maya.cmds.sets('sxCrease1', query=True), fl=True)
+        creaseSet2 = maya.cmds.ls(maya.cmds.sets('sxCrease2', query=True), fl=True)
+        creaseSet3 = maya.cmds.ls(maya.cmds.sets('sxCrease3', query=True), fl=True)
+        creaseSet4 = maya.cmds.ls(maya.cmds.sets('sxCrease4', query=True), fl=True)
+
+        for component in sxglobals.settings.componentArray:
+            if component in creaseSet1:
+                pass
+            else:
+                break
+            found = True
+            bgc1 = (0.255, 0.302, 0.353)
+
+        if not found:
+            for component in sxglobals.settings.componentArray:
+                if component in creaseSet2:
+                    pass
+                else:
+                    break
+                found = True
+                bgc2 = (0.255, 0.302, 0.353)
+
+        if not found:
+            for component in sxglobals.settings.componentArray:
+                if component in creaseSet3:
+                    pass
+                else:
+                    break
+                found = True
+                bgc3 = (0.255, 0.302, 0.353)
+
+        if not found:
+            for component in sxglobals.settings.componentArray:
+                if component in creaseSet4:
+                    pass
+                else:
+                    break
+                bgc4 = (0.255, 0.302, 0.353)
 
         maya.cmds.rowColumnLayout(
             'creaseRowColumns',
@@ -1889,21 +1935,25 @@ class UI(object):
             label='25%',
             parent='creaseRowColumns',
             height=30,
+            bgc=bgc1,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease1')"))
         maya.cmds.button(
             label='50%',
             parent='creaseRowColumns',
             height=30,
+            bgc=bgc2,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease2')"))
         maya.cmds.button(
             label='75%',
             parent='creaseRowColumns',
             height=30,
+            bgc=bgc3,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease3')"))
         maya.cmds.button(
             label='Hard',
             parent='creaseRowColumns',
             height=30,
+            bgc=bgc4,
             command=("sxtools.sxglobals.tools.assignToCreaseSet('sxCrease4')"))
 
         maya.cmds.button(
