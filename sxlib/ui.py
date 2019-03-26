@@ -756,10 +756,17 @@ class UI(object):
             ann=(
                 'Doubleclick to hide/unhide layer in Final shading mode\n'
                 'Shift + doubleclick to hide/unhide unselected layers\n'
+                'Alt + click to select layer mask\n'
+                'Shift + Alt + click to select invert layer mask\n'
+                'Del to clear selection on highlighted layer\n'
                 'H - hidden layer\n'
                 'M - mask layer\n'
                 'A - adjustment layer'),
             selectCommand='sxtools.sxglobals.layers.highlightLayer()',
+            deleteKeyCommand=(
+                'sxtools.sxglobals.tools.clearSelector()\n'
+                'sxtools.sxglobals.layers.refreshLayerList()\n'
+                'sxtools.sxglobals.layers.compositeLayers()'),
             doubleClickCommand=(
                 "sxtools.sxglobals.layers.toggleAllLayers("
                 "sxtools.sxglobals.settings.tools['selectedLayer'])"))

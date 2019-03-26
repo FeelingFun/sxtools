@@ -798,6 +798,9 @@ class LayerManagement(object):
         sxglobals.core.updateSXTools()
 
     def highlightLayer(self):
+        modifiers = maya.cmds.getModifiers()
+        alt = bool((modifiers & 8)> 0)
+
         selectedIndex = int(maya.cmds.textScrollList(
             'layerList', query=True, selectIndexedItem=True)[0])
         refLayers = self.sortLayers(
@@ -833,6 +836,10 @@ class LayerManagement(object):
             'layerColorLabel',
             edit=True,
             label=sxglobals.settings.tools['selectedDisplayLayer'] + ' Colors:')
+
+        # if layer alt-clicked or shift-alt-clicked select mask
+        if alt:
+            maya.cmds.select(sxglobals.tools.getLayerMask())
 
         if maya.cmds.getAttr(str(sxglobals.settings.shapeArray[0]) + '.shadingMode') != 0:
             self.compositeLayers()
