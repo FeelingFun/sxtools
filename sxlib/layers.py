@@ -20,8 +20,8 @@ class LayerManagement(object):
     # the 'composite' colorSet will be refreshed
     # after every user action
     def compositeLayers(self):
+        # startTimeOcc = maya.cmds.timerX()
         if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
-            # startTimeOcc = maya.cmds.timerX()
             numLayers = sxglobals.settings.project['LayerCount']
 
             maya.cmds.polyColorSet(
@@ -173,11 +173,11 @@ class LayerManagement(object):
 
                 MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
 
-            # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-            # print('SX Tools: Layer compositing duration ' + str(totalTime))
-
         elif sxglobals.settings.tools['compositor'] == 1:
             maya.cmds.shaderfx(sfxnode='SXShader', update=True)
+
+        # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        # print('SX Tools: Layer compositing duration ' + str(totalTime))
 
     def mergeLayers(self, objects, sourceLayer, targetLayer, up):
         # startTimeOcc = maya.cmds.timerX()
@@ -505,7 +505,7 @@ class LayerManagement(object):
                 currentColorSet=True,
                 colorSet=layer)
             color = sxglobals.settings.project['LayerData'][layer][1]
-            
+
             # Component vs. object selection
             if objList is None:
                 maya.cmds.polyColorPerVertex(

@@ -2184,9 +2184,11 @@ class SceneSetup(object):
                     setName + '.partition',
                     'sxCreasePartition.sets[' + str(i) + ']')
                 setUpdated = True
-                
-        maya.cmds.setAttr(
-            'sxCrease' + str(numCreaseSets - 1) + '.creaseLevel', 10)
+
+        if setUpdated:
+            maya.cmds.setAttr(
+                'sxCrease' + str(numCreaseSets - 1) + '.creaseLevel', 10)
+
         return setUpdated
 
     def createSubMeshSets(self):

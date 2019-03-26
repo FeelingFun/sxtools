@@ -1883,46 +1883,16 @@ class UI(object):
         bgc2 = (0.365, 0.365, 0.365)
         bgc3 = (0.365, 0.365, 0.365)
         bgc4 = (0.365, 0.365, 0.365)
-        found = False
 
-        creaseSet1 = maya.cmds.ls(maya.cmds.sets('sxCrease1', query=True), fl=True)
-        creaseSet2 = maya.cmds.ls(maya.cmds.sets('sxCrease2', query=True), fl=True)
-        creaseSet3 = maya.cmds.ls(maya.cmds.sets('sxCrease3', query=True), fl=True)
-        creaseSet4 = maya.cmds.ls(maya.cmds.sets('sxCrease4', query=True), fl=True)
-
-        for component in sxglobals.settings.componentArray:
-            if component in creaseSet1:
-                pass
-            else:
-                break
-            found = True
-            bgc1 = (0.255, 0.302, 0.353)
-
-        if not found:
-            for component in sxglobals.settings.componentArray:
-                if component in creaseSet2:
-                    pass
-                else:
-                    break
-                found = True
-                bgc2 = (0.255, 0.302, 0.353)
-
-        if not found:
-            for component in sxglobals.settings.componentArray:
-                if component in creaseSet3:
-                    pass
-                else:
-                    break
-                found = True
-                bgc3 = (0.255, 0.302, 0.353)
-
-        if not found:
-            for component in sxglobals.settings.componentArray:
-                if component in creaseSet4:
-                    pass
-                else:
-                    break
+        if len(sxglobals.settings.componentArray) > 0:
+            if maya.cmds.sets(sxglobals.settings.componentArray, im='sxCrease4'):
                 bgc4 = (0.255, 0.302, 0.353)
+            elif maya.cmds.sets(sxglobals.settings.componentArray, im='sxCrease3'):
+                bgc3 = (0.255, 0.302, 0.353)
+            elif maya.cmds.sets(sxglobals.settings.componentArray, im='sxCrease2'):
+                bgc2 = (0.255, 0.302, 0.353)
+            elif maya.cmds.sets(sxglobals.settings.componentArray, im='sxCrease1'):
+                bgc1 = (0.255, 0.302, 0.353)
 
         maya.cmds.rowColumnLayout(
             'creaseRowColumns',

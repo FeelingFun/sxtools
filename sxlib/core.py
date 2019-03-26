@@ -116,10 +116,14 @@ class Core(object):
     # Avoids UI refresh from being included in the undo list
     # Called by the "jobID" scriptJob whenever the user clicks a selection.
     def updateSXTools(self):
+        # startTimeOcc = maya.cmds.timerX()
         maya.cmds.undoInfo(stateWithoutFlush=False)
         self.selectionManager()
         self.refreshSXTools()
+        self.verifySceneState()
         maya.cmds.undoInfo(stateWithoutFlush=True)
+        # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        # print('Update ' + str(totalTime))
 
     def exitSXTools(self):
         scriptJobs = maya.cmds.scriptJob(listJobs=True)
@@ -202,9 +206,7 @@ class Core(object):
 
         sxglobals.tools.checkHistory(sxglobals.settings.objectArray)
 
-    # Re-draws the UI dynamically for different selection types
-    def refreshSXTools(self):
-
+    def verifySceneState(self):
         x1 = sxglobals.setup.createDefaultLights()
         x2 = sxglobals.setup.createCreaseSets()
         x3 = sxglobals.setup.createSubMeshSets()
@@ -213,6 +215,51 @@ class Core(object):
         if (x1 or x2 or x3 or x4):
             maya.cmds.select(clear=True)
 
+        # Hacky hack to prevent Maya's outliner bug from
+        # replicating unlimited sets per refresh
+        # if not maya.cmds.objExists('sxToolsItemFilter'):
+        #     maya.cmds.itemFilter('sxToolsItemFilter', bt='creaseSet')
+        # maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='sxToolsItemFilter')
+        # maya.cmds.outlinerEditor('outlinerPanel1', edit=True, refresh=True)
+        # maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='')
+
+        # Make sure selected things are using the correct material
+        if maya.cmds.getAttr('assetsLayer.visibility'):
+            if sxglobals.settings.tools['compositor'] == 1:
+                for shape in sxglobals.settings.shapeArray:
+                    mode = maya.cmds.getAttr(str(shape) + '.shadingMode')
+                    if mode == 0:
+                        maya.cmds.sets(
+                            shape, e=True, forceElement='SXShaderSG')
+                    else:
+                        maya.cmds.sets(
+                            shape, e=True, forceElement='SXDebugShaderSG')
+            else:
+                maya.cmds.sets(
+                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
+
+        # Vertex color display with the custom
+        # shader requires textured mode
+        maya.cmds.modelEditor(
+            'modelPanel4',
+            edit=True,
+            useDefaultMaterial=False,
+            displayLights='all',
+            lights=True,
+            displayTextures=True)
+
+        # Adjust viewport crease levels based on
+        # the subdivision level of the selected object
+        if sxglobals.settings.tools['matchSubdivision']:
+            if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
+                sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
+                maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
+                maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
+                maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
+                maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
+
+    # Re-draws the UI dynamically for different selection types
+    def refreshSXTools(self):
         # base canvases for all SX Tools UI
         if maya.cmds.layout('canvasPanes', exists=True):
             maya.cmds.deleteUI('canvasPanes')
@@ -326,44 +373,4 @@ class Core(object):
             sxglobals.layers.refreshLayerList()
             sxglobals.layers.compositeLayers()
 
-            # Make sure selected things are using the correct material
-            if sxglobals.settings.tools['compositor'] == 1:
-                for shape in sxglobals.settings.shapeArray:
-                    mode = maya.cmds.getAttr(str(shape) + '.shadingMode')
-                    if mode == 0:
-                        maya.cmds.sets(
-                            shape, e=True, forceElement='SXShaderSG')
-                    else:
-                        maya.cmds.sets(
-                            shape, e=True, forceElement='SXDebugShaderSG')
-            else:
-                maya.cmds.sets(
-                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
-
-            maya.cmds.modelEditor(
-                'modelPanel4',
-                edit=True,
-                useDefaultMaterial=False,
-                displayLights='all',
-                lights=True,
-                displayTextures=True)
-
-            # Adjust crease levels based on
-            # the subdivision level of the selected object
-            if sxglobals.settings.tools['matchSubdivision']:
-                if maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel') > 0:
-                    sdl = maya.cmds.getAttr(sxglobals.settings.objectArray[0] + '.subdivisionLevel')
-                    maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
-                    maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
-                    maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
-                    maya.cmds.setAttr('sxCrease4.creaseLevel', 10)
-
         maya.cmds.setFocus('MayaWindow')
-
-        # Hacky hack to prevent Maya's outliner bug from
-        # replicating unlimited sets per refresh
-        if not maya.cmds.objExists('sxToolsItemFilter'):
-            maya.cmds.itemFilter('sxToolsItemFilter', bt='creaseSet')
-        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='sxToolsItemFilter')
-        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, refresh=True)
-        maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='')

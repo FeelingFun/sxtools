@@ -42,6 +42,7 @@ class ToolActions(object):
                     if maya.cmds.sets(sxglobals.settings.componentArray, isMember=set):
                         maya.cmds.sets(
                             sxglobals.settings.componentArray, remove=set)
+                maya.cmds.polyCrease(sxglobals.settings.componentArray, op=1)
                 maya.cmds.sets(
                     sxglobals.settings.componentArray, forceElement=setName)
             elif len(sxglobals.settings.componentArray) == 0:
@@ -50,13 +51,18 @@ class ToolActions(object):
                 for set in creaseSets:
                     if maya.cmds.sets(edgeList, isMember=set):
                         maya.cmds.sets(edgeList, remove=set)
+                maya.cmds.polyCrease(edgeList, op=1)
+                maya.cmds.sets(
+                    edgeList, forceElement=setName)
             else:
                 edgeList = maya.cmds.polyListComponentConversion(
                     sxglobals.settings.componentArray, te=True)
                 for set in creaseSets:
                     if maya.cmds.sets(edgeList, isMember=set):
                         maya.cmds.sets(edgeList, remove=set)
-                maya.cmds.sets(edgeList, forceElement=setName)
+                maya.cmds.polyCrease(edgeList, op=1)
+                maya.cmds.sets(
+                    edgeList, forceElement=setName)
 
     def clearCreases(self):
         creaseSets = (
@@ -74,6 +80,8 @@ class ToolActions(object):
                 maya.cmds.sets(edgeList, remove=set)
             if maya.cmds.sets(vertList, isMember=set):
                 maya.cmds.sets(vertList, remove=set)
+
+        maya.cmds.polyCrease(sxglobals.settings.objectArray, op=2)
         maya.cmds.sets(edgeList, forceElement='sxCrease0')
 
     def assignToSubMeshSet(self, setName):
