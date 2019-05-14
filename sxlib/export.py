@@ -391,11 +391,6 @@ class Export(object):
             if (uSource, vSource, uvSet) not in exportBlocks:
                 exportBlocks.append((uSource, vSource, uvSet))
 
-        numLayers = (
-            sxglobals.settings.project['LayerCount'] -
-            len(overlay) -
-            len(alphaOverlayArray))
-
         # Clear existing export objects and create if necessary
         if maya.cmds.objExists('_staticExports'):
             maya.cmds.delete('_staticExports')
@@ -579,6 +574,13 @@ class Export(object):
             maya.cmds.delete(exportShape, ch=True)
 
             # Flatten colors to layer1
+            if maya.cmds.getAttr(exportShape+'.staticVertexColors'):
+                numLayers = sxglobals.settings.project['LayerCount']
+            else:
+                numLayers = (
+                    sxglobals.settings.project['LayerCount'] -
+                    len(overlay) -
+                    len(alphaOverlayArray))
             self.flattenLayers(exportShape, numLayers)
 
             # Delete unnecessary color sets (leave only layer1)
