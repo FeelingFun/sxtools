@@ -253,7 +253,7 @@ The following files, nodes, and attributes are created by the project setup phas
 * multiple color sets per every edited object
 
 To remove all optionVars created by SX Tools:
-`sxtools.resetSXTools()` in Maya's scripting window
+`sxtools.sxglobals.core.resetSXTools()` in Maya's scripting window
 
 
 (c) 2017-2019 Jani Kahrama / Secret Exit Ltd
