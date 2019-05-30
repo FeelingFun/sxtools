@@ -18,6 +18,7 @@ class Core(object):
 
     def startSXTools(self):
         sxglobals.settings.tools['platform'] = maya.cmds.about(os=True)
+        sxglobals.settings.tools['compositeEnable'] = True
 
         if sxglobals.settings.tools['platform'] == 'win' or sxglobals.settings.tools['platform'] == 'win64':
             sxglobals.settings.tools['displayScale'] = maya.cmds.mayaDpiSetting(
@@ -31,11 +32,6 @@ class Core(object):
             elif sxglobals.settings.tools['displayScale'] == 2.0:
                 sxglobals.settings.tools['lineHeight'] = 14.5
 
-            # Most PCs with modern graphics cards can run
-            # vertex color compositing fully on the GPU
-            sxglobals.settings.tools['compositor'] = 1
-            sxglobals.settings.tools['compositeEnable'] = False
-
             if maya.cmds.optionVar(query='vp2RenderingEngine') != 'DirectX11':
                 maya.cmds.optionVar(
                     stringValue=('vp2RenderingEngine', 'DirectX11'))
@@ -46,11 +42,6 @@ class Core(object):
         else:
             sxglobals.settings.tools['displayScale'] = 1.0
             sxglobals.settings.tools['lineHeight'] = 12.5
-
-            # On Mac (Linux untested), a simpler shader
-            # with CPU color compositing is used instead
-            sxglobals.settings.tools['compositor'] = 2
-            sxglobals.settings.tools['compositeEnable'] = True
 
         sxglobals.settings.loadPreferences()
         maya.cmds.workspaceControl(
@@ -224,29 +215,23 @@ class Core(object):
         # maya.cmds.outlinerEditor('outlinerPanel1', edit=True, filter='')
 
         # Make sure selected things are using the correct material
-        if maya.cmds.getAttr('assetsLayer.visibility'):
-            if sxglobals.settings.tools['compositor'] == 1:
-                for shape in sxglobals.settings.shapeArray:
-                    mode = maya.cmds.getAttr(str(shape) + '.shadingMode')
-                    if mode == 0:
-                        maya.cmds.sets(
-                            shape, e=True, forceElement='SXShaderSG')
-                    else:
-                        maya.cmds.sets(
-                            shape, e=True, forceElement='SXDebugShaderSG')
-            else:
-                maya.cmds.sets(
-                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
+        if maya.cmds.getAttr('assetsLayer.visibility') and len(sxglobals.settings.shapeArray) > 0:
+            maya.cmds.sets(
+                sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
 
-        # Vertex color display with the custom
-        # shader requires textured mode
-        maya.cmds.modelEditor(
-            'modelPanel4',
-            edit=True,
-            useDefaultMaterial=False,
-            displayLights='all',
-            lights=True,
-            displayTextures=True)
+            # Vertex color display with the custom
+            # shader requires textured mode
+            maya.cmds.modelEditor(
+                'modelPanel4',
+                edit=True,
+                useDefaultMaterial=False,
+                displayLights='all',
+                lights=True,
+                shadows=False,
+                displayTextures=True,
+                vtn='sRGB gamma')
+
+        maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 0)
 
         # Adjust viewport crease levels based on
         # the subdivision level of the selected object
@@ -300,6 +285,17 @@ class Core(object):
             maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
             maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
+            maya.cmds.modelEditor(
+                'modelPanel4',
+                edit=True,
+                useDefaultMaterial=False,
+                displayLights='all',
+                lights=True,
+                shadows=True,
+                displayTextures=True,
+                vtn='Unity neutral tone-map')
+
+            maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 1)
             # hacky hack to refresh the layer editor
             maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
             sxglobals.ui.exportObjectsUI()

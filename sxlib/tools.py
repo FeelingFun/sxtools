@@ -806,49 +806,28 @@ class ToolActions(object):
         sxglobals.layers.compositeLayers()
 
     def openSXPaintTool(self):
-        if sxglobals.settings.tools['compositor'] == 1:
-            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-            maya.mel.eval('PaintVertexColorTool;')
-            maya.cmds.artAttrPaintVertexCtx(
-                'artAttrColorPerVertexContext',
-                edit=True,
-                usepressure=False,
-                paintNumChannels=4,
-                paintRGBA=True,
-                paintVertexFace=False)
-            maya.cmds.toolPropertyWindow(inMainWindow=True)
-            maya.cmds.setToolTo('artAttrColorPerVertexContext')
-
-        elif sxglobals.settings.tools['compositor'] == 2:
-            sxglobals.settings.tools['currentTool'] = 'SXPaint'
-            sxglobals.settings.tools['compositeEnabled'] = False
-            sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
-            maya.mel.eval('PaintVertexColorTool;')
-            maya.cmds.artAttrPaintVertexCtx(
-                'artAttrColorPerVertexContext',
-                edit=True,
-                usepressure=False,
-                paintNumChannels=4,
-                paintRGBA=True,
-                paintVertexFace=False)
-            maya.cmds.toolPropertyWindow(inMainWindow=True)
-            maya.cmds.setToolTo('artAttrColorPerVertexContext')
-            maya.cmds.radioButtonGrp(
-                'shadingButtons',
-                edit = True,
-                select=2)
-            self.setShadingMode(1)
-            maya.cmds.polyOptions(
-                activeObjects=True,
-                colorMaterialChannel='none',
-                colorShadedDisplay=True)
-            maya.cmds.modelEditor(
-                'modelPanel4',
-                edit=True,
-                useDefaultMaterial=False,
-                displayLights='all',
-                lights=True,
-                displayTextures=True)
+        sxglobals.settings.tools['currentTool'] = 'SXPaint'
+        sxglobals.settings.tools['compositeEnabled'] = False
+        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+        maya.mel.eval('PaintVertexColorTool;')
+        maya.cmds.artAttrPaintVertexCtx(
+            'artAttrColorPerVertexContext',
+            edit=True,
+            usepressure=False,
+            paintNumChannels=4,
+            paintRGBA=True,
+            paintVertexFace=False)
+        maya.cmds.toolPropertyWindow(inMainWindow=True)
+        maya.cmds.setToolTo('artAttrColorPerVertexContext')
+        maya.cmds.radioButtonGrp(
+            'shadingButtons',
+            edit = True,
+            select=2)
+        self.setShadingMode(1)
+        maya.cmds.polyOptions(
+            activeObjects=True,
+            colorMaterialChannel='none',
+            colorShadedDisplay=True)
 
     def applyMasterPalette(self, objects):
         startTimeOcc = maya.cmds.timerX()
@@ -1551,66 +1530,32 @@ class ToolActions(object):
         for shape in sxglobals.settings.shapeArray:
             maya.cmds.setAttr(str(shape) + '.shadingMode', mode)
 
-        if sxglobals.settings.tools['compositor'] == 1:
-            if mode == 0:
-                maya.cmds.sets(
-                    sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
-                for shape in sxglobals.settings.shapeArray:
-                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+        if mode == 0:
+            sxglobals.settings.tools['compositeEnabled']=True
+            for shape in sxglobals.settings.shapeArray:
+                maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                maya.cmds.setAttr(str(shape) + '.displayColors', 0)
+                maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
+            maya.cmds.modelEditor(
+                'modelPanel4',
+                edit=True,
+                useDefaultMaterial=False,
+                displayLights='all',
+                lights=True,
+                displayTextures=True)
 
-                maya.cmds.modelEditor(
-                    'modelPanel4',
-                    edit=True,
-                    useDefaultMaterial=False,
-                    displayLights='all',
-                    lights=True,
-                    displayTextures=True)
+            # kludgy kludge for deadling with
+            # paint vertex tool output in sw compositing
+            if sxglobals.settings.tools['currentTool'] == 'SXPaint':
+                maya.cmds.setToolTo('selectSuperContext')
+                sxglobals.settings.tools['currentTool'] = 'Select'
+                sxglobals.layers.refreshLayerList()
 
-            elif mode == 1:
-                maya.cmds.sets(
-                    sxglobals.settings.shapeArray, e=True, forceElement='SXDebugShaderSG')
-                for shape in sxglobals.settings.shapeArray:
-                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
-
-            elif mode == 2:
-                maya.cmds.sets(
-                    sxglobals.settings.shapeArray, e=True, forceElement='SXDebugShaderSG')
-                for shape in sxglobals.settings.shapeArray:
-                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
-
-        elif sxglobals.settings.tools['compositor'] == 2:
-            if mode == 0:
-                sxglobals.settings.tools['compositeEnabled']=True
-                for shape in sxglobals.settings.shapeArray:
-                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'Ambient+Diffuse', type='string')
-                maya.cmds.modelEditor(
-                    'modelPanel4',
-                    edit=True,
-                    useDefaultMaterial=False,
-                    displayLights='all',
-                    lights=True,
-                    displayTextures=True)
-
-                # kludgy kludge for deadling with
-                # paint vertex tool output in sw compositing
-                if sxglobals.settings.tools['currentTool'] == 'SXPaint':
-                    maya.cmds.setToolTo('selectSuperContext')
-                    sxglobals.settings.tools['currentTool'] = 'Select'
-                    sxglobals.layers.refreshLayerList()
-
-            elif mode == 1 or mode == 2:
-                for shape in sxglobals.settings.shapeArray:
-                    maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
-                    maya.cmds.setAttr(str(shape) + '.displayColors', 1)
-                    maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
+        elif mode == 1 or mode == 2:
+            for shape in sxglobals.settings.shapeArray:
+                maya.cmds.setAttr(str(shape) + '.materialBlend', 0)
+                maya.cmds.setAttr(str(shape) + '.displayColors', 1)
+                maya.cmds.setAttr(str(shape) + '.displayColorChannel', 'None', type='string')
 
         sxglobals.layers.compositeLayers()
 

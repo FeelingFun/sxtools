@@ -113,22 +113,6 @@ class UI(object):
                 "maya.cmds.workspaceControl('SXToolsUI', edit=True,"
                 " dockToControl=('AttributeEditor', 'left'))"))
 
-        maya.cmds.text(
-            parent='prefsFrame',
-            label='Vertex Color Compositing')
-        maya.cmds.radioButtonGrp(
-            'compositorSelector',
-            parent='prefsFrame',
-            vertical=True,
-            ann='Changing the compositor requires applying new Project Settings',
-            labelArray2=['Full GPU (DX11)', 'Hybrid'],
-            select=sxglobals.settings.tools['compositor'],
-            numberOfRadioButtons=2,
-            onCommand1=(
-                "sxtools.sxglobals.settings.tools['compositor'] = 1"),
-            onCommand2=(
-                "sxtools.sxglobals.settings.tools['compositor'] = 2"))
-
         maya.cmds.checkBox(
             'matchSubdivisionToggle',
             label='Accurate crease preview',
@@ -229,7 +213,10 @@ class UI(object):
                 edit=True,
                 value=sxglobals.settings.project['LayerCount'])
 
-        maya.cmds.textField('maskExport', text='U3')
+        #maya.cmds.textField('maskExport', text='U1')
+        maya.cmds.textField(
+            'maskExport',
+            text=sxglobals.settings.refLayerData['layer1'][2])
 
         maya.cmds.text(label=' ')
         maya.cmds.text(label=' ')
@@ -241,19 +228,33 @@ class UI(object):
 
         maya.cmds.text('occlusionLabel', label='Occlusion:')
         maya.cmds.checkBox('occlusion', label='', value=True)
-        maya.cmds.textField('occlusionExport', text='U1')
+        maya.cmds.textField(
+            'occlusionExport',
+            text=sxglobals.settings.refLayerData['occlusion'][2])
 
-        maya.cmds.text('specularLabel', label='Specular:')
-        maya.cmds.checkBox('specular', label='', value=True)
-        maya.cmds.textField('specularExport', text='V1')
+        maya.cmds.text('metallicLabel', label='Metallic:')
+        maya.cmds.checkBox('metallic', label='', value=True)
+        maya.cmds.textField(
+            'metallicExport',
+            text=sxglobals.settings.refLayerData['metallic'][2])
+
+        maya.cmds.text('smoothnessLabel', label='Smoothness:')
+        maya.cmds.checkBox('smoothness', label='', value=True)
+        maya.cmds.textField(
+            'smoothnessExport',
+            text=sxglobals.settings.refLayerData['smoothness'][2])
 
         maya.cmds.text('transmissionLabel', label='Transmission:')
         maya.cmds.checkBox('transmission', label='', value=True)
-        maya.cmds.textField('transmissionExport', text='U2')
+        maya.cmds.textField(
+            'transmissionExport',
+            text=sxglobals.settings.refLayerData['transmission'][2])
 
         maya.cmds.text('emissionLabel', label='Emission:')
         maya.cmds.checkBox('emission', label='', value=True)
-        maya.cmds.textField('emissionExport', text='V2')
+        maya.cmds.textField(
+            'emissionExport',
+            text=sxglobals.settings.refLayerData['emission'][2])
 
         maya.cmds.text('alphaOverlay1Label', label='Overlay1 (A):')
         maya.cmds.textField('alphaOverlay1', text='layer8')
@@ -273,9 +274,13 @@ class UI(object):
                 edit=True,
                 value=bool(sxglobals.settings.project['LayerData']['occlusion'][5]))
             maya.cmds.checkBox(
-                'specular',
+                'metallic',
                 edit=True,
-                value=bool(sxglobals.settings.project['LayerData']['specular'][5]))
+                value=bool(sxglobals.settings.project['LayerData']['metallic'][5]))
+            maya.cmds.checkBox(
+                'smoothness',
+                edit=True,
+                value=bool(sxglobals.settings.project['LayerData']['smoothness'][5]))
             maya.cmds.checkBox(
                 'transmission',
                 edit=True,
@@ -293,9 +298,13 @@ class UI(object):
                 edit=True,
                 text=(sxglobals.settings.project['LayerData']['occlusion'][2]))
             maya.cmds.textField(
-                'specularExport',
+                'metallicExport',
                 edit=True,
-                text=(sxglobals.settings.project['LayerData']['specular'][2]))
+                text=(sxglobals.settings.project['LayerData']['metallic'][2]))
+            maya.cmds.textField(
+                'smoothnessExport',
+                edit=True,
+                text=(sxglobals.settings.project['LayerData']['smoothness'][2]))
             maya.cmds.textField(
                 'transmissionExport',
                 edit=True,
@@ -502,13 +511,14 @@ class UI(object):
             'exportShadingButtons1',
             parent='exportObjFrame',
             vertical=True,
-            columnWidth3=(80, 80, 80),
-            columnAttach3=('left', 'left', 'left'),
-            labelArray3=['Composite', 'Albedo', 'Layer Masks'],
-            numberOfRadioButtons=3,
+            columnWidth4=(80, 80, 80, 80),
+            columnAttach4=('left', 'left', 'left', 'left'),
+            labelArray4=['Composite', 'Albedo', 'Layer Masks', 'Occlusion'],
+            numberOfRadioButtons=4,
             onCommand1=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
-            onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"))
+            onCommand3=("sxtools.sxglobals.export.viewExportedMaterial()"),
+            onCommand4=("sxtools.sxglobals.export.viewExportedMaterial()"))
 
         maya.cmds.radioButtonGrp(
             'exportShadingButtons2',
@@ -517,7 +527,7 @@ class UI(object):
             shareCollection='exportShadingButtons1',
             columnWidth4=(80, 80, 80, 80),
             columnAttach4=('left', 'left', 'left', 'left'),
-            labelArray4=['Occlusion', 'Specular', 'Transmission', 'Emission'],
+            labelArray4=['Metallic', 'Smoothness', 'Transmission', 'Emission'],
             numberOfRadioButtons=4,
             onCommand1=("sxtools.sxglobals.export.viewExportedMaterial()"),
             onCommand2=("sxtools.sxglobals.export.viewExportedMaterial()"),
@@ -633,8 +643,8 @@ class UI(object):
                 "    using reference names\n"
                 "4. DELETE HISTORY on selected objects\n"
                 "5. Press 'Add Missing Color Sets' button\n\n"
-                "Reference names:\nlayer1-nn, occlusion, specular,\n"
-                "transmission, emission, composite"
+                "Reference names:\nlayer1-nn, occlusion, metallic,\n"
+                "smoothness, transmission, emission, composite"
             ),
             align="left")
         maya.cmds.button(

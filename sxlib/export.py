@@ -214,6 +214,8 @@ class Export(object):
         uArray = OM.MFloatArray()
         vArray = OM.MFloatArray()
 
+        print uSource, vSource, targetUVSet, mode
+        # Write source to both U and V if only one given
         if uSource is not None:
             uColorArray = MFnMesh.getFaceVertexColors(colorSet=uSource)
             lenColorArray = len(uColorArray)
@@ -221,7 +223,7 @@ class Export(object):
         if vSource is not None:
             vColorArray = MFnMesh.getFaceVertexColors(colorSet=vSource)
             lenColorArray = len(vColorArray)
-            vArray.setLength(lenColorArray)
+            vArray.setLength(lenColorArray)         
 
         uvIdArray = MFnMesh.getAssignedUVs()
 
@@ -254,6 +256,7 @@ class Export(object):
                               sxglobals.settings.project['AlphaTolerance']) and
                               (axis == 'v')):
                                 vArray[k] = float(i)
+
         # mode 2 - material channels
         elif mode == 2:
             for k in range(lenColorArray):
@@ -278,6 +281,90 @@ class Export(object):
 
         MFnMesh.setUVs(uArray, vArray, targetUVSet)
         MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=targetUVSet)
+
+    def dataToUVChannel(self,
+                 shape,
+                 sourceColorSet,
+                 targetUVChannel,
+                 mode):
+        numMasks = sxglobals.settings.project['MaskCount']
+
+        selectionList = OM.MSelectionList()
+        selectionList.add(shape)
+        nodeDagPath = OM.MDagPath()
+        nodeDagPath = selectionList.getDagPath(0)
+        MFnMesh = OM.MFnMesh(nodeDagPath)
+
+        colorArray = OM.MColorArray()
+        uvSetName = 'UV'+str(targetUVChannel[1])
+        uArray = OM.MFloatArray()
+        vArray = OM.MFloatArray()
+        uArray, vArray = MFnMesh.getUVs(uvSet=uvSetName)
+        uvIdArray = MFnMesh.getAssignedUVs(uvSet=uvSetName)
+        lenUVArray = len(uArray)
+
+        if sourceColorSet is not None:
+            colorArray = MFnMesh.getFaceVertexColors(colorSet=sourceColorSet)
+
+        axis = str.lower(str(targetUVChannel[0]))
+
+        # mode 1 - layer masks
+        if mode == 1:
+            # Iterate through all layers from top to bottom
+            # to assign each vertex to correct layer mask.
+            for i in range(1, numMasks + 1):
+                sourceColorSet = 'layer' + str(i)
+                colorArray = MFnMesh.getFaceVertexColors(
+                    colorSet=sourceColorSet)
+
+                if i == 1:
+                    if axis == 'u':
+                        for k in range(lenUVArray):
+                            uArray[k] = 1
+                    else:
+                        for k in range(lenUVArray):
+                            vArray[k] = 1
+                        
+                else:
+                    for k in range(lenUVArray):
+                        # NOTE: Alpha inadvertedly gets written with
+                        # a low non-zero values when using brush tools.
+                        # The tolerance threshold helps fix that.
+                        if axis == 'u':
+                            if colorArray[k].a >= sxglobals.settings.project['AlphaTolerance']:
+                                uArray[k] = float(i)
+                        else:                            
+                            if colorArray[k].a >= sxglobals.settings.project['AlphaTolerance']:
+                                vArray[k] = float(i)
+
+        # mode 2 - material channels
+        elif mode == 2:
+            if axis == 'u':
+                for k in range(lenUVArray):
+                    uArray[k] = 0
+                    if colorArray[k].a > 0:
+                        uArray[k] = colorArray[k].r
+            else:
+                for k in range(lenUVArray):
+                    vArray[k] = 0
+                    if colorArray[k].a > 0:
+                        vArray[k] = colorArray[k].r
+
+        # mode 3 - alpha overlays
+        elif mode == 3:
+            if axis == 'u':
+                for k in range(lenUVArray):
+                    uArray[k] = 0
+                    if colorArray[k].a > 0:
+                        uArray[k] = colorArray[k].a
+            else:
+                for k in range(lenUVArray):
+                    vArray[k] = 0
+                    if colorArray[k].a > 0:
+                        vArray[k] = colorArray[k].a
+
+        MFnMesh.setUVs(uArray, vArray, uvSetName)
+        MFnMesh.assignUVs(uvIdArray[0], uvIdArray[1], uvSet=uvSetName)
 
     def overlayToUV(self, selected, layers, targetUVSetList):
         for idx, layer in enumerate(layers):
@@ -338,58 +425,31 @@ class Export(object):
 
         sourceArray = []
         alphaOverlayArray = [None, None]
-        alphaOverlayUVArray = [None, None]
         overlay = []
         overlayUVArray = []
         materials = []
-        materialUVArray = []
-        exportBlocks = []
+        exportList = []
 
         for key, value in sxglobals.settings.project['LayerData'].iteritems():
             # UV channel for palette masks
             if key == 'layer1':
                 maskExport = value[2]
+                exportList.append((None, maskExport, 1))
             # Material channels
             elif value[5]:
                 materials.append(key)
-                materialUVArray.append(value[2])
+                exportList.append((key, value[2], 2))
             # UV channels for alpha overlays
             elif value[3] != 0:
                 if value[2][0] == 'U':
                     alphaOverlayArray[0] = key
-                    alphaOverlayUVArray[0] = value[2]
                 else:
                     alphaOverlayArray[1] = key
-                    alphaOverlayUVArray[1] = value[2]
+                exportList.append((key, value[2], 3))
             # UV channels for overlay
             elif value[4]:
                 overlay.append(key)
                 overlayUVArray.append(value[2])
-
-        if (str(alphaOverlayUVArray[0])[1] != str(alphaOverlayUVArray[1])[1]):
-            print('SX Tools Error: Two alpha overlays must be assigned'
-                  ' to the same UV Set')
-            return
-
-        # sort channels into pairs
-        for idx, material in enumerate(materials):
-            uSource = None
-            vSource = None
-            uvSet = None
-
-            chanTemp = materialUVArray[idx]
-            if chanTemp[0] == 'U':
-                uSource = material
-                vSource = materials[
-                    materialUVArray.index('V'+str(chanTemp[1]))]
-            else:
-                vSource = material
-                uSource = materials[
-                    materialUVArray.index('U'+str(chanTemp[1]))]
-
-            uvSet = 'UV' + str(chanTemp[1])
-            if (uSource, vSource, uvSet) not in exportBlocks:
-                exportBlocks.append((uSource, vSource, uvSet))
 
         # Clear existing export objects and create if necessary
         if maya.cmds.objExists('_staticExports'):
@@ -535,38 +595,18 @@ class Export(object):
                         uvSet=name)
 
             # Create UV sets
-            self.initUVs(exportShape, 'UV1')
-            self.initUVs(exportShape, 'UV2')
-            self.initUVs(exportShape, 'UV3')
-            self.initUVs(exportShape, 'UV4')
-            if overlayUVArray is not None:
-                for uvSet in overlayUVArray:
-                    for uv in uvSet:
-                        self.initUVs(exportShape, uv)
+            for i in xrange(1, 8):
+                self.initUVs(exportShape, 'UV'+str(i))
 
-            # Bake masks
-            maskUV = 'UV' + str(maskExport)[1]
-            self.dataToUV(exportShape, None, None, maskUV, 1)
-
-            # Bake material properties to UV channels
-            for block in exportBlocks:
-                self.dataToUV(
+            # Bake single channels
+            for item in exportList:
+                self.dataToUVChannel(
                     exportShape,
-                    block[0],
-                    block[1],
-                    block[2], 2)
+                    item[0],
+                    item[1],
+                    item[2])
 
-            # Bake alpha overlays
-            if alphaOverlayArray != [None, None]:
-                if str(alphaOverlayUVArray[0])[1] == str(alphaOverlayUVArray[1])[1]:
-                    alphaOverlayUV = 'UV' + str(alphaOverlayUVArray[0])[1]
-                self.dataToUV(
-                    exportShape,
-                    alphaOverlayArray[0],
-                    alphaOverlayArray[1],
-                    alphaOverlayUV, 3)
-
-            # Bake overlays
+            # Bake RGBA overlay
             if overlay != [None]:
                 self.overlayToUV(exportShape, overlay, overlayUVArray)
 
@@ -577,10 +617,7 @@ class Export(object):
             if maya.cmds.getAttr(exportShape+'.staticVertexColors'):
                 numLayers = sxglobals.settings.project['LayerCount']
             else:
-                numLayers = (
-                    sxglobals.settings.project['LayerCount'] -
-                    len(overlay) -
-                    len(alphaOverlayArray))
+                numLayers = sxglobals.settings.project['MaskCount']
             self.flattenLayers(exportShape, numLayers)
 
             # Delete unnecessary color sets (leave only layer1)
@@ -899,6 +936,7 @@ class Export(object):
             pointsShaded=1,
             polygonObject=1)
         maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
+
         # hacky hack to refresh the layer editor
         maya.cmds.delete(maya.cmds.createDisplayLayer(empty=True))
         mel.eval('FrameSelectedWithoutChildren;')
@@ -958,6 +996,11 @@ class Export(object):
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
                     'value', True))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', False))
 
         # Layer Masks
         elif buttonState1 == 3:
@@ -973,9 +1016,14 @@ class Export(object):
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
                     'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', True))
 
         # Occlusion
-        elif buttonState2 == 1:
+        elif buttonState1 == 4:
             maya.cmds.sets(
                 sxglobals.settings.shapeArray,
                 e=True,
@@ -988,20 +1036,50 @@ class Export(object):
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
                     'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', False))
 
-        # Specular
-        elif buttonState2 == 2:
+        # Metallic
+        elif buttonState2 == 1:
             maya.cmds.sets(
                 sxglobals.settings.shapeArray,
                 e=True,
                 forceElement='SXExportShaderSG')
-            chanID = sxglobals.settings.project['LayerData']['specular'][2]
+            chanID = sxglobals.settings.project['LayerData']['metallic'][2]
             chanAxis = str(chanID[0])
             chanIndex = chanID[1]
             maya.cmds.shaderfx(
                 sfxnode='SXExportShader',
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
+                    'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', False))
+
+        # Smoothness
+        elif buttonState2 == 2:
+            maya.cmds.sets(
+                sxglobals.settings.shapeArray,
+                e=True,
+                forceElement='SXExportShaderSG')
+            chanID = sxglobals.settings.project['LayerData']['smoothness'][2]
+            chanAxis = str(chanID[0])
+            chanIndex = chanID[1]
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['colorBool'],
+                    'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
                     'value', False))
 
         # Transmission
@@ -1018,6 +1096,11 @@ class Export(object):
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
                     'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', False))
 
         # Emission
         elif buttonState2 == 4:
@@ -1032,6 +1115,11 @@ class Export(object):
                 sfxnode='SXExportShader',
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
+                    'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
                     'value', False))
 
         # Alpha Overlay 1
@@ -1052,6 +1140,11 @@ class Export(object):
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
                     'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
+                    'value', False))
 
         # Alpha Overlay 2
         elif buttonState3 == 2:
@@ -1070,6 +1163,11 @@ class Export(object):
                 sfxnode='SXExportShader',
                 edit_bool=(
                     sxglobals.settings.exportNodeDict['colorBool'],
+                    'value', False))
+            maya.cmds.shaderfx(
+                sfxnode='SXExportShader',
+                edit_bool=(
+                    sxglobals.settings.exportNodeDict['divBool'],
                     'value', False))
 
         # Overlay
@@ -1094,6 +1192,7 @@ class Export(object):
                     edit_bool=(
                         sxglobals.settings.exportNodeDict['uvBool'],
                         'value', True))
+
             elif chanAxis == 'V':
                 maya.cmds.shaderfx(
                     sfxnode='SXExportShader',

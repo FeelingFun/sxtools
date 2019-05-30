@@ -21,7 +21,7 @@ class LayerManagement(object):
     # after every user action
     def compositeLayers(self):
         # startTimeOcc = maya.cmds.timerX()
-        if sxglobals.settings.tools['compositeEnabled'] and sxglobals.settings.tools['compositor'] == 2:
+        if sxglobals.settings.tools['compositeEnabled']:
             numLayers = sxglobals.settings.project['LayerCount']
 
             maya.cmds.polyColorSet(
@@ -172,9 +172,6 @@ class LayerManagement(object):
                         fvIt.next()
 
                 MFnMesh.setFaceVertexColors(targetColorArray, faceIds, vtxIds)
-
-        elif sxglobals.settings.tools['compositor'] == 1:
-            maya.cmds.shaderfx(sfxnode='SXShader', update=True)
 
         # totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         # print('SX Tools: Layer compositing duration ' + str(totalTime))
@@ -406,7 +403,8 @@ class LayerManagement(object):
                 'layer'+str(sxglobals.settings.project['LayerCount']))
             return
         elif ((str(sourceLayer) == 'occlusion') or
-              (str(sourceLayer) == 'specular') or
+              (str(sourceLayer) == 'metallic') or
+              (str(sourceLayer) == 'smoothness') or
               (str(sourceLayer) == 'transmission') or
               (str(sourceLayer) == 'emission')):
             print('SX Tools Error: Cannot merge material channels')
@@ -809,15 +807,6 @@ class LayerManagement(object):
         sxglobals.settings.tools['selectedLayer'] = str(refLayers[selectedIndex - 1])
         sxglobals.settings.tools['selectedDisplayLayer'] = sxglobals.settings.project['LayerData'][sxglobals.settings.tools['selectedLayer']][6]
         sxglobals.settings.tools['selectedLayerIndex'] = selectedIndex
-
-        # Update debug material when GPU compositing
-        if sxglobals.settings.tools['compositor'] == 1:
-            maya.cmds.shaderfx(
-                sfxnode='SXDebugShader',
-                edit_int=(
-                    sxglobals.settings.nodeDict['layerIndex'],
-                    'value',
-                    sxglobals.settings.tools['selectedLayerIndex'] - 1))
 
         self.getLayerPaletteAndOpacity(
             sxglobals.settings.shapeArray[

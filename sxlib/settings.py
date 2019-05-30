@@ -52,7 +52,6 @@ class Settings(object):
             'displayScale': 1.0,
             'platform': 'win64',
             'lineHeight': 14.5,
-            'compositor': 2,
             'compositeEnable': True,
             'recentPaletteIndex': 1,
             'overwriteAlpha': False,
@@ -83,8 +82,8 @@ class Settings(object):
         self.refArray = [
             u'layer1', u'layer2', u'layer3', u'layer4', u'layer5',
             u'layer6', u'layer7', u'layer8', u'layer9', u'layer10',
-            u'occlusion', u'specular', u'transmission', u'emission',
-            u'composite'
+            u'occlusion', u'metallic', u'smoothness', u'transmission',
+            u'emission', u'composite'
         ]
         # name: ([0]index, [1](default values),
         #        [2]export channels, [3]alphaOverlayIndex,
@@ -92,7 +91,7 @@ class Settings(object):
         #        [6]display name)
         self.refLayerData = {
             self.refArray[0]:
-                [1, (0.5, 0.5, 0.5, 1), 'U3', 0, False, False, 'layer1'],
+                [1, (0.5, 0.5, 0.5, 1), 'U1', 0, False, False, 'layer1'],
             self.refArray[1]:
                 [2, (0, 0, 0, 0), None, 0, False, False, 'layer2'],
             self.refArray[2]:
@@ -104,7 +103,7 @@ class Settings(object):
             self.refArray[5]:
                 [6, (0, 0, 0, 0), None, 0, False, False, 'layer6'],
             self.refArray[6]:
-                [7, (0, 0, 0, 0), ('V3', 'U7', 'V7'), 0, False, False, 'layer7'],
+                [7, (0, 0, 0, 0), ('U7', 'V7'), 0, False, False, 'layer7'],
             self.refArray[7]:
                 [8, (0, 0, 0, 0), 'U4', 1, False, False, 'gradient1'],
             self.refArray[8]:
@@ -112,15 +111,17 @@ class Settings(object):
             self.refArray[9]:
                 [10, (0, 0, 0, 0), ('UV5', 'UV6'), 0, True, False, 'overlay'],
             self.refArray[10]:
-                [11, (1, 1, 1, 1), 'U1', 0, False, True, 'occlusion'],
+                [11, (1, 1, 1, 1), 'V1', 0, False, True, 'occlusion'],
             self.refArray[11]:
-                [12, (0, 0, 0, 1), 'V1', 0, False, True, 'specular'],
+                [12, (0, 0, 0, 1), 'U3', 0, False, True, 'metallic'],
             self.refArray[12]:
-                [13, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
+                [13, (0, 0, 0, 1), 'V3', 0, False, True, 'smoothness'],
             self.refArray[13]:
-                [14, (0, 0, 0, 1), 'V2', 0, False, True, 'emission'],
+                [14, (0, 0, 0, 1), 'U2', 0, False, True, 'transmission'],
             self.refArray[14]:
-                [15, (0, 0, 0, 1), None, 0, False, False, 'composite']
+                [15, (0, 0, 0, 1), 'V2', 0, False, True, 'emission'],
+            self.refArray[15]:
+                [16, (0, 0, 0, 1), None, 0, False, False, 'composite']
         }
 
     def __del__(self):
@@ -137,7 +138,7 @@ class Settings(object):
             self.project['ExportOffset'] = 5
             self.project['LayerCount'] = 10
             self.project['MaskCount'] = 7
-            self.project['ChannelCount'] = 4
+            self.project['ChannelCount'] = 5
 
             self.project['RefNames'] = self.refArray
 
@@ -150,43 +151,26 @@ class Settings(object):
             self.project['paletteTarget4'] = [self.refArray[3], ]
             self.project['paletteTarget5'] = [self.refArray[4], ]
 
-        if self.tools['compositor'] == 1:
-            if shift:
-                sxglobals.setup.createSXShader(
-                    self.project['LayerCount'], True, True, True, True)
-                sxglobals.setup.createSXDebugShader(
-                    self.project['LayerCount'], True, True, True, True)
-            elif not shift:
-                sxglobals.setup.createSXShader(
-                    self.project['LayerCount'],
-                    self.project['LayerData']['occlusion'][5],
-                    self.project['LayerData']['specular'][5],
-                    self.project['LayerData']['transmission'][5],
-                    self.project['LayerData']['emission'][5])
-                sxglobals.setup.createSXDebugShader(
-                    self.project['LayerCount'],
-                    self.project['LayerData']['occlusion'][5],
-                    self.project['LayerData']['specular'][5],
-                    self.project['LayerData']['transmission'][5],
-                    self.project['LayerData']['emission'][5])
-        elif self.tools['compositor'] == 2:
-            if shift:
-                sxglobals.setup.createSXShaderLite(
-                    self.project['LayerCount'], True, True, True, True)
-            elif not shift:
-                sxglobals.setup.createSXShaderLite(
-                    self.project['LayerCount'],
-                    self.project['LayerData']['occlusion'][5],
-                    self.project['LayerData']['specular'][5],
-                    self.project['LayerData']['transmission'][5],
-                    self.project['LayerData']['emission'][5])
+        if shift:
+            sxglobals.setup.createSXShader(
+                self.project['LayerCount'], True, True, True, True, True)
+        elif not shift:
+            sxglobals.setup.createSXShader(
+                self.project['LayerCount'],
+                self.project['LayerData']['occlusion'][5],
+                self.project['LayerData']['metallic'][5],
+                self.project['LayerData']['smoothness'][5],
+                self.project['LayerData']['transmission'][5],
+                self.project['LayerData']['emission'][5])
+
         sxglobals.setup.createSXExportShader()
         sxglobals.setup.createSXExportOverlayShader()
         sxglobals.setup.createSXPBShader()
         sxglobals.setup.createSubMeshMaterials()
 
         # Viewport and Maya prefs
-        maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
+        maya.cmds.colorManagementPrefs(edit=True, cmEnabled=1)
+        maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 0)
         maya.cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 0)
         maya.cmds.setAttr('hardwareRenderingGlobals.lineAAEnable', 1)
         maya.cmds.setAttr('hardwareRenderingGlobals.multiSampleEnable', 1)
@@ -241,7 +225,7 @@ class Settings(object):
 
             self.project['RefNames'].append(layerName)
 
-        channels = [u'occlusion', u'specular', u'transmission', u'emission']
+        channels = [u'occlusion', u'metallic', u'smoothness', u'transmission', u'emission']
         for channel in channels:
             if maya.cmds.checkBox(channel, query=True, value=True):
                 refIndex += 1
@@ -282,14 +266,22 @@ class Settings(object):
         else:
             self.project['LayerData']['occlusion'][5] = False
             self.project['LayerData']['occlusion'][2] = None
-        if maya.cmds.checkBox('specular', query=True, value=True):
-            self.project['LayerData']['specular'][5] = True
-            self.project['LayerData']['specular'][2] = (
+        if maya.cmds.checkBox('metallic', query=True, value=True):
+            self.project['LayerData']['metallic'][5] = True
+            self.project['LayerData']['metallic'][2] = (
                 maya.cmds.textField(
-                    'specularExport', query=True, text=True))
+                    'metallicExport', query=True, text=True))
         else:
-            self.project['LayerData']['specular'][5] = False
-            self.project['LayerData']['specular'][2] = None
+            self.project['LayerData']['metallic'][5] = False
+            self.project['LayerData']['metallic'][2] = None
+        if maya.cmds.checkBox('smoothness', query=True, value=True):
+            self.project['LayerData']['smoothness'][5] = True
+            self.project['LayerData']['smoothness'][2] = (
+                maya.cmds.textField(
+                    'smoothnessExport', query=True, text=True))
+        else:
+            self.project['LayerData']['smoothness'][5] = False
+            self.project['LayerData']['smoothness'][2] = None
         if maya.cmds.checkBox('transmission', query=True, value=True):
             self.project['LayerData']['transmission'][5] = True
             self.project['LayerData']['transmission'][2] = (
