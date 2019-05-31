@@ -3,7 +3,7 @@
 ![Layered Example](/images/sxtools_multichannel.jpg)
 
 ### Overview
-SX Tools is an artist toolbox for vertex coloring, OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018-2019. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and to provide tools that simplify the face and vertex coloring process.
+SX Tools is an artist toolbox for vertex coloring, OpenSubdiv creasing and game engine exporting in Autodesk Maya 2018-2019. Its main goal is to present Maya’s color sets in a *layer stack* context more common in 2D painting workflows and to provide tools that simplify the face and vertex coloring process. It is also designed to enable a Physically Based Rendering (PBR) workflow when authoring low-poly assets.
 
 The additional vertex data created by the tool in Maya is exported via UV channels to bring rich vertex colors to game engines.
 
