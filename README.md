@@ -45,8 +45,8 @@ For certain art styles, taking the control cages to the game engine to be tessel
 9. (At some point, set a Master Palette location.)
 
 ## Caveats
-On Windows, SX Tools runs with a complex ShaderFX shader that handles vertex color compositing fully on the GPU. On Mac (and possibly Linux), a CPU-assisted shader is used. There have been no major issues with either.
-**Make sure your viewport is in DX11 Mode on Windows!**
+When working on a metallic/smoothness material representation, the viewport shader is only a coarse representation. A more accurate view of the object is shown in the Export Preview mode which uses a PBR material.
+**Viewport DX11 Mode on Windows is recommended.**
 (Windows -> Settings/Preferences -> Preferences -> Display -> Viewport 2.0 -> Rendering engine: -> DirectX 11
 Some tool actions fail if the object has history. The toolbox has a built-in warning for when history is detected.
 Some tools are not undo-safe. If proper development pipeline is observed, this should not be too hazardous.
@@ -105,7 +105,7 @@ Once you’ve made your selections, press **Apply Project Defaults** to get star
 Shift-clicking the button starts with built-in default settings. A settings file and its location must be set before proceeding.
 
 Creating project defaults may take a few seconds, as the tool generates custom shaders according to the channel and layer selections.
-The tool also by default disables color management, enables AA, smooth wireframes, enables OpenSubdiv mesh preview, and transparency depth peeling.
+The tool also by default enables color management, enables AA, smooth wireframes, enables OpenSubdiv mesh preview, and transparency depth peeling.
 
 ## Assigning Layer Sets
 Import or create polygon mesh objects while SX Tools is running. A message will pop up that allows you to add the project-defined set of layers to the object (or objects). Selecting an object with the default set of layers will bring up the main tool window.
@@ -182,7 +182,7 @@ Applies selected color to selected layer or components. The tool respects layer 
 Noise can be added with the Noise Intensity slider.
 
 ### Gradient Fill
-Allows for a custom ramp texture to be applied to the object or objects. Different modes under the "Direction" pull-down menu are gradient along XYZ, remapping an existing layer’s luminance to a gradient, or applying a ramp according to the curvature of the mesh. Saving a preset does not currently support the alpha gradient, only color.
+Allows for a custom ramp texture to be applied to the object or objects. Different modes under the "Direction" pull-down menu are gradient along XYZ, remapping an existing layer’s luminance to a gradient, or applying a ramp according to the curvature of the mesh.
 
 ### Bake Occlusion
 SX Tools has a built-in ambient occlusion renderer.
