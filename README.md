@@ -19,9 +19,9 @@ Changing the topology of your model while coloring and creasing is probably fine
 ## Goals & Purpose
 The toolbox is developed to allow 3D artists to create simple and stylized visuals that side-step the "low-poly, limited palette" retro look that is common to many indie titles. The development is focused on a workflow where almost the entire modeling work is to create a simple, elegant control cage that is subdivided as the final export step. All modeling effort and vertex painting work is performed on the control cage. This keeps the source art lightweight, easy to edit, and avoids the hassle involved with texturing. Instead of beveling edges, subdiv creasing should be used whenever possible.
 
-In other common art pipelines a model is sculpted without concern to poly counts, then baked to normal maps that are applied to a re-topo mesh. However these meshes are still fairly complex to manage when skinning, rigging etc.
+Another goal for SX Tools is to combine the simplicity of low-poly modeling with a physically based rendering workflow. The metallic/smoothness model used in Unity's standard PBR material is adopted by default.
 
-For certain art styles, taking the control cages to the game engine to be tessellated may be a feasible approach, work on that still continues on many fronts.
+In other common art pipelines a model is sculpted without concern to poly counts, then baked to normal maps that are applied to a re-topo mesh. However these meshes are still fairly complex to manage when skinning, rigging etc. The proposed workflow for this toolbox is designed to side-step many of those mentioned complexities.
 
 ### Terminology
 | Term | Summary |
