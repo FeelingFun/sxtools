@@ -169,7 +169,7 @@ class Settings(object):
         sxglobals.setup.createSubMeshMaterials()
 
         # Viewport and Maya prefs
-        maya.cmds.colorManagementPrefs(edit=True, cmEnabled=1)
+        maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
         maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 0)
         maya.cmds.setAttr('hardwareRenderingGlobals.transparencyAlgorithm', 0)
         maya.cmds.setAttr('hardwareRenderingGlobals.lineAAEnable', 1)

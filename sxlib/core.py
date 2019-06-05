@@ -216,6 +216,7 @@ class Core(object):
 
         # Make sure selected things are using the correct material
         if maya.cmds.getAttr('assetsLayer.visibility') and len(sxglobals.settings.shapeArray) > 0:
+            maya.cmds.colorManagementPrefs(edit=True, cmEnabled=0)
             maya.cmds.sets(
                 sxglobals.settings.shapeArray, e=True, forceElement='SXShaderSG')
 
@@ -285,6 +286,7 @@ class Core(object):
             maya.cmds.setAttr('skinMeshLayer.visibility', 0)
             maya.cmds.setAttr('assetsLayer.visibility', 0)
             maya.cmds.editDisplayLayerGlobals(cdl='exportsLayer')
+            maya.cmds.colorManagementPrefs(edit=True, cmEnabled=1)
             maya.cmds.modelEditor(
                 'modelPanel4',
                 edit=True,
