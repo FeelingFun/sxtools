@@ -144,7 +144,7 @@ class Settings(object):
 
             self.project['LayerData'] = self.refLayerData
 
-            self.project['ExportSuffix'] = True
+            self.project['ExportSuffix'] = False
             self.project['paletteTarget1'] = [self.refArray[0], ]
             self.project['paletteTarget2'] = [self.refArray[1], ]
             self.project['paletteTarget3'] = [self.refArray[2], ]

@@ -410,7 +410,7 @@ class UI(object):
         maya.cmds.checkBox(
             'suffixCheck',
             label='',
-            value=True,
+            value=False,
             changeCommand=(
                 "sxtools.sxglobals.settings.project['ExportSuffix'] = ("
                 "maya.cmds.checkBox('suffixCheck', query=True, value=True))"))

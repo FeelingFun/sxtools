@@ -748,7 +748,7 @@ class Export(object):
 
                 # Apply smoothing if set in export flags
                 if maya.cmds.getAttr(skinTarget+'.subdivisionLevel') > 0:
-                    sdl = maya.cmds.getAttr(exportShape+'.subdivisionLevel')
+                    sdl = maya.cmds.getAttr('|_ignore|'+str(exportShape).split('|')[-1]+'.subdivisionLevel')
                     maya.cmds.setAttr('sxCrease1.creaseLevel', sdl * 0.25)
                     maya.cmds.setAttr('sxCrease2.creaseLevel', sdl * 0.5)
                     maya.cmds.setAttr('sxCrease3.creaseLevel', sdl * 0.75)
@@ -761,13 +761,13 @@ class Export(object):
                         kt=1, kmb=1, suv=1, peh=0,
                         sl=1, dpe=1, ps=0.1, ro=1, ch=0)
 
-                    objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion(exportShape, te=True))
+                    objEdges = maya.cmds.sets(maya.cmds.polyListComponentConversion('|_ignore|'+str(exportShape).split('|')[-1], te=True))
                     hardEdges = maya.cmds.sets(objEdges, intersection='sxCrease4')
                     maya.cmds.select(objEdges, r=True, ne=True)
-                    maya.cmds.polySoftEdge(a=maya.cmds.getAttr(exportShape+'.smoothingAngle'), ch=0)
+                    maya.cmds.polySoftEdge(a=maya.cmds.getAttr('|_ignore|'+str(exportShape).split('|')[-1]+'.smoothingAngle'), ch=0)
 
                     # Apply hard edges to hard creases
-                    if hardEdges and maya.cmds.getAttr(exportShape+'.hardEdges'):
+                    if hardEdges and maya.cmds.getAttr('|_ignore|'+str(exportShape).split('|')[-1]+'.hardEdges'):
                         maya.cmds.select(hardEdges, r=True, ne=True)
                         maya.cmds.polySoftEdge(a=0, ch=0)
 
