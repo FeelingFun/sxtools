@@ -1210,7 +1210,7 @@ class Export(object):
             sxglobals.settings.project['SXToolsExportPath'] = path
         else:
             sxglobals.settings.project['SXToolsExportPath'] = path + '/'
-        sxglobals.settings.savePreferences()
+        sxglobals.settings.saveFile(0)
 
     # Converts a selection of Maya shape nodes to their transform nodes
     def getTransforms(self, shapeList, fullPath=False):

@@ -43,7 +43,7 @@ class Core(object):
             sxglobals.settings.tools['displayScale'] = 1.0
             sxglobals.settings.tools['lineHeight'] = 12.5
 
-        sxglobals.settings.loadPreferences()
+        sxglobals.settings.loadFile(0)
         maya.cmds.workspaceControl(
             sxglobals.dockID,
             label='SX Tools',
@@ -230,7 +230,7 @@ class Core(object):
                 lights=True,
                 shadows=False,
                 displayTextures=True,
-                vtn='sRGB gamma')
+                vtn='Raw')
 
         maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 0)
 
@@ -274,7 +274,7 @@ class Core(object):
 
         # If nothing selected, or defaults not set, construct setup view
         if ((len(sxglobals.settings.shapeArray) == 0) or
-           not (maya.cmds.optionVar(exists='SXToolsPrefsFile')) or
+           not (maya.cmds.optionVar(exists='SXToolsSettingsFile')) or
            ('LayerData' not in sxglobals.settings.project)):
             sxglobals.settings.tools['compositeEnabled'] = False
             sxglobals.ui.setupProjectUI()
@@ -295,7 +295,7 @@ class Core(object):
                 lights=True,
                 shadows=True,
                 displayTextures=True,
-                vtn='Unity neutral tone-map')
+                vtn='Raw')
 
             maya.cmds.setAttr('hardwareRenderingGlobals.ssaoEnable', 1)
             # hacky hack to refresh the layer editor
@@ -363,6 +363,7 @@ class Core(object):
             sxglobals.ui.gradientToolUI()
             sxglobals.ui.bakeOcclusionToolUI()
             sxglobals.ui.masterPaletteToolUI()
+            sxglobals.ui.materialToolUI()
             sxglobals.ui.assignCreaseToolUI()
             sxglobals.ui.createSkinMeshUI()
             sxglobals.ui.exportFlagsUI()

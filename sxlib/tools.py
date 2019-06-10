@@ -829,75 +829,39 @@ class ToolActions(object):
             colorMaterialChannel='none',
             colorShadedDisplay=True)
 
-    def applyMasterPalette(self, objects):
+    # NOTE: Master Palette uses the noise settings of Apply Color tool
+    def applyMasterPalette(self):
         startTimeOcc = maya.cmds.timerX()
-
-        selectionList = OM.MSelectionList()
-        for obj in objects:
-            selectionList.add(obj)
-        selDagPath = OM.MDagPath()
-        fvColors = OM.MColorArray()
-        vtxIds = OM.MIntArray()
-        fvIds = OM.MIntArray()
-        faceIds = OM.MIntArray()
-        fillColor = OM.MColor()
-        mod = OM.MDGModifier()
-        colorRep = OM.MFnMesh.kRGBA
 
         for i in xrange(1, 6):
             targetLayers = sxglobals.settings.project['paletteTarget'+str(i)]
-            maya.cmds.palettePort('masterPalette', edit=True, scc=i-1)
-            fillColor.r = maya.cmds.palettePort(
-                'masterPalette', query=True, rgb=True)[0]
-            fillColor.g = maya.cmds.palettePort(
-                'masterPalette', query=True, rgb=True)[1]
-            fillColor.b = maya.cmds.palettePort(
-                'masterPalette', query=True, rgb=True)[2]
+            maya.cmds.palettePort('newPalette', edit=True, scc=i-1)
+            sxglobals.settings.currentColor = maya.cmds.palettePort(
+                'newPalette', query=True, rgb=True)
 
             for layer in targetLayers:
-                maya.cmds.polyColorSet(
-                    objects,
-                    currentColorSet=True,
-                    colorSet=layer)
+                sxglobals.settings.tools['selectedLayer'] = layer
+                self.colorFill(False, True)
 
-                selectionIter = OM.MItSelectionList(selectionList)
-                while not selectionIter.isDone():
-                    selDagPath = selectionIter.getDagPath()
-                    mesh = OM.MFnMesh(selDagPath)
-                    fvColors.clear()
-                    fvColors = mesh.getFaceVertexColors(colorSet=layer)
-                    selLen = len(fvColors)
-                    vtxIds.setLength(selLen)
-                    fvIds.setLength(selLen)
-                    faceIds.setLength(selLen)
-
-                    meshIter = OM.MItMeshFaceVertex(selDagPath)
-                    j = 0
-                    while not meshIter.isDone():
-                        vtxIds[j] = meshIter.vertexId()
-                        faceIds[j] = meshIter.faceId()
-                        fvIds[j] = meshIter.faceVertexId()
-
-                        if fvColors[j].a == 0 and layer != 'layer1':
-                            fvColors[j].r = 0.0
-                            fvColors[j].g = 0.0
-                            fvColors[j].b = 0.0
-                        else:
-                            fvColors[j].r = fillColor.r
-                            fvColors[j].g = fillColor.g
-                            fvColors[j].b = fillColor.b
-
-                        j += 1
-                        meshIter.next()
-
-                    mesh.setFaceVertexColors(fvColors, faceIds, vtxIds, mod, colorRep)
-                    selectionIter.next()
-
-        mod.doIt()
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Apply Master Palette duration ' + str(totalTime))
-        sxglobals.layers.refreshLayerList()
-        sxglobals.layers.compositeLayers()
+        sxglobals.core.updateSXTools()
+
+    def applyMaterial(self):
+        startTimeOcc = maya.cmds.timerX()
+        sxglobals.settings.tools['noiseValue'] = 0
+        targets = (sxglobals.settings.project['materialTarget'][0], 'metallic', 'smoothness')
+
+        for i in xrange(3):
+            maya.cmds.palettePort('newMaterial', edit=True, scc=i-1)
+            sxglobals.settings.currentColor = maya.cmds.palettePort(
+                'newMaterial', query=True, rgb=True)
+            sxglobals.settings.tools['selectedLayer'] = targets[i]
+            self.colorFill(True, False)
+
+        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        print('SX Tools: Apply Material duration ' + str(totalTime))
+        sxglobals.core.updateSXTools()
 
     def calculateBoundingBox(self, selection):
         selectionList = OM.MSelectionList()
@@ -1145,10 +1109,10 @@ class ToolActions(object):
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)
         print('SX Tools: Gradient Fill duration ' + str(totalTime))
 
-    def colorFill(self, overwriteAlpha=False):
-        startTimeOcc = maya.cmds.timerX()
+    def colorFill(self, overwriteAlpha=False, palette=False):
+        #startTimeOcc = maya.cmds.timerX()
         layer = sxglobals.settings.tools['selectedLayer']
-        sxglobals.layers.setColorSet(sxglobals.settings.tools['selectedLayer'])
+        sxglobals.layers.setColorSet(layer)
         fillColor = OM.MColor()
         mod = OM.MDGModifier()
         colorRep = OM.MFnMesh.kRGBA
@@ -1215,13 +1179,23 @@ class ToolActions(object):
                             break
                     fvIt.next()
             else:
-                if overwriteAlpha:
+                if palette:
+                    for idx in xrange(selLen):
+                        if fvColors[idx].a == 0 and layer != 'layer1':
+                            fvColors[idx].r = 0.0
+                            fvColors[idx].g = 0.0
+                            fvColors[idx].b = 0.0
+                        else:
+                            fvColors[idx].r = fillColor.r
+                            fvColors[idx].g = fillColor.g
+                            fvColors[idx].b = fillColor.b
+                elif overwriteAlpha:
                     for idx in xrange(selLen):
                         fvColors[idx] = fillColor
                 elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax == 0):
                     for idx in xrange(selLen):
                         fvColors[idx] = fillColor
-                elif (not overwriteAlpha) and (sxglobals.settings.layerAlphaMax != 0):
+                elif ((not overwriteAlpha) and (sxglobals.settings.layerAlphaMax != 0)):
                     for idx in xrange(selLen):
                         fvColors[idx].r = fillColor.r
                         fvColors[idx].g = fillColor.g
@@ -1236,11 +1210,12 @@ class ToolActions(object):
         if sxglobals.settings.tools['noiseValue'] > 0:
             self.colorNoise()
 
-        totalTime = maya.cmds.timerX(startTime=startTimeOcc)
-        print('SX Tools: Apply Color duration ' + str(totalTime))
+        #totalTime = maya.cmds.timerX(startTime=startTimeOcc)
+        #print('SX Tools: Apply Color duration ' + str(totalTime))
 
-        sxglobals.layers.refreshLayerList()
-        sxglobals.layers.compositeLayers()
+        if not palette:
+            sxglobals.layers.refreshLayerList()
+            sxglobals.layers.compositeLayers()
 
     def colorNoise(self):
         mono = sxglobals.settings.tools['noiseMonochrome']
@@ -1731,16 +1706,30 @@ class ToolActions(object):
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
 
-        if shift:
-            for vertFace in vertFaceList:
-                if maya.cmds.polyColorPerVertex(
-                   vertFace, query=True, a=True)[0] == 0:
-                    maskList.append(vertFace)
-        elif not shift:
-            for vertFace in vertFaceList:
-                if maya.cmds.polyColorPerVertex(
-                   vertFace, query=True, a=True)[0] > 0:
-                    maskList.append(vertFace)
+        if ((sxglobals.settings.tools['selectedLayer'] == 'metallic') or
+            (sxglobals.settings.tools['selectedLayer'] == 'transmission') or
+            (sxglobals.settings.tools['selectedLayer'] == 'emission')):
+            if shift:
+                for vertFace in vertFaceList:
+                    if maya.cmds.polyColorPerVertex(
+                       vertFace, query=True, r=True)[0] == 0:
+                        maskList.append(vertFace)
+            elif not shift:
+                for vertFace in vertFaceList:
+                    if maya.cmds.polyColorPerVertex(
+                       vertFace, query=True, r=True)[0] > 0:
+                        maskList.append(vertFace)
+        else:
+            if shift:
+                for vertFace in vertFaceList:
+                    if maya.cmds.polyColorPerVertex(
+                       vertFace, query=True, a=True)[0] == 0:
+                        maskList.append(vertFace)
+            elif not shift:
+                for vertFace in vertFaceList:
+                    if maya.cmds.polyColorPerVertex(
+                       vertFace, query=True, a=True)[0] > 0:
+                        maskList.append(vertFace)
 
         if len(maskList) == 0:
             print('SX Tools: No layer mask found')
@@ -1855,12 +1844,16 @@ class ToolActions(object):
 
         if category == sxglobals.settings.paletteDict:
             category[preset] = paletteArray
-        else:
+        elif 'Palette' in paletteUI:
             for i, cat in enumerate(sxglobals.settings.masterPaletteArray):
                 if cat.keys()[0] == category:
                     sxglobals.settings.masterPaletteArray[i][
                         category][preset] = paletteArray
-
+        elif 'Material' in paletteUI:
+            for i, cat in enumerate(sxglobals.settings.materialArray):
+                if cat.keys()[0] == category:
+                    sxglobals.settings.materialArray[i][
+                        category][preset] = paletteArray
         maya.cmds.palettePort(
             paletteUI,
             edit=True,
@@ -1872,10 +1865,15 @@ class ToolActions(object):
                 presetColors = category[preset]
             else:
                 return
-        else:
+        elif 'Palette' in paletteUI:
             for i, cat in enumerate(sxglobals.settings.masterPaletteArray):
                 if cat.keys()[0] == category:
                     presetColors = sxglobals.settings.masterPaletteArray[i][
+                        category][preset]
+        elif 'Material' in paletteUI:
+            for i, cat in enumerate(sxglobals.settings.materialArray):
+                if cat.keys()[0] == category:
+                    presetColors = sxglobals.settings.materialArray[i][
                         category][preset]
 
         for idx, color in enumerate(presetColors):
@@ -1891,10 +1889,21 @@ class ToolActions(object):
                 sxglobals.settings.masterPaletteArray.pop(i)
         sxglobals.settings.tools['categoryPreset'] = None
 
+    def deleteMaterialCategory(self, category):
+        for i, cat in enumerate(sxglobals.settings.materialArray):
+            if cat.keys()[0] == category:
+                sxglobals.settings.materialArray.pop(i)
+        sxglobals.settings.tools['materialCategoryPreset'] = None
+
     def deletePalette(self, category, preset):
         for i, cat in enumerate(sxglobals.settings.masterPaletteArray):
             if cat.keys()[0] == category:
                 sxglobals.settings.masterPaletteArray[i][category].pop(preset)
+
+    def deleteMaterial(self, category, preset):
+        for i, cat in enumerate(sxglobals.settings.materialArray):
+            if cat.keys()[0] == category:
+                sxglobals.settings.materialArray[i][category].pop(preset)
 
     def saveMasterCategory(self):
         modifiers = maya.cmds.getModifiers()
@@ -1909,7 +1918,7 @@ class ToolActions(object):
                 self.deleteCategory(category)
                 maya.cmds.deleteUI(category)
                 maya.cmds.deleteUI(category+'Option')
-                sxglobals.settings.savePalettes()
+                sxglobals.settings.saveFile(1)
             else:
                 print('SX Tools Error: No category to delete!')
 
@@ -1939,7 +1948,55 @@ class ToolActions(object):
                     'masterCategories',
                     edit=True,
                     select=idx)
-                sxglobals.settings.savePalettes()
+                sxglobals.settings.saveFile(1)
+                sxglobals.core.updateSXTools()
+            else:
+                print('SX Tools Error: Invalid preset name!')
+
+    def saveMaterialCategory(self):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+
+        if shift:
+            category = maya.cmds.optionMenu(
+                'materialCategories',
+                query=True,
+                value=True)
+            if category is not None:
+                self.deleteCategory(category)
+                maya.cmds.deleteUI(category)
+                maya.cmds.deleteUI(category+'Option')
+                sxglobals.settings.saveFile(2)
+            else:
+                print('SX Tools Error: No category to delete!')
+
+        elif not shift:
+            itemList = maya.cmds.optionMenu(
+                'materialCategories',
+                query=True,
+                ils=True)
+            category = maya.cmds.textField(
+                'saveMaterialCategoryName', query=True, text=True).replace(' ', '_')
+            if ((len(category) > 0) and
+               ((itemList is None) or (category not in itemList))):
+                categoryDict = {}
+                categoryDict[category] = {}
+                sxglobals.settings.materialArray.append(categoryDict)
+                maya.cmds.menuItem(
+                    category,
+                    label=category,
+                    parent='materialCategories')
+                itemList = maya.cmds.optionMenu(
+                    'materialCategories',
+                    query=True,
+                    ils=True)
+                idx = itemList.index(category) + 1
+                sxglobals.settings.tools['materialCategoryPreset'] = idx
+                maya.cmds.optionMenu(
+                    'materialCategories',
+                    edit=True,
+                    select=idx)
+                sxglobals.settings.saveFile(2)
                 sxglobals.core.updateSXTools()
             else:
                 print('SX Tools Error: Invalid preset name!')
@@ -1951,10 +2008,22 @@ class ToolActions(object):
         if shift:
             self.deletePalette(category, preset)
             maya.cmds.deleteUI(category+preset)
-            sxglobals.settings.savePalettes()
+            sxglobals.settings.saveFile(1)
         elif not shift:
             self.setMasterPalette(category, preset)
-            self.applyMasterPalette(sxglobals.settings.objectArray)
+            self.applyMasterPalette()
+
+    def materialButtonManager(self, category, preset):
+        modifiers = maya.cmds.getModifiers()
+        shift = bool((modifiers & 1) > 0)
+
+        if shift:
+            self.deleteMaterial(category, preset)
+            maya.cmds.deleteUI(category+preset)
+            sxglobals.settings.saveFile(2)
+        elif not shift:
+            self.setMaterialPalette(category, preset)
+            self.applyMaterial()
 
     def saveMasterPalette(self):
         category = maya.cmds.optionMenu(
@@ -1966,22 +2035,49 @@ class ToolActions(object):
 
         if len(preset) > 0:
             self.storePalette(
-                'masterPalette',
+                'newPalette',
                 category,
                 preset)
-            sxglobals.settings.savePalettes()
+            sxglobals.settings.saveFile(1)
+        else:
+            print('SX Tools Error: Invalid preset name!')
+
+    def saveMaterial(self):
+        category = maya.cmds.optionMenu(
+            'materialCategories',
+            query=True,
+            value=True)
+        preset = maya.cmds.textField(
+            'saveMaterialName', query=True, text=True).replace(' ', '_')
+
+        if len(preset) > 0:
+            self.storePalette(
+                'newMaterial',
+                category,
+                preset)
+            sxglobals.settings.saveFile(2)
         else:
             print('SX Tools Error: Invalid preset name!')
 
     def setMasterPalette(self, category, preset):
         self.getPalette(
-            'masterPalette',
+            'newPalette',
             category,
             preset)
         self.storePalette(
-            'masterPalette',
+            'newPalette',
             sxglobals.settings.paletteDict,
             'SXToolsMasterPalette')
+
+    def setMaterialPalette(self, category, preset):
+        self.getPalette(
+            'newMaterial',
+            category,
+            preset)
+        self.storePalette(
+            'newMaterial',
+            sxglobals.settings.paletteDict,
+            'SXToolsMaterialPalette')
 
     def checkTarget(self, targets, index):
         refLayers = sxglobals.layers.sortLayers(
@@ -2001,7 +2097,7 @@ class ToolActions(object):
                 text=''.join(sxglobals.settings.project['paletteTarget'+str(index)]))
             return
         sxglobals.settings.project['paletteTarget'+str(index)] = targetList
-        sxglobals.settings.savePreferences()
+        sxglobals.settings.saveFile(0)
 
     def gradientToolManager(self, mode):
         modifiers = maya.cmds.getModifiers()

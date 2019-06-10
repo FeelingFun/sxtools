@@ -166,15 +166,15 @@ class UI(object):
             parent='prefsColumn',
             statusBarMessage='Shift-click button to reload settings from file',
             command=(
-                'sxtools.sxglobals.settings.setPreferencesFile()\n'
+                'sxtools.sxglobals.settings.setFile(0)\n'
                 'sxtools.sxglobals.core.updateSXTools()'))
 
-        if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
-                str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
+        if maya.cmds.optionVar(exists='SXToolsSettingsFile') and len(
+                str(maya.cmds.optionVar(query='SXToolsSettingsFile'))) > 0:
             maya.cmds.text(
                 label='Current settings location:')
             maya.cmds.text(
-                label=maya.cmds.optionVar(query='SXToolsPrefsFile'),
+                label=maya.cmds.optionVar(query='SXToolsSettingsFile'),
                 ww=True)
         else:
             maya.cmds.text(
@@ -441,8 +441,8 @@ class UI(object):
             adjustableColumn=True)
         maya.cmds.text(label=' ', parent='reflayerFrame')
 
-        if maya.cmds.optionVar(exists='SXToolsPrefsFile') and len(
-                str(maya.cmds.optionVar(query='SXToolsPrefsFile'))) > 0:
+        if maya.cmds.optionVar(exists='SXToolsSettingsFile') and len(
+                str(maya.cmds.optionVar(query='SXToolsSettingsFile'))) > 0:
             maya.cmds.text(
                 label='(Shift-click below to apply built-in defaults)',
                 parent='reflayerFrame')
@@ -454,7 +454,7 @@ class UI(object):
                 command=(
                     "sxtools.sxglobals.settings.createPreferences()\n"
                     "sxtools.sxglobals.settings.setPreferences()\n"
-                    "sxtools.sxglobals.settings.savePreferences()\n"
+                    "sxtools.sxglobals.settings.saveFile(0)\n"
                     "sxtools.sxglobals.settings.frames['setupCollapse']=True\n"
                     "sxtools.sxglobals.core.updateSXTools()"))
 
@@ -1137,7 +1137,7 @@ class UI(object):
                 '"sxApplyColor", query=True, rgbValue=True))\n'
                 'sxtools.sxglobals.tools.colorFill('
                 'maya.cmds.checkBox('
-                '"overwriteAlpha", query=True, value=True))\n'
+                '"overwriteAlpha", query=True, value=True), False)\n'
                 'sxtools.sxglobals.tools.updateRecentPalette()'))
         sxglobals.tools.getPalette(
             'recentPalette',
@@ -1231,7 +1231,7 @@ class UI(object):
             command=(
                 "sxtools.sxglobals.tools.gradientToolManager('preset')\n"
                 "sxtools.sxglobals.core.updateSXTools()\n"
-                "sxtools.sxglobals.settings.savePreferences()"))
+                "sxtools.sxglobals.settings.saveFile(0)"))
         maya.cmds.textField(
             'presetName',
             parent='gradientRowColumns',
@@ -1454,7 +1454,7 @@ class UI(object):
             width=100,
             command=(
                 'sxtools.sxglobals.tools.bakeBlendOcclusion()\n'
-                'sxtools.sxglobals.settings.savePreferences()'))
+                'sxtools.sxglobals.settings.saveFile(0)'))
 
         plugList = maya.cmds.pluginInfo(query=True, listPlugins=True)
         if 'Mayatomr' in plugList:
@@ -1484,10 +1484,27 @@ class UI(object):
                 edit=True,
                 select=sxglobals.settings.tools['categoryPreset'])
 
+    def refreshMaterialCategoryMenu(self):
+        categoryNameArray = []
+        if len(sxglobals.settings.materialArray) > 0:
+            for category in sxglobals.settings.materialArray:
+                categoryNameArray.append(category.keys()[0])
+        if categoryNameArray is not None:
+            for categoryName in categoryNameArray:
+                maya.cmds.menuItem(
+                    categoryName+'Option',
+                    label=categoryName,
+                    parent='materialCategories')
+        if sxglobals.settings.tools['materialCategoryPreset'] is not None:
+            maya.cmds.optionMenu(
+                'materialCategories',
+                edit=True,
+                select=sxglobals.settings.tools['materialCategoryPreset'])
+
     def masterPaletteToolUI(self):
         if ((maya.cmds.optionVar(exists='SXToolsPalettesFile')) and
            (len(str(maya.cmds.optionVar(query='SXToolsPalettesFile'))) > 0)):
-            sxglobals.settings.loadPalettes()
+            sxglobals.settings.loadFile(1)
         maya.cmds.frameLayout(
             'masterPaletteFrame',
             parent='canvas',
@@ -1649,7 +1666,7 @@ class UI(object):
             placeholderText='Palette Name')
         maya.cmds.text('masterPaletteLabel', label='Palette Colors:')
         maya.cmds.palettePort(
-            'masterPalette',
+            'newPalette',
             dimensions=(5, 1),
             width=120,
             height=10,
@@ -1658,17 +1675,17 @@ class UI(object):
             colorEditable=True,
             changeCommand=(
                 "sxtools.sxglobals.tools.storePalette("
-                "'masterPalette',"
+                "'newPalette',"
                 "sxtools.sxglobals.settings.paletteDict,"
                 "'SXToolsMasterPalette')"),
             colorEdited=(
                 "sxtools.sxglobals.tools.storePalette("
-                "'masterPalette',"
+                "'newPalette',"
                 "sxtools.sxglobals.settings.paletteDict,"
                 "'SXToolsMasterPalette')"))
 
         sxglobals.tools.getPalette(
-            'masterPalette',
+            'newPalette',
             sxglobals.settings.paletteDict,
             'SXToolsMasterPalette')
 
@@ -1709,7 +1726,7 @@ class UI(object):
             statusBarMessage=(
                 'Shift-click button to reload palettes from file'),
             command=(
-                'sxtools.sxglobals.settings.setPalettesFile()\n'
+                'sxtools.sxglobals.settings.setFile(1)\n'
                 'sxtools.sxglobals.core.updateSXTools()'))
 
         maya.cmds.rowColumnLayout(
@@ -1800,6 +1817,261 @@ class UI(object):
                 "'masterTarget5', query=True, text=True), 5)\n"
                 "maya.cmds.setFocus('MayaWindow')"),
             placeholderText='layer5')
+        maya.cmds.setParent('canvas')
+
+    def materialToolUI(self):
+        if ((maya.cmds.optionVar(exists='SXToolsMaterialsFile')) and
+           (len(str(maya.cmds.optionVar(query='SXToolsMaterialsFile'))) > 0)):
+            sxglobals.settings.loadFile(2)
+        maya.cmds.frameLayout(
+            'materialsFrame',
+            parent='canvas',
+            label='Apply PBR Material',
+            width=250,
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=sxglobals.settings.frames['materialsCollapse'],
+            collapseCommand=(
+                "sxtools.sxglobals.settings.frames['materialsCollapse']=True"),
+            expandCommand=(
+                "sxtools.sxglobals.settings.frames['materialsCollapse']=False"))
+
+        maya.cmds.frameLayout(
+            'materialCategoryFrame',
+            parent='materialsFrame',
+            label='Material List',
+            marginWidth=2,
+            marginHeight=0,
+            collapsable=True,
+            collapse=sxglobals.settings.frames['materialCategoryCollapse'],
+            collapseCommand=(
+                "sxtools.sxglobals.settings.frames['materialCategoryCollapse']=True"),
+            expandCommand=(
+                "sxtools.sxglobals.settings.frames['materialCategoryCollapse']=False"))
+        if len(sxglobals.settings.materialArray) > 0:
+            for categoryDict in sxglobals.settings.materialArray:
+                if categoryDict.keys()[0]+'Collapse' not in sxglobals.settings.frames:
+                    sxglobals.settings.frames[categoryDict.keys()[0]+'Collapse'] = True
+                maya.cmds.frameLayout(
+                    categoryDict.keys()[0],
+                    parent='materialCategoryFrame',
+                    label=categoryDict.keys()[0],
+                    marginWidth=0,
+                    marginHeight=0,
+                    enableBackground=True,
+                    backgroundColor=[0.32, 0.32, 0.32],
+                    collapsable=True,
+                    collapse=(
+                        sxglobals.settings.frames[categoryDict.keys()[0]+'Collapse']),
+                    collapseCommand=(
+                        'sxtools.sxglobals.settings.frames["' +
+                        categoryDict.keys()[0]+'"+"Collapse"]=True'),
+                    expandCommand=(
+                        'sxtools.sxglobals.settings.frames["' +
+                        categoryDict.keys()[0]+'"+"Collapse"]=False'))
+                if len(categoryDict[categoryDict.keys()[0]]) > 0:
+                    for i, (name) in enumerate(
+                       categoryDict[categoryDict.keys()[0]].keys()):
+                        stripeColor = []
+                        if i % 2 == 0:
+                            stripeColor = [0.22, 0.22, 0.22]
+                        else:
+                            stripeColor = [0.24, 0.24, 0.24]
+                        maya.cmds.rowColumnLayout(
+                            categoryDict.keys()[0]+name,
+                            parent=categoryDict.keys()[0],
+                            numberOfColumns=3,
+                            enableBackground=True,
+                            backgroundColor=stripeColor,
+                            columnWidth=((1, 90), (2, 90), (3, 40)),
+                            columnAttach=[
+                                (1, 'both', 0),
+                                (2, 'right', 5),
+                                (3, 'right', 0)],
+                            rowSpacing=(1, 0))
+                        maya.cmds.text(
+                            label=name,
+                            align='right',
+                            font='smallPlainLabelFont')
+                        maya.cmds.palettePort(
+                            categoryDict.keys()[0]+name+'Material',
+                            dimensions=(3, 1),
+                            width=80,
+                            height=20,
+                            actualTotal=3,
+                            editable=True,
+                            colorEditable=False,
+                            changeCommand=(
+                                'sxtools.sxglobals.settings.currentColor = '
+                                'maya.cmds.palettePort(' +
+                                '\"'+categoryDict.keys()[0]+name +
+                                'Material'+'\", query=True, rgb=True)\n'
+                                'sxtools.sxglobals.tools.setMaterial(' +
+                                '\"'+categoryDict.keys()[0] +
+                                '\", \"'+name+'\")\n'
+                                'sxtools.sxglobals.tools.setPaintColor('
+                                'sxtools.sxglobals.settings.currentColor)'))
+                        sxglobals.tools.getPalette(
+                            categoryDict.keys()[0]+name+'Material',
+                            categoryDict.keys()[0],
+                            name)
+                        maya.cmds.button(
+                            categoryDict.keys()[0]+name+'Button',
+                            label='Apply',
+                            height=20,
+                            ann='Shift-click to delete material',
+                            command=(
+                                'sxtools.sxglobals.tools.materialButtonManager(' +
+                                '\"'+categoryDict.keys()[0] +
+                                '\", \"'+name+'\")'))
+
+        maya.cmds.frameLayout(
+            'createMaterialFrame',
+            parent='materialsFrame',
+            label='Edit Materials',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=sxglobals.settings.frames['newMaterialCollapse'],
+            collapseCommand=(
+                "sxtools.sxglobals.settings.frames['newMaterialCollapse']=True"),
+            expandCommand=(
+                "sxtools.sxglobals.settings.frames['newMaterialCollapse']=False"))
+
+        maya.cmds.rowColumnLayout(
+            'materialsRowColumns',
+            parent='createMaterialFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 100), (2, 140)),
+            columnAttach=[(1, 'right', 0), (2, 'both', 5)],
+            rowSpacing=(1, 5))
+
+        maya.cmds.text(label='Category:')
+
+        maya.cmds.optionMenu(
+            'materialCategories',
+            parent='materialsRowColumns',
+            changeCommand=(
+                'sxtools.sxglobals.settings.tools["categoryPreset"]='
+                'maya.cmds.optionMenu('
+                '"materialCategories", query=True, select=True)'))
+
+        self.refreshMaterialCategoryMenu()
+
+        maya.cmds.button(
+            'saveMaterialCategory',
+            label='Save Category',
+            width=100,
+            ann='Shift-click to delete a category and contained materials',
+            command=(
+                'sxtools.sxglobals.tools.saveMaterialCategory()'))
+        maya.cmds.textField(
+            'saveMaterialCategoryName',
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='Category Name')
+        maya.cmds.button(
+            'saveMaterial',
+            label='Save Material',
+            ann='The material is saved under the selected category',
+            width=100,
+            command=(
+                'sxtools.sxglobals.tools.saveMaterial()\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+        maya.cmds.textField(
+            'saveMaterialName',
+            enterCommand=("maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='Material Name')
+        maya.cmds.text('materialLabel', label='Material Values:')
+        maya.cmds.palettePort(
+            'newMaterial',
+            dimensions=(3, 1),
+            width=120,
+            height=10,
+            actualTotal=3,
+            editable=True,
+            colorEditable=True,
+            changeCommand=(
+                "sxtools.sxglobals.tools.storePalette("
+                "'newMaterial',"
+                "sxtools.sxglobals.settings.paletteDict,"
+                "'SXToolsMaterialPalette')"),
+            colorEdited=(
+                "sxtools.sxglobals.tools.storePalette("
+                "'newMaterial',"
+                "sxtools.sxglobals.settings.paletteDict,"
+                "'SXToolsMaterialPalette')"))
+
+        sxglobals.tools.getPalette(
+            'newMaterial',
+            sxglobals.settings.paletteDict,
+            'SXToolsMaterialPalette')
+
+        maya.cmds.frameLayout(
+            'materialSettingsFrame',
+            parent='materialsFrame',
+            label='Material Palette Settings',
+            marginWidth=5,
+            marginHeight=5,
+            collapsable=True,
+            collapse=sxglobals.settings.frames['materialSettingsCollapse'],
+            collapseCommand=(
+                "sxtools.sxglobals.settings.frames['materialSettingsCollapse']=True"),
+            expandCommand=(
+                "sxtools.sxglobals.settings.frames['materialSettingsCollapse']=False"))
+
+        if ((maya.cmds.optionVar(exists='SXToolsMaterialsFile')) and
+           (len(str(maya.cmds.optionVar(query='SXToolsMaterialsFile'))) > 0)):
+            # sxglobals.settings.loadFile(2)
+            maya.cmds.text(
+                label='Current materials location:',
+                parent='materialSettingsFrame')
+            maya.cmds.text(
+                label=maya.cmds.optionVar(query='SXToolsMaterialsFile'),
+                parent='materialSettingsFrame',
+                ww=True)
+        else:
+            maya.cmds.text(
+                label='WARNING: Materials file location not set!',
+                parent='materialSettingsFrame',
+                height=20,
+                backgroundColor=(0.35, 0.1, 0),
+                ww=True)
+
+        maya.cmds.button(
+            label='Select Materials File',
+            parent='materialSettingsFrame',
+            statusBarMessage=(
+                'Shift-click button to reload materials from file'),
+            command=(
+                'sxtools.sxglobals.settings.setFile(2)\n'
+                'sxtools.sxglobals.core.updateSXTools()'))
+
+        maya.cmds.rowColumnLayout(
+            'metallicColorTargetRowColumns',
+            parent='materialSettingsFrame',
+            numberOfColumns=2,
+            columnWidth=((1, 100), (2, 140)),
+            columnAttach=[(1, 'left', 0), (2, 'both', 5)],
+            rowSpacing=(1, 5))
+
+        maya.cmds.text(label='Color Target Layer: ')
+        maya.cmds.textField(
+            'materialTarget',
+            parent='metallicColorTargetRowColumns',
+            text=', '.join(sxglobals.settings.project['materialTarget']),
+            enterCommand=(
+                "sxtools.sxglobals.tools.checkTarget("
+                "maya.cmds.textField("
+                "'materialTarget', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            changeCommand=(
+                "sxtools.sxglobals.tools.checkTarget("
+                "maya.cmds.textField("
+                "'materialTarget', query=True, text=True), 1)\n"
+                "maya.cmds.setFocus('MayaWindow')"),
+            placeholderText='layer7')
+
         maya.cmds.setParent('canvas')
 
     def assignCreaseToolUI(self):

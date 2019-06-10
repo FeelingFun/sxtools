@@ -25,6 +25,7 @@ class Settings(object):
         self.exportNodeDict = {}
         self.paletteDict = {}
         self.masterPaletteArray = []
+        self.materialArray = []
         self.project = {}
         self.localOcclusionDict = {}
         self.globalOcclusionDict = {}
@@ -38,6 +39,10 @@ class Settings(object):
             'paletteCategoryCollapse': False,
             'newPaletteCollapse': True,
             'paletteSettingsCollapse': True,
+            'materialsCollapse': True,
+            'materialCategoryCollapse': True,
+            'newMaterialCollapse': True,
+            'materialSettingsCollapse': True,
             'creaseCollapse': True,
             'autoCreaseCollapse': True,
             'applyColorCollapse': True,
@@ -63,6 +68,7 @@ class Settings(object):
             'bakeTogether': False,
             'blendSlider': 0.0,
             'categoryPreset': None,
+            'materialCategoryPreset': None,
             'gradientDirection': 1,
             'gradientPreset': 1,
             'rayCount': 250,
@@ -150,6 +156,8 @@ class Settings(object):
             self.project['paletteTarget3'] = [self.refArray[2], ]
             self.project['paletteTarget4'] = [self.refArray[3], ]
             self.project['paletteTarget5'] = [self.refArray[4], ]
+
+            self.project['materialTarget'] = [self.refArray[6], ]
 
         if shift:
             sxglobals.setup.createSXShader(
@@ -333,6 +341,7 @@ class Settings(object):
         self.project['paletteTarget3'] = ['layer3', ]
         self.project['paletteTarget4'] = ['layer4', ]
         self.project['paletteTarget5'] = ['layer5', ]
+        self.project['materialTarget'] = ['layer7', ]
         self.project['MaskCount'] = maya.cmds.intField(
             'numMasks', query=True, value=True)
 
@@ -345,100 +354,81 @@ class Settings(object):
                 sxglobals.settings.refArray[i]][6] = maya.cmds.textField(
                 fieldLabel, query=True, text=True)
 
-    def setPreferencesFile(self):
+    def setFile(self, mode):
+        modeArray = ('Settings', 'Palettes', 'Materials')
+        modeName = modeArray[mode]
         modifiers = maya.cmds.getModifiers()
         shift = bool((modifiers & 1) > 0)
-        if shift is False:
+
+        if not shift:
             filePath = maya.cmds.fileDialog2(
                 fileFilter='*.json',
-                cap='Select SX Tools Settings File',
+                cap=('Select SX Tools ' + modeName + ' File'),
                 dialogStyle=2,
                 fm=0)
             if filePath is not None:
+                print('SX Tools: ' + modeName + ' file set to ' + filePath[0])
                 maya.cmds.optionVar(
-                    stringValue=('SXToolsPrefsFile', filePath[0]))
+                    stringValue=('SXTools' + modeName + 'File', filePath[0]))
             else:
-                print('SX Tools: No Settings file selected')
+                print('SX Tools: No ' + modeName + 'file selected')
         else:
-            self.loadPreferences()
+            self.loadFile(mode)
 
-    def savePreferences(self):
-        if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
-            filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
-            with open(filePath, 'w') as output:
-                json.dump(self.project, output, indent=4)
-                output.close()
-            print('SX Tools: Settings saved')
-        else:
-            print('SX Tools Warning: Settings file location not set!')
-
-    def loadPreferences(self):
-        if maya.cmds.optionVar(exists='SXToolsPrefsFile'):
-            filePath = maya.cmds.optionVar(q='SXToolsPrefsFile')
+    def loadFile(self, mode):
+        modeArray = ('Settings', 'Palettes', 'Materials')
+        modeName = modeArray[mode]
+        modePath = 'SXTools' + modeName + 'File'
+        if maya.cmds.optionVar(exists=modePath):
+            filePath = maya.cmds.optionVar(q=modePath)
             try:
                 with open(filePath, 'r') as input:
-                    self.project.clear()
-                    self.project = json.load(input)
+                    if mode == 0:
+                        self.project.clear()
+                        self.project = json.load(input)
+                        self.setPreferences()
+                        self.frames['setupCollapse'] = True
+                    elif mode == 1:
+                        tempDict = {}
+                        tempDict = json.load(input)
+                        del self.masterPaletteArray[:]
+                        self.masterPaletteArray = tempDict['Palettes']
+                    elif mode == 2:
+                        tempDict = {}
+                        tempDict = json.load(input)
+                        del self.materialArray[:]
+                        self.materialArray = tempDict['Materials']
                     input.close()
-                print('SX Tools: Settings loaded from ' + filePath)
-                self.setPreferences()
-                self.frames['setupCollapse'] = True
+                print('SX Tools: ' + modeName + ' loaded from ' + filePath)
             except ValueError:
-                print('SX Tools Error: Invalid settings file.')
-                maya.cmds.optionVar(remove='SXToolsPrefsFile')
+                print('SX Tools Error: Invalid ' + modeName + ' file.')
+                maya.cmds.optionVar(remove=modePath)
             except IOError:
-                print('SX Tools Error: Settings file not found!')
-                maya.cmds.optionVar(remove='SXToolsPrefsFile')
+                print('SX Tools Error: ' + modeName + ' file not found!')
+                if mode == 0:
+                    maya.cmds.optionVar(remove=modePath)
+
         else:
-            print('SX Tools: No settings file found')
+            print('SX Tools: No ' + modeName + ' file found')
 
-    def setPalettesFile(self):
-        modifiers = maya.cmds.getModifiers()
-        shift = bool((modifiers & 1) > 0)
-        if shift is False:
-            filePath = maya.cmds.fileDialog2(
-                fileFilter='*.json',
-                cap='Select SX Tools Palettes File',
-                dialogStyle=2,
-                fm=0)
-            if filePath is not None:
-                print('SX Tools: Palettes file set to ' + filePath[0])
-                maya.cmds.optionVar(
-                    stringValue=('SXToolsPalettesFile', filePath[0]))
-            else:
-                print('SX Tools: No Palette file selected')
-        else:
-            self.loadPalettes()
-
-    def savePalettes(self):
-        if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
-            filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
-            tempDict = {}
-            tempDict['Palettes'] = self.masterPaletteArray
-
+    def saveFile(self, mode):
+        modeArray = ('Settings', 'Palettes', 'Materials')
+        modeName = modeArray[mode]
+        modePath = 'SXTools' + modeName + 'File'
+        if maya.cmds.optionVar(exists=modePath):
+            filePath = maya.cmds.optionVar(q=modePath)
             with open(filePath, 'w') as output:
-                json.dump(tempDict, output, indent=4)
-                output.close()
-            print('SX Tools: Palettes saved')
-        else:
-            print('SX Tools Warning: Palettes file location not set!')
-
-    def loadPalettes(self):
-        if maya.cmds.optionVar(exists='SXToolsPalettesFile'):
-            try:
-                filePath = maya.cmds.optionVar(q='SXToolsPalettesFile')
-                with open(filePath, 'r') as input:
+                if mode == 0:
+                    json.dump(self.project, output, indent=4)
+                elif mode == 1:
                     tempDict = {}
-                    tempDict = json.load(input)
-                    input.close()
-
-                del self.masterPaletteArray[:]
-                self.masterPaletteArray = tempDict['Palettes']
-            except ValueError:
-                print('SX Tools Error: Invalid palettes file!')
-                maya.cmds.optionVar(remove='SXToolsPalettesFile')
-            except IOError:
-                print('SX Tools Error: Palettes file not found!')
-                # maya.cmds.optionVar(remove='SXToolsPalettesFile')
+                    tempDict['Palettes'] = self.masterPaletteArray
+                    json.dump(tempDict, output, indent=4)
+                elif mode == 2:
+                    tempDict = {}
+                    tempDict['Materials'] = self.materialArray
+                    json.dump(tempDict, output, indent=4)
+                output.close()
+            print('SX Tools: ' + modeName + ' saved')
         else:
-            print('SX Tools: No palettes found')
+            print('SX Tools Warning: ' + modeName + ' file location not set!')
