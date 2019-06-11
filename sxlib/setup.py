@@ -1409,6 +1409,11 @@ class SceneSetup(object):
                     obj,
                     ln='smoothingAngle',
                     at='byte', min=0, max=180, dv=80)
+            if ('versionIdentifier' not in flagList):
+                maya.cmds.addAttr(
+                    obj,
+                    ln='versionIdentifier',
+                    at='byte', min=0, max=255, dv=1)
 
         for shape in sxglobals.settings.shapeArray:
             attrList = maya.cmds.listAttr(shape, ud=True)

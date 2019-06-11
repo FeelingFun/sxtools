@@ -853,10 +853,11 @@ class ToolActions(object):
         targets = (sxglobals.settings.project['materialTarget'][0], 'metallic', 'smoothness')
 
         for i in xrange(3):
-            maya.cmds.palettePort('newMaterial', edit=True, scc=i-1)
+            maya.cmds.palettePort('newMaterial', edit=True, scc=i)
             sxglobals.settings.currentColor = maya.cmds.palettePort(
                 'newMaterial', query=True, rgb=True)
             sxglobals.settings.tools['selectedLayer'] = targets[i]
+            print i, targets[i], sxglobals.settings.currentColor
             self.colorFill(True, False)
 
         totalTime = maya.cmds.timerX(startTime=startTimeOcc)

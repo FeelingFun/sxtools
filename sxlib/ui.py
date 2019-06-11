@@ -1907,7 +1907,7 @@ class UI(object):
                                 'maya.cmds.palettePort(' +
                                 '\"'+categoryDict.keys()[0]+name +
                                 'Material'+'\", query=True, rgb=True)\n'
-                                'sxtools.sxglobals.tools.setMaterial(' +
+                                'sxtools.sxglobals.tools.setMaterialPalette(' +
                                 '\"'+categoryDict.keys()[0] +
                                 '\", \"'+name+'\")\n'
                                 'sxtools.sxglobals.tools.setPaintColor('
@@ -1953,7 +1953,7 @@ class UI(object):
             'materialCategories',
             parent='materialsRowColumns',
             changeCommand=(
-                'sxtools.sxglobals.settings.tools["categoryPreset"]='
+                'sxtools.sxglobals.settings.tools["materialCategoryPreset"]='
                 'maya.cmds.optionMenu('
                 '"materialCategories", query=True, select=True)'))
 
