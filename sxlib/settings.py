@@ -388,6 +388,7 @@ class Settings(object):
                         self.project = json.load(input)
                         self.setPreferences()
                         self.frames['setupCollapse'] = True
+                        print('SX Tools: ' + modeName + ' loaded from ' + filePath)
                     elif mode == 1:
                         tempDict = {}
                         tempDict = json.load(input)
@@ -399,7 +400,6 @@ class Settings(object):
                         del self.materialArray[:]
                         self.materialArray = tempDict['Materials']
                     input.close()
-                print('SX Tools: ' + modeName + ' loaded from ' + filePath)
             except ValueError:
                 print('SX Tools Error: Invalid ' + modeName + ' file.')
                 maya.cmds.optionVar(remove=modePath)

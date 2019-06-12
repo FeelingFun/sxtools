@@ -1689,6 +1689,22 @@ class UI(object):
             sxglobals.settings.paletteDict,
             'SXToolsMasterPalette')
 
+        maya.cmds.button(
+            label='Non-Metallic',
+            statusBarMessage=(
+                'Remaps palette colors to PBR non-metallic luminosity range (50-243)'),
+            command=(
+                'sxtools.sxglobals.tools.paletteRemapper('
+                '"newPalette", False)'))
+
+        maya.cmds.button(
+            label='Metallic',
+            statusBarMessage=(
+                'Remaps palette colors to PBR metallic luminosity range (186-255)'),
+            command=(
+                'sxtools.sxglobals.tools.paletteRemapper('
+                '"newPalette", True)'))
+
         maya.cmds.frameLayout(
             'paletteSettingsFrame',
             parent='masterPaletteFrame',
@@ -2006,6 +2022,22 @@ class UI(object):
             'newMaterial',
             sxglobals.settings.paletteDict,
             'SXToolsMaterialPalette')
+
+        maya.cmds.button(
+            label='Non-Metallic',
+            statusBarMessage=(
+                'Remaps palette colors to PBR non-metallic luminosity range (50-243)'),
+            command=(
+                'sxtools.sxglobals.tools.paletteRemapper('
+                '"newMaterial", False)'))
+
+        maya.cmds.button(
+            label='Metallic',
+            statusBarMessage=(
+                'Remaps palette colors to PBR metallic luminosity range (186-255)'),
+            command=(
+                'sxtools.sxglobals.tools.paletteRemapper('
+                '"newMaterial", True)'))
 
         maya.cmds.frameLayout(
             'materialSettingsFrame',

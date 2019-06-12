@@ -2458,3 +2458,63 @@ class ToolActions(object):
     def setHardEdgeFlag(self, objects, flag):
         for obj in objects:
             maya.cmds.setAttr(obj+'.hardEdges', flag)
+
+    # determine brightest channel of RGB,
+    # check if within specified value range
+    # if not, remap to new range,
+    # multiply other channels with ratio of change
+    def colorRemapper(self, color, metallic=False):
+        oldValue = max(color)
+
+        if oldValue == 0.0:
+            return color
+        else:
+            oldRange = 1.0
+            oldMin = 0.0
+            oldMax = 1.0
+
+            if metallic:
+                newMax = 1.0
+                newMin = float(186)/float(255)
+            else:
+                newMax = float(243)/float(255)
+                newMin = float(50)/float(255)
+
+            if (oldValue < newMin) or (oldValue > newMax): 
+                newRange = (newMax - newMin)
+                newColor = []
+
+                newValue = (((float(oldValue) - oldMin) * newRange) / oldRange) + newMin
+                
+                ratio = float(newValue)/float(oldValue)
+
+                for channel in color: 
+                    newChannel = channel * ratio
+                    newColor.append(newChannel)
+                
+                return newColor
+            else:
+                return color
+
+    def paletteRemapper(self, paletteUI, metallic=False):
+            numColors = maya.cmds.palettePort(paletteUI, query=True, actualTotal=True)
+            for i in xrange(numColors):
+                maya.cmds.palettePort(paletteUI, edit=True, scc=i)
+                oldColor = maya.cmds.palettePort(paletteUI, query=True, rgb=True)
+                newColor = self.colorRemapper(oldColor, metallic)
+                maya.cmds.palettePort(
+                    paletteUI,
+                    edit=True,
+                    rgb=(i, newColor[0], newColor[1], newColor[2]))
+
+    def masterPaletteRemapper(self, array, metallic=False):
+        for categoryDict in array:
+            for key, valueDict in categoryDict.iteritems():
+                for name, colorArray in valueDict.iteritems():
+                    newColorArray = []
+                    for color in colorArray:
+                        newColor = self.colorRemapper(color, metallic)
+                        newColorArray.append(newColor)
+                    valueDict[name] = newColorArray
+
+        sxglobals.settings.saveFile(1)
