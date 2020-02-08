@@ -37,7 +37,7 @@ In other common art pipelines a model is sculpted without concern to poly counts
 1. Copy sxtools.py, sxglobals.py, sxlib folder, and sfx folder to your Maya scripts folder
 2. Load shelf_SX.mel, start SX Tools by pressing shelf icon
 3. Click on empty space
-4. Click on ***Set Preferences Location*** and choose a place for your preferences file
+4. Click on ***Select Settings File*** and choose a place and name for your preferences file
 5. Shift-click on **Apply Project Defaults** to start with basic configuration
 6. Import or load a mesh object
 7. Click on object, press **Add Missing Color Sets**
